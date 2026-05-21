@@ -2192,28 +2192,87 @@ function UnifiedTabStrip({ items, active, onSelect }) {
 // Section tabs — true mutually-exclusive tabs (Measurements · Materials ·
 // Labor · Equipment · Disposal). Replaces the collapsible-accordion model
 // per Craig (May '26 v2): "Long scrolling is the enemy of users."
+//
+// Phase 2.3 B-2: visually upgraded to a numbered SubStepStrip (numbered
+// circles connected by a line) instead of pill tabs. Reads as progress
+// through the build sub-steps, even though the rep can hop around freely.
 // ─────────────────────────────────────────────────────────
 function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
   if (!facet) return null;
-  const labels = { measurements: 'Measurements', materials: 'Materials', labor: 'Labor', equipment: 'Equipment', disposal: 'Disposal', photos: 'Photos' };
-  const subtotalFor = (section) => {
-    if (!facet.hasPricing) return null;
-    if (!['materials', 'labor', 'equipment', 'disposal'].includes(section)) return null;
-    const li = env.lineItems?.[section] || [];
-    return li.reduce((sum, it) => sum + lineTotal(facet.id, section, it), 0);
-  };
-  const photoCount = items.filter((it) => it.facetId === facet.id).length;
+  const labels = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', equipment: 'Equipment', disposal: 'Disposal', photos: 'Photos' };
   const visible = sections.filter((s) => s !== 'photos');
   return (
     <div style={{ padding: '0 14px 6px' }}>
-      <div>
-        <UnifiedTabStrip
-          items={visible.map((sec) => ({ id: sec, label: labels[sec] }))}
-          active={activeSection}
-          onSelect={onSelect} />
-      </div>
+      <SubStepStrip
+        items={visible.map((sec) => ({ id: sec, label: labels[sec] }))}
+        active={activeSection}
+        onSelect={onSelect} />
     </div>);
 
+}
+
+// ─────────────────────────────────────────────────────────
+// SubStepStrip — numbered circles connected by a horizontal line,
+// labels underneath. Visually signals "you're step N of M" while still
+// allowing free navigation. Replaces UnifiedTabStrip on the Build screen
+// for the section row. (Phase 2.3 B-2 redesign port.)
+// ─────────────────────────────────────────────────────────
+function SubStepStrip({ items, active, onSelect }) {
+  if (!items || items.length === 0) return null;
+  const activeIdx = Math.max(0, items.findIndex((it) => it.id === active));
+  return (
+    <div style={{ padding: '4px 0 2px' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        {/* Connecting baseline */}
+        <div style={{
+          position: 'absolute', top: 13, left: 14, right: 14, height: 2,
+          background: 'var(--border)', zIndex: 0
+        }} />
+        {/* Brand progress fill up to active step */}
+        {items.length > 1 &&
+        <div style={{
+          position: 'absolute', top: 13, left: 14, height: 2,
+          background: 'var(--brand)', zIndex: 0,
+          width: `calc(${(activeIdx / (items.length - 1)) * 100}% - ${(activeIdx / (items.length - 1)) * 28}px)`
+        }} />}
+        {items.map((it, i) => {
+          const isActive = it.id === active;
+          const isPast = i < activeIdx;
+          return (
+            <button
+              key={it.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onSelect(it.id)}
+              style={{
+                position: 'relative', zIndex: 1,
+                background: 'transparent', border: 0, cursor: 'pointer', padding: '2px 4px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                flex: '1 1 0', minWidth: 0
+              }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 999,
+                background: isActive ? 'var(--brand)' : (isPast ? 'var(--brand)' : 'var(--surface)'),
+                color: (isActive || isPast) ? 'var(--brand-fg)' : 'var(--text-3)',
+                border: isActive ? '2px solid var(--brand)' : (isPast ? 'none' : '2px solid var(--border-strong)'),
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700, lineHeight: 1,
+                boxShadow: isActive ? '0 0 0 4px var(--brand-soft)' : 'none',
+                boxSizing: 'border-box', flexShrink: 0
+              }}>
+                {isPast ? '✓' : i + 1}
+              </div>
+              <div style={{
+                fontSize: 10, fontWeight: isActive ? 700 : 600,
+                color: isActive ? 'var(--text)' : 'var(--text-3)',
+                textAlign: 'center', lineHeight: 1.2, letterSpacing: '-0.005em',
+                maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+              }}>{it.label}</div>
+            </button>);
+        })}
+      </div>
+    </div>);
 }
 
 // ─────────────────────────────────────────────────────────

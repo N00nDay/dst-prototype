@@ -369,6 +369,20 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
             structures={structures}
             activeStructureId={activeStructureId}
             onSelect={setActiveStructureId}
+            perStructure={perStructure} />
+        )}
+
+        {/* Project overview — all structures stacked. Phase 2.4 P-4.
+            Renders only when 2+ structures exist; complements (doesn't
+            replace) the per-structure scope cards below by showing the
+            bundle at a glance. */}
+        {(structures || []).length > 1 && (
+          <ProjectOverviewCard
+            tablet={tablet}
+            structures={structures}
+            perStructure={perStructure}
+            activeStructureId={activeStructureId}
+            onSelectStructure={setActiveStructureId}
             grand={grand} />
         )}
 
@@ -553,6 +567,92 @@ function BarRangeStat({ label, low, high, color, tablet }) {
 
 function BarSep() {
   return <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 0' }} />;
+}
+
+// ─── Project overview card (multi-structure) ──────────────────
+// Phase 2.4 P-4 redesign port. Stacks every structure's price range +
+// per-scope breakdown so the rep can see the whole bundle without
+// jumping between tabs. Tap a row to make that structure active.
+function ProjectOverviewCard({ tablet, structures, perStructure, activeStructureId, onSelectStructure, grand }) {
+  if (!structures || structures.length < 2) return null;
+  const psById = (perStructure || []).reduce((m, ps) => { m[ps.structureId] = ps; return m; }, {});
+  const anyPicked = (perStructure || []).some((ps) => ps.high > 0);
+  return (
+    <div style={{ padding: tablet ? '6px 28px 4px' : '4px 16px 2px' }}>
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, overflow: 'hidden'
+      }}>
+        <div style={{
+          padding: '12px 14px 8px',
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
+          borderBottom: '1px solid var(--border)'
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.12, textTransform: 'uppercase' }}>
+            Project overview · {structures.length} structures
+          </span>
+          {anyPicked &&
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+              letterSpacing: '-0.02em', color: 'var(--text)', whiteSpace: 'nowrap'
+            }}>
+              {grand.low === grand.high ?
+                fmt(grand.high || 0) :
+                <>{fmt(grand.low)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 2px' }}>–</span>{fmt(grand.high)}</>}
+            </span>}
+        </div>
+        {structures.map((s, i) => {
+          const ps = psById[s.id];
+          const isActive = s.id === activeStructureId;
+          const sLow = ps?.low || 0;
+          const sHigh = ps?.high || 0;
+          const scopes = Object.keys(ps?.scopeRollups || {});
+          const scopeLabels = scopes.map((id) => SCOPE_CATALOG.find((sc) => sc.id === id)?.label || id);
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onSelectStructure(s.id)}
+              style={{
+                width: '100%', textAlign: 'left',
+                padding: '12px 14px',
+                background: isActive ? 'var(--brand-soft)' : 'transparent',
+                border: 0,
+                borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer'
+              }}>
+              <span style={{
+                width: 22, height: 22, borderRadius: 5,
+                background: isActive ? 'var(--brand)' : 'var(--surface-3)',
+                color: isActive ? 'var(--brand-fg)' : 'var(--text-2)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 800, flexShrink: 0
+              }}>{i + 1}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? 'var(--brand-soft-fg)' : 'var(--text)', letterSpacing: '-0.01em' }}>{s.name}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2, fontWeight: 600 }}>
+                  {scopeLabels.length === 0 ? 'No picks yet' : scopeLabels.join(' · ')}
+                </div>
+              </div>
+              {sHigh > 0 ?
+                <span style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                  letterSpacing: '-0.02em', color: 'var(--text)', whiteSpace: 'nowrap', flexShrink: 0
+                }}>
+                  {sLow === sHigh ?
+                    fmt(sHigh) :
+                    <>{fmt(sLow)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 2px' }}>–</span>{fmt(sHigh)}</>}
+                </span> :
+                <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600, fontStyle: 'italic', flexShrink: 0 }}>
+                  pending
+                </span>}
+            </button>);
+        })}
+      </div>
+    </div>);
 }
 
 function SectionLabel({ label, sub }) {
@@ -1046,15 +1146,12 @@ function PricingModeToggle({ tablet, mode, onChange, structures }) {
 
 // ─── Structure tabs (By-structure mode) ───────────────────────
 // Horizontal snap-grid so condo complexes can scroll cleanly past 3-4 tabs.
-// Each tab carries a price range derived from a proportional split of the
-// project rollup (weighted by the structure's scope count). This is a
-// transitional placeholder — until per-structure pricing lands in the
-// model (plan: phase 2.4 P-3), every structure shares the same proposal
-// state and the only honest per-structure dimension we have is "how many
-// envelopes does this building cover." A future commit will replace the
-// weighting with real per-structure totals. (Craig, May '26 — P-1.)
-function StructureTabs({ tablet, structures, activeStructureId, onSelect, grand }) {
-  const totalScopes = structures.reduce((n, s) => n + (s.scopes || []).length, 0);
+// Phase 2.4 P-3: each tab now shows its real per-structure price range
+// from the perStructure rollup (built in M-1..M-3). Falls back to an
+// envelope count when no products have been picked yet for that
+// structure.
+function StructureTabs({ tablet, structures, activeStructureId, onSelect, perStructure }) {
+  const psById = (perStructure || []).reduce((m, ps) => { m[ps.structureId] = ps; return m; }, {});
   return (
     <div style={{ padding: tablet ? '0 28px 12px' : '0 16px 10px' }}>
       <div style={{
@@ -1068,10 +1165,10 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect, grand 
         {structures.map((s, i) => {
           const isActive = s.id === activeStructureId;
           const scopeCount = (s.scopes || []).length;
-          const weight = totalScopes > 0 ? scopeCount / totalScopes : 0;
-          const sLow = grand ? Math.round(grand.low * weight) : 0;
-          const sHigh = grand ? Math.round(grand.high * weight) : 0;
-          const showRange = grand && sHigh > 0;
+          const ps = psById[s.id];
+          const sLow = ps?.low || 0;
+          const sHigh = ps?.high || 0;
+          const showRange = sHigh > 0;
           return (
             <button
               key={s.id}
@@ -1103,12 +1200,14 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect, grand 
                   fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
                   whiteSpace: 'nowrap'
                 }}>
-                  {fmt(sLow)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 2px' }}>–</span>{fmt(sHigh)}
+                  {sLow === sHigh ?
+                    fmt(sHigh) :
+                    <>{fmt(sLow)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 2px' }}>–</span>{fmt(sHigh)}</>}
                 </span> :
                 <span style={{
                   fontSize: 11, color: 'var(--text-3)', fontWeight: 600
                 }}>
-                  {scopeCount} envelope{scopeCount === 1 ? '' : 's'}
+                  {scopeCount} envelope{scopeCount === 1 ? '' : 's'} · no picks yet
                 </span>}
             </button>);
 

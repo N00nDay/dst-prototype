@@ -402,9 +402,11 @@ function InspectionScreen({
           const facetMeta = ENVELOPE_FACETS.find((f) => f.id === fid);
           schema.forEach((f) => {
             const v = meas[f.key];
-            const hasValue = v != null && v !== '' && v !== 0;
             const lockState = locks[f.key] || 'open';
-            if (hasValue && lockState === 'open') {
+            // Flag every row that's neither locked nor dismissed. Empty
+            // rows count too — the rep should explicitly dismiss them
+            // (mark N/A) or fill + lock them before continuing.
+            if (lockState === 'open') {
               openRows.push({
                 facetId: fid, facetLabel: facetMeta?.label || fid,
                 fieldKey: f.key, fieldLabel: f.label, unit: f.unit, value: v, step: f.step || 1, isText: !!f.isText
@@ -1288,8 +1290,7 @@ function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onA
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em',
-          textDecoration: isDismissed ? 'line-through' : 'none',
-          color: isLocked ? 'var(--success)' : 'inherit'
+          color: isLocked ? 'var(--success)' : (isDismissed ? 'var(--text-3)' : 'inherit')
         }}>{field.label}</div>
         {field.hint && <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{field.hint}</div>}
         {pendingAvailable &&
@@ -1372,33 +1373,66 @@ function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onA
           onClick={() => onChange((Number(value) || 0) + (field.step || 1))}
           style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0 }}
           aria-label="increase">+</button>}
-        {/* Phase 2.3 B-5: lock/dismiss toggle.
-            - Open + has value → lock button (commits the row as final).
-            - Open + empty     → dismiss button (mark N/A so it doesn't
-              show up in the open-count gate).
-            - Locked           → unlock button.
-            - Dismissed        → Undo button. */}
-        {onSetLock && !field.isText &&
+        {/* Row affordances — always two slots, contextual content:
+            - Open      → [X dismiss] + [lock] (lock only when row has value)
+            - Locked    → [unlock]                (single slot)
+            - Dismissed → [undo]                  (single slot)
+            Dismissing is only available when unlocked, per Craig's rule. */}
+        {onSetLock && !field.isText && isLocked &&
         <button
           type="button"
-          onClick={() => {
-            if (isLocked) onSetLock(null);
-            else if (isDismissed) onSetLock(null);
-            else if (empty) onSetLock('dismissed');
-            else onSetLock('locked');
-          }}
-          aria-label={isLocked ? 'Unlock row' : (isDismissed ? 'Undo dismiss' : (empty ? 'Mark not applicable' : 'Lock row'))}
-          title={isLocked ? 'Unlock — re-open this row' : (isDismissed ? 'Undo — restore this row' : (empty ? 'Mark not applicable' : 'Lock — commit this row'))}
+          onClick={() => onSetLock(null)}
+          aria-label="Unlock row"
+          title="Unlock — re-open this row"
           style={{
             width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0,
-            background: isLocked ? 'var(--success)' : (isDismissed ? 'transparent' : 'transparent'),
-            color: isLocked ? '#fff' : (isDismissed ? 'var(--brand)' : 'var(--text-3)'),
-            border: isLocked ? 'none' : (isDismissed ? '1px solid var(--brand)' : '1px solid var(--border)'),
+            background: 'var(--success)', color: '#fff', border: 'none',
             cursor: 'pointer', fontSize: 11, fontWeight: 700,
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-          {isLocked ? '🔒' : (isDismissed ? '↺' : (empty ? '⊘' : '🔓'))}
-        </button>}
+          }}>🔒</button>}
+        {onSetLock && !field.isText && isDismissed &&
+        <button
+          type="button"
+          onClick={() => onSetLock(null)}
+          aria-label="Undo dismiss"
+          title="Undo — restore this row"
+          style={{
+            width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0,
+            background: 'transparent', color: 'var(--brand)',
+            border: '1px solid var(--brand)',
+            cursor: 'pointer', fontSize: 13, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>↺</button>}
+        {onSetLock && !field.isText && !isLocked && !isDismissed &&
+        <>
+          <button
+            type="button"
+            onClick={() => onSetLock('dismissed')}
+            aria-label="Dismiss row (mark not applicable)"
+            title="Dismiss — mark this row not applicable"
+            style={{
+              width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0,
+              background: 'transparent', color: 'var(--text-3)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+            <Icon.x />
+          </button>
+          {!empty &&
+          <button
+            type="button"
+            onClick={() => onSetLock('locked')}
+            aria-label="Lock row"
+            title="Lock — commit this row"
+            style={{
+              width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0,
+              background: 'transparent', color: 'var(--text-3)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer', fontSize: 11, fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+            }}>🔓</button>}
+        </>}
       </div>
     </div>);
 

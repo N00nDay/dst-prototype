@@ -212,14 +212,13 @@ function StructureRow({ structure, onRename, onToggleScope, onRequestDelete, can
               onClick={() => onToggleScope(scope.id)}
               style={{
                 padding: tablet ? '4px 9px' : '4px 8px', borderRadius: 999,
-                background: selected ? 'var(--brand)' : 'transparent',
-                color: selected ? 'var(--brand-fg)' : 'var(--text-2)',
-                border: selected ? '1.5px solid var(--brand)' : '1.5px solid var(--border-strong)',
+                background: selected ? 'var(--success-bg)' : 'transparent',
+                color: selected ? 'var(--success)' : 'var(--text-2)',
+                border: `1.5px solid ${selected ? 'var(--success)' : 'var(--border-strong)'}`,
                 fontSize: tablet ? 11 : 10.5, fontWeight: 700, letterSpacing: '-0.01em',
                 cursor: 'pointer', lineHeight: 1.3,
-                display: 'inline-flex', alignItems: 'center', gap: 3
+                display: 'inline-flex', alignItems: 'center'
               }}>
-              {selected && <Icon.check style={{ width: 10, height: 10 }} />}
               {scope.label}
             </button>);
 

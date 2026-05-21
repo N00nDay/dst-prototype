@@ -13,11 +13,17 @@ const REPORT_SOURCES = {
 
 // ─── Envelope facets ──────────────────────────────────────────
 const ENVELOPE_FACETS = [
-  { id: 'roofing',   label: 'Roofing',          icon: 'building', hasPricing: true,  sections: ['measurements','materials','labor','equipment','disposal'] },
-  { id: 'siding',    label: 'Siding',           icon: 'building', hasPricing: true,  sections: ['measurements','materials','labor','equipment','disposal'] },
-  { id: 'gutters',   label: 'Gutters',          icon: 'building', hasPricing: false, sections: ['measurements'] },
-  { id: 'windoors',  label: 'Windows & Doors',  icon: 'building', hasPricing: false, sections: ['measurements'] },
-  { id: 'attic',     label: 'Attic',            icon: 'building', hasPricing: false, sections: ['measurements'] }
+  { id: 'repairs',    label: 'Repairs',          icon: 'building', hasPricing: false, sections: ['measurements'] },
+  { id: 'roofing',    label: 'Roofing',          icon: 'building', hasPricing: true,  sections: ['measurements','materials','labor','equipment','disposal'] },
+  { id: 'siding',     label: 'Siding',           icon: 'building', hasPricing: true,  sections: ['measurements','materials','labor','equipment','disposal'] },
+  { id: 'solar',      label: 'Solar',            icon: 'building', hasPricing: false, sections: ['measurements'] },
+  { id: 'windoors',   label: 'Windows & Doors',  icon: 'building', hasPricing: false, sections: ['measurements'] },
+  { id: 'other',      label: 'Other',            icon: 'building', hasPricing: false, sections: ['measurements'] },
+  { id: 'trim',       label: 'Trim Work',        icon: 'building', hasPricing: false, sections: ['measurements'] },
+  { id: 'insulation', label: 'Insulation',       icon: 'building', hasPricing: false, sections: ['measurements'] },
+  // Kept for back-compat with any existing structures + the Inspect findings
+  // grid, which still surfaces a Gutters card. Not offered on the Scope picker.
+  { id: 'gutters',    label: 'Gutters',          icon: 'building', hasPricing: false, sections: ['measurements'] }
 ];
 
 // ─── Measurement schemas ──────────────────────────────────────

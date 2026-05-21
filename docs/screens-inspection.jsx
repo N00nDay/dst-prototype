@@ -609,11 +609,17 @@ function EnvelopeTabs({ activeFacet, setActiveFacet, envelope, items, allowedFac
 // to the structure scopes sheet to flip an envelope on or off.
 // (Craig, May '26 — Phase 2.3 B-1 + B-10 redesign port.)
 // ─────────────────────────────────────────────────────────
+// Mirror of SCOPE_OPTIONS in screens-scope.jsx — keeps the Build scope
+// tiles in lock-step with what reps can pick on the Scope screen.
 const PICKER_ENVELOPES = [
-  { id: 'roofing',  label: 'Roofing' },
-  { id: 'siding',   label: 'Siding' },
-  { id: 'gutters',  label: 'Gutters' },
-  { id: 'windoors', label: 'Windows & Doors' }
+  { id: 'repairs',    label: 'Repairs' },
+  { id: 'roofing',    label: 'Roofing' },
+  { id: 'siding',     label: 'Siding' },
+  { id: 'solar',      label: 'Solar' },
+  { id: 'windoors',   label: 'Windows & Doors' },
+  { id: 'other',      label: 'Other' },
+  { id: 'trim',       label: 'Trim Work' },
+  { id: 'insulation', label: 'Insulation' }
 ];
 
 // Returns { kind: 'excluded'|'done'|'progress'|'open', pct?: number }
@@ -638,7 +644,7 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase' }}>Scopes</div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${PICKER_ENVELOPES.length}, 1fr)`, gap: 8 }}>
         {PICKER_ENVELOPES.map((e) => {
           const status = envelopeStatusFor(e.id, structureScopes, envelope);
           const isExcluded = status.kind === 'excluded';

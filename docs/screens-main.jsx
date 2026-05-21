@@ -95,9 +95,9 @@ function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 4,
-      background: 'var(--bg)',
+      background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',
-      padding: '6px 12px',
+      padding: '6px 12px 8px',
       display: 'flex', alignItems: 'center', gap: 0
     }}>
       {tabs.map((t, i) => {

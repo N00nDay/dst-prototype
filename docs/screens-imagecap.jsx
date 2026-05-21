@@ -1,4 +1,4 @@
-/* global React, Icon, ENVELOPE_FACETS, MEASUREMENT_SCHEMA */
+/* global React, Icon, ENVELOPE_FACETS, MEASUREMENT_SCHEMA, CATALOGS */
 /* Image Capture & Annotation screen — first SOLVE tab.
    Replaces the old measurements-heavy Inspection tab. Reps shoot photos,
    annotate, and star the ones to include in the presentation. AI assigns
@@ -582,16 +582,16 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
           onChange({ lineItems: updated.lineItems, parsedFromMemo: updated.parsedFromMemo });
         }} />
 
-      {/* Carry-forward summary: what the memo parser pulled out, sent to
-          Build · Materials on this scope. Each chip can be dismissed if
-          the rep wants to drop it from the parse summary. */}
+      {/* Carry-forward list: what the memo parser pulled out, routed to
+          Build · Materials for this scope. Each row is editable — change
+          the material, adjust the quantity, or remove it. Edits flow
+          through to env.lineItems so Build stays in sync. */}
       {(env.parsedFromMemo || []).length > 0 &&
-      <ParsedFromMemoStrip
+      <ParsedFromMemoList
+        facetId={facet.id}
         items={env.parsedFromMemo || []}
-        onRemove={(catalogId) => {
-          const next = (env.parsedFromMemo || []).filter((p) => p.catalogId !== catalogId);
-          onChange({ parsedFromMemo: next });
-        }} />}
+        lineItems={env.lineItems || {}}
+        onChange={onChange} />}
 
       {/* Attached photos */}
       <div>
@@ -741,56 +741,175 @@ function applyParsedFromMemo(env, parsed) {
   return { ...env, lineItems, parsedFromMemo: parsed || [] };
 }
 
-// ─── Parsed-from-memo carry-forward strip ─────────────────────
-// Compact chip list shown on the EnvelopeCard after dictation runs. Each
-// chip names the catalog item and the qty the LLM extracted from the
-// memo. Tap × to drop the chip from this summary (the line item itself
-// remains on Build · Materials; the rep can adjust there).
-function ParsedFromMemoStrip({ items, onRemove }) {
+// ─── Parsed-from-memo carry-forward list ──────────────────────
+// First-class editable rows shown on the EnvelopeCard after dictation
+// runs. Each row carries the catalog item the LLM matched plus the qty
+// it pulled out. The rep can:
+//   - edit qty inline via the stepper
+//   - tap the material name to swap it for a different catalog item
+//   - remove the row from this summary (the line item stays on Build)
+// Mutations also flow through to env.lineItems so Build · Materials
+// stays in sync with what shows up here.
+function ParsedFromMemoList({ facetId, items, lineItems, onChange }) {
+  const [pickerFor, setPickerFor] = useState(null); // catalogId being changed
+  const catalog = (typeof CATALOGS !== 'undefined' && CATALOGS[facetId]?.materials) || [];
+
+  const updateItem = (catalogId, patch) => {
+    const next = (items || []).map((it) => it.catalogId === catalogId ? { ...it, ...patch } : it);
+    const lineItemsNext = { ...(lineItems || {}) };
+    const sec = patch.section || (items.find((i) => i.catalogId === catalogId)?.section || 'materials');
+    const rows = [...(lineItemsNext[sec] || [])];
+    const rowIdx = rows.findIndex((r) => r.id === catalogId);
+    if (rowIdx >= 0 && patch.qty != null) {
+      rows[rowIdx] = { ...rows[rowIdx], qty: patch.qty };
+      lineItemsNext[sec] = rows;
+    }
+    onChange({ parsedFromMemo: next, lineItems: lineItemsNext });
+  };
+
+  const swapMaterial = (oldCatalogId, newCatalogEntry) => {
+    if (!newCatalogEntry) return;
+    const next = (items || []).map((it) => it.catalogId === oldCatalogId ?
+      { ...it, catalogId: newCatalogEntry.id, label: newCatalogEntry.name, unit: newCatalogEntry.unit } :
+      it);
+    const lineItemsNext = { ...(lineItems || {}) };
+    Object.keys(lineItemsNext).forEach((sec) => {
+      lineItemsNext[sec] = (lineItemsNext[sec] || []).map((r) => r.id === oldCatalogId ?
+        { ...r, id: newCatalogEntry.id } :
+        r);
+    });
+    onChange({ parsedFromMemo: next, lineItems: lineItemsNext });
+    setPickerFor(null);
+  };
+
+  const removeItem = (catalogId) => {
+    const next = (items || []).filter((it) => it.catalogId !== catalogId);
+    onChange({ parsedFromMemo: next });
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
-          Carried to Build · Materials
+          From the memo · carried to Build
         </div>
-        <span style={{
-          fontSize: 9, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '-0.005em'
-        }}>· from your memo</span>
       </div>
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-        {items.map((it) =>
-        <span
-          key={it.catalogId}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '4px 4px 4px 9px', borderRadius: 999,
-            background: 'var(--success-bg)', color: 'var(--success)',
-            border: '1px solid var(--success)',
-            fontSize: 10.5, fontWeight: 700, letterSpacing: '-0.005em',
-            lineHeight: 1.2
-          }}>
-          {it.label}
-          <span style={{
-            background: 'var(--success)', color: '#fff',
-            padding: '1px 6px', borderRadius: 999,
-            fontSize: 10, fontVariantNumeric: 'tabular-nums'
-          }}>×{it.qty}{it.unit ? ` ${it.unit.toLowerCase()}` : ''}</span>
-          <button
-            type="button"
-            onClick={() => onRemove(it.catalogId)}
-            aria-label={`Remove ${it.label} from summary`}
-            title="Remove from this summary (Build line item stays)"
-            style={{
-              width: 16, height: 16, padding: 0, borderRadius: 999,
-              background: 'transparent', color: 'var(--success)', border: 0,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer'
+      <div style={{
+        borderRadius: 10, background: 'var(--success-bg)', border: '1px solid var(--success)',
+        overflow: 'hidden'
+      }}>
+        {items.map((it, idx) =>
+        <div key={it.catalogId} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px',
+          borderTop: idx === 0 ? 'none' : '1px solid color-mix(in srgb, var(--success) 30%, transparent)'
+        }}>
+            {/* Material name — click to swap */}
+            <button
+              type="button"
+              onClick={() => setPickerFor(pickerFor === it.catalogId ? null : it.catalogId)}
+              title="Change material"
+              style={{
+                flex: 1, minWidth: 0, textAlign: 'left',
+                background: 'transparent', border: 0, padding: 0,
+                color: 'var(--success)', cursor: catalog.length ? 'pointer' : 'default',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em'
+              }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
+              {catalog.length > 0 &&
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.6 }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>}
+            </button>
+            {/* Qty stepper */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 2,
+              background: '#fff', border: '1px solid var(--success)', borderRadius: 6,
+              padding: 1, flexShrink: 0
             }}>
-            <Icon.x style={{ width: 9, height: 9 }} />
-          </button>
-        </span>
+              <button
+                type="button"
+                onClick={() => updateItem(it.catalogId, { qty: Math.max(0, (Number(it.qty) || 0) - 1) })}
+                aria-label="Decrease quantity"
+                style={{ width: 20, height: 22, border: 0, background: 'transparent', color: 'var(--success)', fontSize: 14, fontWeight: 700, padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                −
+              </button>
+              <input
+                type="number"
+                value={it.qty == null ? '' : it.qty}
+                onChange={(e) => updateItem(it.catalogId, { qty: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                style={{
+                  width: 36, height: 22, border: 0, outline: 'none', textAlign: 'center',
+                  background: 'transparent', color: 'var(--text)',
+                  fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', padding: 0
+                }} />
+              <button
+                type="button"
+                onClick={() => updateItem(it.catalogId, { qty: (Number(it.qty) || 0) + 1 })}
+                aria-label="Increase quantity"
+                style={{ width: 20, height: 22, border: 0, background: 'transparent', color: 'var(--success)', fontSize: 14, fontWeight: 700, padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                +
+              </button>
+            </div>
+            {it.unit &&
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: 'var(--success)', letterSpacing: 0.04,
+              textTransform: 'uppercase', flexShrink: 0
+            }}>{it.unit}</span>}
+            {/* Remove */}
+            <button
+              type="button"
+              onClick={() => removeItem(it.catalogId)}
+              aria-label={`Remove ${it.label}`}
+              title="Remove from summary (Build line item stays)"
+              style={{
+                width: 22, height: 22, padding: 0, borderRadius: 6,
+                background: 'transparent', color: 'var(--success)',
+                border: '1px solid var(--success)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0
+              }}>
+              <Icon.x style={{ width: 10, height: 10 }} />
+            </button>
+          </div>
         )}
       </div>
+      {/* Inline catalog picker — pops below the row being changed. */}
+      {pickerFor && catalog.length > 0 &&
+      <div style={{
+        marginTop: 6,
+        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
+        padding: '6px', maxHeight: 180, overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 2
+      }}>
+        <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', padding: '4px 6px' }}>Pick a material</div>
+        {catalog.slice(0, 12).map((c) =>
+        <button
+          key={c.id}
+          type="button"
+          onClick={() => swapMaterial(pickerFor, c)}
+          style={{
+            textAlign: 'left', background: 'transparent', border: 0,
+            padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 11, color: 'var(--text)', fontWeight: 600
+          }}>
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+            <span style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase' }}>{c.unit}</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setPickerFor(null)}
+          style={{
+            marginTop: 4, textAlign: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)',
+            padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
+            fontSize: 11, color: 'var(--text-3)', fontWeight: 700
+          }}>
+          Cancel
+        </button>
+      </div>}
     </div>);
 }
 

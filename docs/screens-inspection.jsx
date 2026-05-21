@@ -165,6 +165,12 @@ function InspectionScreen({
   // surfaces a sheet listing them all so the rep can lock or adjust in
   // one place before advancing.
   const [showContinueReview, setShowContinueReview] = useState(false);
+  // Scroll the section content back to top on every section / facet
+  // switch so the rep doesn't land mid-page after navigating.
+  const scrollAreaRef = window.React.useRef(null);
+  useEffect(() => {
+    if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
+  }, [activeSection, activeFacet, activeStructureId]);
 
   // If active structure's scopes shrink and they no longer include the
   // active facet, snap to the first available scope.
@@ -284,7 +290,7 @@ function InspectionScreen({
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-      <div className="scroll-area" data-screen-label="Inspection" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
+      <div ref={scrollAreaRef} className="scroll-area" data-screen-label="Inspection" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
         {/* Sticky nav stack — scope tiles + section stepper travel with the
             rep as they scroll. The structure switcher chip lives in the
             AppContextBar header (rendered globally from app.jsx). */}
@@ -309,7 +315,37 @@ function InspectionScreen({
             onCopyFrom={(srcId) => {
               const src = (structures || []).find((s) => s.id === srcId);
               if (!src) return;
-              setEnvelope(JSON.parse(JSON.stringify(src.envelope || {})));
+              const cloned = JSON.parse(JSON.stringify(src.envelope || {}));
+              // Locks carry over from source (deep clone already preserves
+              // measurementLocks + lineItems[*].state). Belt-and-suspenders:
+              // also auto-lock every row in the destination that has a
+              // value but no explicit state — the rep is copying a
+              // committed take-off, so the destination starts fully
+              // locked. Dismissed rows stay dismissed; existing locks
+              // are left alone.
+              Object.keys(cloned).forEach((fid) => {
+                const e = cloned[fid] || {};
+                const schema = MEASUREMENT_SCHEMA[fid] || [];
+                const meas = e.measurements || {};
+                const locks = { ...(e.measurementLocks || {}) };
+                schema.forEach((f) => {
+                  if (locks[f.key]) return;
+                  const v = meas[f.key];
+                  if (v != null && v !== '' && v !== 0) locks[f.key] = 'locked';
+                });
+                e.measurementLocks = locks;
+                if (e.lineItems) {
+                  Object.keys(e.lineItems).forEach((sec) => {
+                    e.lineItems[sec] = (e.lineItems[sec] || []).map((li) => {
+                      if (li.state) return li;
+                      const hasData = li.qty != null && Number(li.qty) > 0;
+                      return hasData ? { ...li, state: 'locked' } : li;
+                    });
+                  });
+                }
+                cloned[fid] = e;
+              });
+              setEnvelope(cloned);
             }} />}
         </div>
 
@@ -516,22 +552,75 @@ function InspectionScreen({
         const nextSectionLabel = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
         const continueLabel = isLastSection ? continueCascade.label : `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
         const continueSub = isLastSection ? ((continueCascade.sub || '') + extraSub) : '';
+        // Helpers to detect "scope complete" — every section's open-row
+        // count is zero. Used to decide whether Continue jumps to the
+        // next scope on this structure or to the structure cascade.
+        const sectionsForFacet = (f) => {
+          const secs = (f?.sections || ['measurements']).filter((s) => s !== 'photos');
+          const hasO = secs.includes('equipment') || secs.includes('disposal');
+          const ids = ['measurements', 'materials', 'labor'].filter((s) => secs.includes(s));
+          if (hasO) ids.push('other');
+          return ids;
+        };
+        const openCountFor = (facetId, section) => {
+          const e = (envelope || {})[facetId] || {};
+          if (section === 'measurements') {
+            const schema = MEASUREMENT_SCHEMA[facetId] || [];
+            const locks = e.measurementLocks || {};
+            return schema.filter((f) => (locks[f.key] || 'open') === 'open').length;
+          }
+          const secs = section === 'other' ? ['equipment', 'disposal'] : [section];
+          let n = 0;
+          secs.forEach((sec) => {
+            (e.lineItems?.[sec] || []).forEach((li) => {
+              if ((li.state || 'open') === 'open') n += 1;
+            });
+          });
+          return n;
+        };
+        const isScopeComplete = (facetId) => {
+          const f = ENVELOPE_FACETS.find((x) => x.id === facetId);
+          if (!f) return true;
+          return sectionsForFacet(f).every((sec) => openCountFor(facetId, sec) === 0);
+        };
+        const nextIncompleteFacet = () => {
+          if (!allowedFacets.length) return null;
+          const startIdx = allowedFacets.findIndex((f) => f.id === activeFacet);
+          for (let i = 1; i <= allowedFacets.length; i++) {
+            const cand = allowedFacets[(startIdx + i) % allowedFacets.length];
+            if (cand.id === activeFacet) continue;
+            if (!isScopeComplete(cand.id)) return cand;
+          }
+          return null;
+        };
+
         // Continue gate fires on EVERY section now — any open
         // (unlocked + undismissed) rows in the active section open the
-        // review drawer before we advance to the next section / structure.
+        // review drawer before we advance. Traversal order:
+        //   section → next section in this scope
+        //   last section + scope incomplete elsewhere → next scope on this structure
+        //   all scopes complete → structure cascade (next building or Slides)
+        const advance = () => {
+          if (!isLastSection) {
+            setActiveSection(stepperIds[curIdx + 1]);
+            return;
+          }
+          const nf = nextIncompleteFacet();
+          if (nf) {
+            setActiveFacet(nf.id);
+            setActiveSection('measurements');
+            return;
+          }
+          onContinue();
+        };
         const onContinueClick = () => {
           if (openRowCount > 0) {
             setShowContinueReview(true);
             return;
           }
-          if (!isLastSection) {
-            setActiveSection(stepperIds[curIdx + 1]);
-            return;
-          }
-          onContinue();
+          advance();
         };
-        // Lock everything currently open, then advance — section step if
-        // we're not on the last section, else structure cascade.
+        // Lock everything currently open, then advance.
         const lockAllAndAdvance = () => {
           setEnvelope((s) => {
             const next = { ...s };
@@ -548,11 +637,7 @@ function InspectionScreen({
             return next;
           });
           setShowContinueReview(false);
-          if (!isLastSection) {
-            setActiveSection(stepperIds[curIdx + 1]);
-          } else {
-            onContinue();
-          }
+          advance();
         };
         return (
           <>

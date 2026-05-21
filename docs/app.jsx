@@ -773,7 +773,9 @@ function App() {
           {showDictation && <DictationModal onClose={() => setShowDictation(false)} onCommit={commitItem} />}
           {showMissing && <MissingSheet items={missingForSheet} onClose={() => setShowMissing(false)} />}
           {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} />}
-          <ToastLayer toasts={toasts} />
+          {/* Toasts disabled per Craig — strewn-about black pills weren't
+              reading as cohesive. push() calls remain as no-ops in case
+              we want to bring this back behind a unified design. */}
         </div>
 
         {/* Full-screen camera, mounted above the inner wrapper so it covers

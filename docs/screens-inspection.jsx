@@ -256,7 +256,12 @@ function InspectionScreen({
             onRename={onRenameStructure}
             onRemove={onRemoveStructure}
             onSetScopes={onSetStructureScopes} />
-          <EnvelopeTabs activeFacet={activeFacet} setActiveFacet={setActiveFacet} envelope={envelope} items={items} allowedFacets={allowedFacets} />
+          <EnvelopePicker
+            activeFacet={activeFacet}
+            setActiveFacet={setActiveFacet}
+            structureScopes={activeStructure.scopes}
+            envelope={envelope}
+            onSetScopes={(next) => onSetStructureScopes && onSetStructureScopes(activeStructure.id, next)} />
           {!noScopes &&
           <SectionTabs sections={sections} activeSection={activeSection} onSelect={setActiveSection} facet={facet} env={env} items={items} />}
         </div>
@@ -359,6 +364,133 @@ function EnvelopeTabs({ activeFacet, setActiveFacet, envelope, items, allowedFac
         onSelect={setActiveFacet} />
     </div>);
 
+}
+
+// ─────────────────────────────────────────────────────────
+// EnvelopePicker — 4-tile grid replacing the horizontal strip.
+// Each tile carries a status badge (Done ✓ / X% / Open / Excluded) and
+// an in-place include/exclude toggle so the rep doesn't have to bounce
+// to the structure scopes sheet to flip an envelope on or off.
+// (Craig, May '26 — Phase 2.3 B-1 + B-10 redesign port.)
+// ─────────────────────────────────────────────────────────
+const PICKER_ENVELOPES = [
+  { id: 'roofing',  label: 'Roofing' },
+  { id: 'siding',   label: 'Siding' },
+  { id: 'gutters',  label: 'Gutters' },
+  { id: 'windoors', label: 'Windows & Doors' }
+];
+
+// Returns { kind: 'excluded'|'done'|'progress'|'open', pct?: number }
+function envelopeStatusFor(facetId, structureScopes, envelopeState) {
+  if (!structureScopes.includes(facetId)) return { kind: 'excluded' };
+  const schema = window.MEASUREMENT_SCHEMA?.[facetId] || [];
+  const m = envelopeState?.[facetId]?.measurements || {};
+  const total = schema.length;
+  const filled = schema.reduce((n, field) => {
+    const v = m[field.key];
+    return n + (v != null && v !== '' && v !== 0 ? 1 : 0);
+  }, 0);
+  if (total === 0) return filled > 0 ? { kind: 'done' } : { kind: 'open' };
+  if (filled === 0) return { kind: 'open' };
+  if (filled >= total) return { kind: 'done' };
+  return { kind: 'progress', pct: Math.round((filled / total) * 100) };
+}
+
+function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope, onSetScopes }) {
+  return (
+    <div style={{ background: 'var(--bg)', padding: '10px 14px 8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase' }}>Envelopes</div>
+        <div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Tap × to exclude · + to include</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        {PICKER_ENVELOPES.map((e) => {
+          const status = envelopeStatusFor(e.id, structureScopes, envelope);
+          const isExcluded = status.kind === 'excluded';
+          const isDone = status.kind === 'done';
+          const isActive = !isExcluded && e.id === activeFacet;
+          const pct = status.kind === 'progress' ? status.pct : null;
+          const handleClick = () => {
+            if (isExcluded) {
+              if (onSetScopes) onSetScopes([...structureScopes, e.id]);
+            } else {
+              setActiveFacet(e.id);
+            }
+          };
+          const toggleScope = (ev) => {
+            ev.stopPropagation();
+            if (!onSetScopes) return;
+            if (isExcluded) onSetScopes([...structureScopes, e.id]);else
+            onSetScopes(structureScopes.filter((x) => x !== e.id));
+          };
+          return (
+            <button
+              key={e.id}
+              type="button"
+              onClick={handleClick}
+              style={{
+                position: 'relative',
+                padding: '18px 8px 14px',
+                borderRadius: 12,
+                background: isExcluded ? 'transparent' : (isActive ? 'var(--brand-soft)' : 'var(--surface)'),
+                border: isExcluded ?
+                  '1px dashed var(--border-strong)' :
+                  (isActive ? '1.5px solid var(--brand)' : '1px solid var(--border)'),
+                opacity: isExcluded ? 0.55 : 1,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                cursor: 'pointer', textAlign: 'center'
+              }}>
+              {/* Top-left toggle */}
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={isExcluded ? `Include ${e.label}` : `Exclude ${e.label}`}
+                onClick={toggleScope}
+                onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') toggleScope(ev); }}
+                style={{
+                  position: 'absolute', top: 6, left: 6,
+                  width: 22, height: 22, borderRadius: 999,
+                  background: isExcluded ? 'var(--brand)' : 'var(--surface-2)',
+                  color: isExcluded ? 'var(--brand-fg)' : 'var(--text-3)',
+                  border: isExcluded ? 'none' : '1px solid var(--border)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, userSelect: 'none'
+                }}>
+                {isExcluded ? '+' : '×'}
+              </span>
+              {/* Done badge */}
+              {isDone &&
+              <span style={{
+                position: 'absolute', top: 8, right: 8,
+                width: 18, height: 18, borderRadius: 999,
+                background: 'var(--success)', color: '#fff',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700
+              }}>✓</span>}
+              {/* Progress pct */}
+              {pct != null &&
+              <span style={{
+                position: 'absolute', top: 8, right: 8,
+                padding: '1px 6px', borderRadius: 999,
+                background: 'var(--surface-2)', color: 'var(--brand-soft-fg)',
+                fontSize: 9, fontWeight: 700
+              }}>{pct}%</span>}
+              <div style={{
+                fontSize: 12, fontWeight: 700,
+                color: isActive ? 'var(--brand-soft-fg)' : (isDone ? 'var(--success)' : 'var(--text-2)'),
+                lineHeight: 1.2, marginTop: 8
+              }}>
+                {e.label}
+              </div>
+              {isExcluded &&
+              <span style={{
+                fontSize: 9, fontWeight: 600, color: 'var(--text-4)',
+                marginTop: 2
+              }}>excluded</span>}
+            </button>);
+        })}
+      </div>
+    </div>);
 }
 
 // ─────────────────────────────────────────────────────────

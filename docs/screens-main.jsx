@@ -177,11 +177,11 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
             {action}
           </div>
         </div>
-        {structureSwitcher &&
-        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 28 }}>
-          {structureSwitcher}
-        </div>}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 22 }}>
+          {structureSwitcher &&
+          <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
+            {structureSwitcher}
+          </div>}
           <PhaseProgress phaseInfo={phaseInfo} />
         </div>
       </div>);

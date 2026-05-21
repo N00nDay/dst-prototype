@@ -996,18 +996,18 @@ function StructureSwitchChip({ structures, activeStructureId, setActiveStructure
       <button
         onClick={() => setOpen((v) => !v)}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '6px 10px', borderRadius: 10,
-          background: 'var(--brand-soft)', border: '1.5px solid var(--brand)',
-          fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          height: 22, padding: '0 8px', borderRadius: 8,
+          background: 'var(--brand-soft)', border: '1px solid var(--brand)',
+          fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1,
           color: 'var(--brand-soft-fg)', cursor: 'pointer'
         }}>
-        <span style={{ width: 18, height: 18, borderRadius: 5, background: 'var(--brand)', color: 'var(--brand-fg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+        <span style={{ width: 14, height: 14, borderRadius: 4, background: 'var(--brand)', color: 'var(--brand-fg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>
           {activeIdx + 1}
         </span>
         {active.name}
-        <span style={{ fontSize: 10, opacity: 0.7, fontWeight: 600 }}>{activeIdx + 1} of {structures.length}</span>
-        <span style={{ fontSize: 11 }}>▾</span>
+        <span style={{ fontSize: 9, opacity: 0.7, fontWeight: 600 }}>{activeIdx + 1} of {structures.length}</span>
+        <span style={{ fontSize: 10 }}>▾</span>
       </button>
       {open &&
       <>

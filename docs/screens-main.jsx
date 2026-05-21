@@ -163,8 +163,8 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
   // Two-row layout when we're inside the in-appointment flow.
   if (phaseInfo) {
     return (
-      <div className="app-status" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '6px 14px 4px', minHeight: 56, gap: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 26 }}>
+      <div className="app-status" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '6px 14px 6px', minHeight: 64, gap: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 26 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
             {leading}
             <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -177,7 +177,7 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
             {action}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', height: 28 }}>
           {structureSwitcher &&
           <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
             {structureSwitcher}

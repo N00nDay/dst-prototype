@@ -191,7 +191,20 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   const scopeDiscount = activeProposal.scopeDiscount;
   const scopeWarranty = activeProposal.scopeWarranty;
 
+  // Per-structure add-ons. Shape: { [structureId]: { [addonId]: true } }.
+  // Reads via activeAddons; writes through setActiveAddons target the
+  // active structure. Each structure has its own addon picks so the
+  // homeowner sees per-building line items (e.g. gutter guards on Main
+  // but not on the Detached Garage).
   const [includedAddons, setIncludedAddons] = useState({});
+  const activeAddons = includedAddons[activeStructureId] || {};
+  const setActiveAddons = (updater) => {
+    setIncludedAddons((s) => {
+      const prev = s[activeStructureId] || {};
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return { ...s, [activeStructureId]: next };
+    });
+  };
 
   // Drawer state — single-instance, parameterized.
   const [productDrawer, setProductDrawer] = useState(null); // { scopeId, tierId }
@@ -287,23 +300,28 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
     });
   }, [proposals, (structures || []).map((s) => s.id + ':' + s.name).join('|')]);
 
-  // Grand rollup: sum of per-structure totals, then global add-ons.
+  // Grand rollup: sum of per-structure totals, then per-structure add-ons.
   const grand = useMemo(() => {
     let low = 0, high = 0, gpLow = 0, gpHigh = 0;
     perStructure.forEach((ps) => {
       low += ps.low; high += ps.high; gpLow += ps.gpLow; gpHigh += ps.gpHigh;
     });
-    // Add-ons: selected ones go in both low and high; un-selected only inflate high.
-    PROPOSAL_ADDONS.forEach((a) => {
-      const aCost = Math.round(a.price * COST_RATIO);
-      const aGp = a.price - aCost;
-      if (includedAddons[a.id]) {
-        low += a.price; high += a.price;
-        gpLow += aGp; gpHigh += aGp;
-      } else {
-        high += a.price;
-        gpHigh += aGp;
-      }
+    // Per-structure add-ons: every (structure, addon) pair contributes.
+    // Selected pairs go in low + high; unselected only inflate high
+    // (upsell hedge), matching the pre-change global behavior.
+    (structures || []).forEach((s) => {
+      const sAddons = includedAddons[s.id] || {};
+      PROPOSAL_ADDONS.forEach((a) => {
+        const aCost = Math.round(a.price * COST_RATIO);
+        const aGp = a.price - aCost;
+        if (sAddons[a.id]) {
+          low += a.price; high += a.price;
+          gpLow += aGp; gpHigh += aGp;
+        } else {
+          high += a.price;
+          gpHigh += aGp;
+        }
+      });
     });
     const commLow = Math.round(gpLow * COMMISSION_RATE);
     const commHigh = Math.round(gpHigh * COMMISSION_RATE);
@@ -403,17 +421,19 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
           </div>
         </div>
 
-        {/* ADD-ONS */}
+        {/* ADD-ONS — per-structure (Phase 2.5 follow-up). Each structure
+            keeps its own add-on picks; the section label reflects what's
+            picked on the active structure. */}
         <div style={{ padding: tablet ? '18px 28px 0' : '16px 16px 0' }}>
           <SectionLabel
-            label="Add-ons to display"
-            sub={`${Object.values(includedAddons).filter(Boolean).length} of ${PROPOSAL_ADDONS.length} on the menu`} />
+            label={(structures || []).length > 1 ? `Add-ons · ${activeStructure?.name || 'Active structure'}` : 'Add-ons to display'}
+            sub={`${Object.values(activeAddons).filter(Boolean).length} of ${PROPOSAL_ADDONS.length} on the menu`} />
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {PROPOSAL_ADDONS.map((a, i) => {
-              const on = !!includedAddons[a.id];
+              const on = !!activeAddons[a.id];
               return (
                 <div key={a.id}
-                onClick={() => setIncludedAddons((s) => ({ ...s, [a.id]: !on }))}
+                onClick={() => setActiveAddons((s) => ({ ...s, [a.id]: !on }))}
                 style={{
                   padding: tablet ? '12px 18px' : '11px 14px',
                   borderTop: i === 0 ? 'none' : '1px solid var(--border)',

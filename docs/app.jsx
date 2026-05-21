@@ -249,6 +249,11 @@ function App() {
   // read per-structure tier picks without a back-channel from the
   // Proposal builder.
   const [proposals, setProposals] = useState({});
+  // Lifted pricing mode — Proposal screen sets it, Present reads it.
+  // 'allin' = one rolled-up comparison slide. 'by' = one comparison slide
+  // per structure, each tagged with the structure name in the hero. Default
+  // flips to 'by' on multi-structure jobs.
+  const [pricingMode, setPricingMode] = useState((structures || []).length > 1 ? 'by' : 'allin');
 
   // ── Close-out state ───────────────────────────────────
   const [signed, setSigned] = useState(null);
@@ -670,6 +675,7 @@ function App() {
             swaps={swaps} setSwaps={setSwaps}
             discounts={discounts} setDiscounts={setDiscounts}
             proposals={proposals} setProposals={setProposals}
+            pricingMode={pricingMode} setPricingMode={setPricingMode}
             onBack={() => setView('apt')}
             onPresent={() => setView('present')} />
           }
@@ -690,6 +696,7 @@ function App() {
             rollupForTier={(id) => null}
             structures={structures}
             proposals={proposals}
+            pricingMode={pricingMode}
             onBack={() => setView('apt')}
             onContinue={() => setView('sign')} />
           }

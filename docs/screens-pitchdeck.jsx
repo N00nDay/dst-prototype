@@ -6,7 +6,7 @@
 
 const { useState, useMemo } = window;
 
-function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, proposals, onBack, onContinue }) {
+function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, onBack, onContinue }) {
   if (mode === 'pick') {
     return <SlidePicker
       brand={brand} rep={rep} tablet={tablet}
@@ -23,6 +23,7 @@ function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlid
     rollupForTier={rollupForTier}
     structures={structures}
     proposals={proposals}
+    pricingMode={pricingMode}
     onBack={onBack}
     onContinue={onContinue} />;
 }
@@ -177,12 +178,27 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
 }
 
 // ─────── Present: full presentation (Approach + Findings + Proposal preview) ───────
-function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, structures, proposals, onBack, onContinue }) {
-  // Append a final comparison slide that the homeowner uses to pick their tier.
-  const allSlides = useMemo(
-    () => [...slides, { id: '__comparison', label: 'Your options', kind: 'comparison', title: 'Choose your roof.' }],
-    [slides]
-  );
+function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, onBack, onContinue }) {
+  // Append the comparison slide(s). All-in: one rolled-up slide. By
+  // structure: one slide per structure, each tagged with the structure
+  // name in the hero so the homeowner sees the building this view is for.
+  const allSlides = useMemo(() => {
+    const isByStructure = pricingMode === 'by' && (structures || []).length > 1;
+    if (isByStructure) {
+      const perStructureSlides = (structures || []).map((s, i) => ({
+        id: `__comparison-${s.id}`,
+        label: `Your options · ${s.name}`,
+        kind: 'comparison',
+        title: 'Choose your roof.',
+        structureId: s.id,
+        structureName: s.name,
+        structureIndex: i + 1,
+        structureCount: structures.length
+      }));
+      return [...slides, ...perStructureSlides];
+    }
+    return [...slides, { id: '__comparison', label: 'Your options', kind: 'comparison', title: 'Choose your roof.' }];
+  }, [slides, pricingMode, structures]);
   const [idx, setIdx] = useState(0);
   // Finding-slide photo carousel — opening a photo lifts it here so the
   // overlay covers the whole presenter, not just the slide card.
@@ -259,7 +275,13 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
           rollupForTier={rollupForTier}
           rep={rep}
           structures={structures}
-          proposals={proposals} /> :
+          proposals={proposals}
+          forStructure={current.structureId ? {
+            id: current.structureId,
+            name: current.structureName,
+            index: current.structureIndex,
+            count: current.structureCount
+          } : null} /> :
 
         <SlideStage slide={current} tablet={tablet} brandObj={brandObj} skipped={!!skips[current.id]} onOpenPhoto={(i) => setOpenPhoto({ slide: current, photoIndex: i })} />
         }
@@ -700,7 +722,7 @@ function materialsFor(scopeId, tierId) {
   return MATERIALS_BY_TIER[`${scopeId}.${tierId || 'flat'}`] || [];
 }
 
-function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures, proposals }) {
+function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures, proposals, forStructure }) {
   // 7.99% APR / 120 mo financing — matches FinancingScreen assumption.
   const monthly = (total) => {
     const r = 0.0799 / 12,n = 120;
@@ -773,25 +795,19 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
           <HeroPill icon={<Icon.pin />} label={CUSTOMER.address.split(',')[0]} />
           <HeroPill icon={<Icon.user />} label={rep?.name || 'Your IHS rep'} />
           <HeroPill icon={<Icon.cal />} label="Quote valid 30 days" />
-          {(structures || []).length > 1 &&
-            <HeroPill icon={<Icon.building />} label={`${structures.length} structures bundled`} />}
+          {forStructure ?
+            <HeroPill icon={<Icon.building />} label={`${forStructure.name} · ${forStructure.index} of ${forStructure.count}`} /> :
+            (structures || []).length > 1 &&
+              <HeroPill icon={<Icon.building />} label={`${structures.length} structures bundled`} />}
         </div>
       </div>
 
-      {/* ── 1b. Multi-structure bundle banner ───────────────────
-          PR-2 + PR-3 redesign port — bundle composition up front,
-          with per-structure tier picks per scope so the homeowner
-          can see at a glance what each building got. */}
-      {(structures || []).length > 1 &&
-      <BundleSummaryCard structures={structures} proposals={proposals} tablet={tablet} />}
-
       {/* ── 2. Per-scope sections (Roofing/Siding tiered, Gutters flat) ──
-          Phase 2.5 PR-4 — hidden on multi-structure jobs because the
-          BundleSummaryCard already shows the per-structure tier picks
-          and the rep walked the homeowner through them upstream on the
-          Proposal screen. On single-structure jobs the tier cards are
-          still the right surface for showing G/B/B trade-offs. */}
-      {(structures || []).length <= 1 && PRESENT_SCOPES.map((scope, idx) =>
+          The per-scope tier-card grid is the homeowner-facing pricing
+          view in both All-in and By-structure modes. By-structure mode
+          gets one of these slides per building (tagged in the hero
+          above); All-in mode rolls everything into a single slide. */}
+      {PRESENT_SCOPES.map((scope, idx) =>
       <ScopeSection
         key={scope.id}
         scope={scope}

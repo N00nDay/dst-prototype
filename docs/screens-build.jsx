@@ -163,11 +163,10 @@ const DEFAULT_PROPOSAL = {
   scopeWarranty: {}
 };
 
-function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, proposals = {}, setProposals, onBack, onPresent }) {
-  // Pricing presentation mode. All-in = one project total view; By-structure
-  // = per-structure tabs. The underlying state is now per-structure (M-1..M-3
-  // landed); modes just affect which structures the UI surfaces.
-  const [pricingMode, setPricingMode] = useState((structures || []).length > 1 ? 'by' : 'allin');
+function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, proposals = {}, setProposals, pricingMode, setPricingMode, onBack, onPresent }) {
+  // pricingMode + setPricingMode are lifted to app.jsx so the Presentation
+  // screen can read the rep's choice and emit one comparison slide (allin)
+  // vs one per structure (by).
 
   // ─── Per-structure proposal state ───────────────────────────
   // proposals lives at app.jsx (PR-3 lift) so Present can read per-structure

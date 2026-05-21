@@ -61,10 +61,13 @@ deferred ?
 
 
 function App() {
-  // Static defaults (formerly tweakable). `device` and `repId` are fixed
-  // to match the live rep experience; `syncState` is vestigial.
-  const { device, repId, syncState } = APP_DEFAULTS;
-  // Theme is local React state so Settings → theme picker keeps working.
+  // Static defaults (formerly tweakable). `repId` is fixed to match the
+  // live rep experience; `syncState` is vestigial.
+  const { repId, syncState } = APP_DEFAULTS;
+  // Device + theme are local React state so the design-preview Phone /
+  // Tablet switcher and the Settings → theme picker keep working without
+  // a Tweaks panel behind them.
+  const [device, setDevice] = useState(APP_DEFAULTS.device);
   const [theme, setTheme] = useState(APP_DEFAULTS.theme);
 
   // Rep is derived from authenticated session (IDP-01). In mock, the
@@ -785,12 +788,23 @@ function App() {
 
   };
 
-  // ── Outer host with device frame ─────────────────────
-  // The dev-only Phone/Tablet switcher row was removed alongside the
-  // Tweaks panel; device is now fixed at the app-default value. For
-  // tablet preview during design review, change APP_DEFAULTS.device.
+  // ── Outer host with device frame + Phone/Tablet switcher ──
+  // The switcher is the only design-preview affordance still rendered
+  // outside the device frame; it flips the local `device` state without
+  // routing through any global tweaks system.
   return (
     <div className="shell-bg" data-host-theme={theme}>
+      <div className="device-switcher">
+        <button className={device === 'phone' ? 'active' : ''} onClick={() => setDevice('phone')}>
+          <span style={{ display: 'inline-block', width: 8, height: 12, border: '1.5px solid currentColor', borderRadius: 2 }} />
+          Phone
+        </button>
+        <button className={device === 'tablet' ? 'active' : ''} onClick={() => setDevice('tablet')}>
+          <span style={{ display: 'inline-block', width: 14, height: 11, border: '1.5px solid currentColor', borderRadius: 2 }} />
+          Tablet
+        </button>
+      </div>
+
       <div className={isTablet ? 'tablet-frame' : 'phone-frame'} data-screen-label={isTablet ? 'Tablet' : 'Phone'}>
         <div className="device-screen">
           {renderApp()}

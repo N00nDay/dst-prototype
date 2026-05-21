@@ -476,14 +476,15 @@ function InspectionScreen({
           lets the rep lock-all-and-continue in one step (or adjust
           individual rows before locking). */}
       {continueCascade && onContinue && (() => {
-        // Build the open-rows list for the CURRENT section, across every
-        // included scope on the active structure. Measure surveys the
-        // measurement schema; Materials/Labor survey lineItems for that
-        // section; Other surveys equipment + disposal lineItems combined.
+        // Build the open-rows list for the CURRENT section of the CURRENT
+        // facet. Each (facet, section) pair owns its own lock state, so
+        // the review drawer and lock-all only operate on what the rep is
+        // actually looking at — locks don't bleed across scopes.
         const sectionForSurvey = activeSection;
         const sectionsToSurvey = sectionForSurvey === 'other' ? ['equipment', 'disposal'] : [sectionForSurvey];
         const openRows = [];
-        (activeStructure.scopes || []).forEach((fid) => {
+        {
+          const fid = activeFacet;
           const e = (envelope || {})[fid] || {};
           const facetMeta = ENVELOPE_FACETS.find((f) => f.id === fid);
           const facetLabel = facetMeta?.label || fid;
@@ -523,7 +524,7 @@ function InspectionScreen({
               });
             });
           }
-        });
+        }
         const openRowCount = openRows.length;
         const sectionRowNoun = sectionForSurvey === 'measurements' ? 'measurement' : 'row';
         const extraSub = openRowCount > 0 ?

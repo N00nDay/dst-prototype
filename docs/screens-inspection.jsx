@@ -550,8 +550,6 @@ function InspectionScreen({
         const curIdx = stepperIds.indexOf(activeSection);
         const isLastSection = curIdx === -1 || curIdx >= stepperIds.length - 1;
         const nextSectionLabel = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
-        const continueLabel = isLastSection ? continueCascade.label : `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
-        const continueSub = isLastSection ? ((continueCascade.sub || '') + extraSub) : '';
         // Helpers to detect "scope complete" — every section's open-row
         // count is zero. Used to decide whether Continue jumps to the
         // next scope on this structure or to the structure cascade.
@@ -613,7 +611,36 @@ function InspectionScreen({
           }
           onContinue();
         };
+        // Package gate: on Materials for a PACKAGE_FACET, Continue is
+        // disabled until all three tiers are committed (product picked
+        // OR explicitly dismissed). Materials line items don't render
+        // until the gate clears, so there's nothing the rep could
+        // meaningfully advance with anyway.
+        const packageIncompleteTiers = (activeSection === 'materials' && PACKAGE_FACETS.has(activeFacet)) ?
+          TIER_KEYS.filter((k) => !(env.packageProducts || {})[k] && !(env.packageDismissals || {})[k]) :
+          [];
+        const isPackageGated = packageIncompleteTiers.length > 0;
+        // Continue label resolves the actual next destination so the
+        // button label matches the user's mental model:
+        //   mid-scope: "Continue to {next section}"
+        //   end-of-scope + more work on this structure: "Continue to {next scope}"
+        //   end-of-structure: structure cascade label (next structure or Slides)
+        let continueLabel;
+        if (isPackageGated) {
+          continueLabel = packageIncompleteTiers.length === 3 ?
+            'Pick or dismiss packages to continue' :
+            `${packageIncompleteTiers.length} package${packageIncompleteTiers.length === 1 ? '' : 's'} still open`;
+        } else if (!isLastSection) {
+          continueLabel = `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
+        } else {
+          const peekNext = nextIncompleteFacet();
+          continueLabel = peekNext ?
+            `Continue to ${peekNext.label}` :
+            continueCascade.label;
+        }
+        const continueSub = isLastSection && !isPackageGated ? ((continueCascade.sub || '') + extraSub) : '';
         const onContinueClick = () => {
+          if (isPackageGated) return;
           if (openRowCount > 0) {
             setShowContinueReview(true);
             return;
@@ -645,7 +672,7 @@ function InspectionScreen({
               tablet={true}
               label={continueLabel}
               sub={continueSub}
-              enabled={true}
+              enabled={!isPackageGated}
               onContinue={onContinueClick} />
             {showContinueReview &&
               <ContinueReviewSheet

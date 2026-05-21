@@ -514,21 +514,56 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
 
   }
 
+  const ScopeIconCmp = window.ScopeIcon?.[facet.id];
+  const hasDictation = !!env.notes;
+  const parsedCount = (env.parsedFromMemo || []).length;
+
   return (
-    <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* ─── Header strip ───────────────────────────────────────
+          Scope icon + title + segmented condition pills + dismiss.
+          Subline below the title surfaces the carry-forward state at a
+          glance ("2 photos · 4 materials parsed") instead of just photo
+          count, so the rep doesn't have to scan the card to know what's
+          on it. */}
+      <div style={{ padding: '12px 14px 10px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        {ScopeIconCmp &&
+        <div style={{
+          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+          background: cond ? `color-mix(in srgb, ${cond.tone} 14%, var(--surface-2))` : 'var(--surface-2)',
+          color: cond ? cond.tone : 'var(--text-2)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <ScopeIconCmp size={26} />
+        </div>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{facet.label}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-            {attachedIndices.length} photo{attachedIndices.length === 1 ? '' : 's'} attached
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
+            {attachedIndices.length} photo{attachedIndices.length === 1 ? '' : 's'}
+            {parsedCount > 0 &&
+            <> · <span style={{ color: 'var(--success)', fontWeight: 700 }}>{parsedCount} material{parsedCount === 1 ? '' : 's'} parsed</span></>}
           </div>
         </div>
-        {cond &&
-        <span style={{
-          padding: '4px 10px', borderRadius: 999,
-          background: cond.tone, color: '#fff',
-          fontSize: 10, fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase'
-        }}>{cond.label}</span>}
+        {/* Inline segmented condition control replaces the full-row pill row. */}
+        <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
+          {CONDITIONS.map((c, i) => {
+            const active = c.id === condition;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onChange({ condition: active ? null : c.id })}
+                aria-pressed={active}
+                style={{
+                  padding: '6px 12px',
+                  border: 0, borderLeft: i === 0 ? 'none' : '1px solid var(--border)',
+                  background: active ? c.tone : 'var(--surface)',
+                  color: active ? '#fff' : 'var(--text-2)',
+                  fontSize: 11, fontWeight: 700, letterSpacing: '-0.005em',
+                  cursor: 'pointer'
+                }}>{c.label}</button>);
+          })}
+        </div>
         <button
           type="button"
           onClick={onDismiss}
@@ -545,73 +580,44 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
         </button>
       </div>
 
-      {/* Condition selector */}
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase', marginBottom: 6 }}>Condition</div>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {CONDITIONS.map((c) => {
-            const active = c.id === condition;
-            return (
-              <button
-                key={c.id}
-                onClick={() => onChange({ condition: active ? null : c.id })}
-                style={{
-                  flex: '1 1 18%', minWidth: 60,
-                  padding: '8px 6px', borderRadius: 8,
-                  border: active ? `1.5px solid ${c.tone}` : '1px solid var(--border)',
-                  background: active ? c.tone : 'var(--surface)',
-                  color: active ? '#fff' : 'var(--text-2)',
-                  fontSize: 11, fontWeight: 700, letterSpacing: '-0.005em',
-                  cursor: 'pointer'
-                }}>{c.label}</button>);
-
-          })}
-        </div>
-      </div>
-
-      {/* Notes — two-step: dictate findings first, then editable text appears.
-            Dictation also returns structured line items the LLM extracted
-            from the memo; those get routed onto envelope.lineItems and
-            echoed back on the card via ParsedFromMemoStrip below. */}
-      <NotesBlock
-        facetId={facet.id}
+      {/* ─── Dictation panel ────────────────────────────────────
+          Pre-dictation: a single wide CTA centered in the card.
+          Post-dictation: notes + parsed materials side-by-side on
+          tablet (auto-fit collapses to one column on narrower screens).
+          Grouping notes + parsed in one bordered section makes it clear
+          they're both outputs of the same dictation action. */}
+      <DictationPanel
+        facet={facet}
         env={env}
         onChange={onChange}
-        onApplyParsed={(parsed) => {
-          const updated = applyParsedFromMemo(env, parsed);
-          onChange({ lineItems: updated.lineItems, parsedFromMemo: updated.parsedFromMemo });
-        }} />
+        hasDictation={hasDictation} />
 
-      {/* Carry-forward list: what the memo parser pulled out, routed to
-          Build · Materials for this scope. Each row is editable — change
-          the material, adjust the quantity, or remove it. Edits flow
-          through to env.lineItems so Build stays in sync. */}
-      {(env.parsedFromMemo || []).length > 0 &&
-      <ParsedFromMemoList
-        facetId={facet.id}
-        items={env.parsedFromMemo || []}
-        lineItems={env.lineItems || {}}
-        onChange={onChange} />}
-
-      {/* Attached photos */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>Photos in presentation</div>
+      {/* ─── Photos strip ───────────────────────────────────────
+          Single tight row: thumbnails inline with the [+ add] tile.
+          No big section header eating vertical space. */}
+      <div style={{
+        padding: '10px 14px 12px',
+        borderTop: '1px solid var(--border)',
+        background: 'var(--surface-2)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
+            Photos
+          </span>
+          <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>
+            {attachedIndices.length} in presentation
+          </span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4 }}>
           {attachedIndices.map((idx) => {
             const it = items[idx];
             const key = String(idx);
             return (
-              <div key={idx} style={{ position: 'relative', borderRadius: 4, overflow: 'hidden', aspectRatio: '1 / 1', background: it.source === 'mic' ? 'var(--brand-soft)' : 'oklch(0.78 0.01 80)' }}>
-                {it.source === 'mic' ?
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-soft-fg)' }}>
-                    <Icon.mic />
-                  </div> :
+              <div key={idx} style={{ position: 'relative', borderRadius: 4, overflow: 'hidden', aspectRatio: '1 / 1', background: 'oklch(0.78 0.01 80)' }}>
                 <div style={{
                   position: 'absolute', inset: 0,
                   background: 'repeating-linear-gradient(135deg, oklch(0.85 0.02 80) 0 4px, oklch(0.8 0.02 80) 4px 8px)'
-                }} />}
+                }} />
                 <button
                   type="button"
                   onClick={() => {
@@ -632,9 +638,7 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
                   <Icon.x />
                 </button>
               </div>);
-
           })}
-          {/* Always-visible Add photos tile, same size as a thumbnail */}
           <button
             type="button"
             onClick={onOpenPicker}
@@ -642,18 +646,168 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
             style={{
               position: 'relative', aspectRatio: '1 / 1', padding: 0,
               borderRadius: 4, border: '1px dashed var(--border-strong)',
-              background: 'var(--surface-2)', color: 'var(--text-3)',
+              background: 'var(--surface)', color: 'var(--text-3)',
               cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 2
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
             <Icon.plus />
-            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 0.02, lineHeight: 1, textAlign: 'center' }}>Add<br />photos</span>
           </button>
         </div>
       </div>
     </div>);
 
+}
+
+// ─── Dictation panel ──────────────────────────────────────────
+// Wraps the dictate state machine + the two outputs (notes + parsed
+// materials) in one bordered section. Empty state is a single CTA;
+// post-dictation, the two outputs sit side-by-side via auto-fit grid so
+// the card stays compact on tablet and stacks on phone.
+function DictationPanel({ facet, env, onChange, hasDictation }) {
+  const [status, setStatus] = useState(hasDictation ? 'ready' : 'idle');
+
+  const beginDictate = () => {
+    setStatus('recording');
+    setTimeout(() => {
+      const mock = MOCK_DICTATION_BY_FACET[facet.id] || MOCK_DICTATION_BY_FACET.roofing;
+      const notesNext = mock.notes || mock;
+      if (Array.isArray(mock.parsed)) {
+        const updated = applyParsedFromMemo({ ...env, notes: notesNext }, mock.parsed);
+        onChange({ notes: notesNext, lineItems: updated.lineItems, parsedFromMemo: updated.parsedFromMemo });
+      } else {
+        onChange({ notes: notesNext });
+      }
+      setStatus('ready');
+    }, 1400);
+  };
+
+  // Empty state — centered CTA, no chrome.
+  if (status === 'idle' && !hasDictation) {
+    return (
+      <div style={{
+        padding: '14px 14px 16px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <button
+          type="button"
+          onClick={beginDictate}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '12px 18px', borderRadius: 999,
+            border: 0, background: 'var(--brand)', color: 'var(--brand-fg)',
+            cursor: 'pointer',
+            fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
+            boxShadow: '0 6px 16px rgba(20,15,5,0.12)'
+          }}>
+          <Icon.mic style={{ width: 16, height: 16 }} /> Dictate findings for {facet.label}
+        </button>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.45, textAlign: 'center', maxWidth: 480 }}>
+          AI parses your memo into homeowner-facing notes and quantified materials. You can edit either side after.
+        </div>
+      </div>);
+  }
+
+  // Recording — single pulsing strip.
+  if (status === 'recording') {
+    return (
+      <div style={{
+        margin: '0 14px 14px',
+        padding: '14px 16px', borderRadius: 10,
+        border: '1.5px solid var(--brand)',
+        background: 'var(--brand-soft)', color: 'var(--brand-soft-fg)',
+        display: 'flex', alignItems: 'center', gap: 12
+      }}>
+        <span style={{
+          width: 30, height: 30, borderRadius: 999,
+          background: 'var(--brand)', color: 'var(--brand-fg)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, animation: 'micPulse 1.2s ease-in-out infinite'
+        }}><Icon.mic style={{ width: 14, height: 14 }} /></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>Listening…</div>
+          <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>Transcribing and parsing materials</div>
+        </div>
+        <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 22 }}>
+          {[0, 1, 2, 3, 4].map((i) =>
+            <span key={i} style={{
+              width: 3, borderRadius: 2, background: 'var(--brand)',
+              animation: `barpulse 0.9s ease-in-out ${i * 0.12}s infinite`
+            }} />
+          )}
+        </div>
+      </div>);
+  }
+
+  // Ready — two-column grid: notes on the left, parsed materials on the
+  // right. auto-fit + minmax collapses to one column when card is narrow.
+  const parsed = env.parsedFromMemo || [];
+  return (
+    <div style={{
+      padding: '12px 14px',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+      gap: 10
+    }}>
+      {/* Notes pane */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
+            Memo
+          </span>
+          <button
+            type="button"
+            onClick={beginDictate}
+            title="Re-dictate findings for this scope"
+            style={{
+              marginLeft: 'auto', height: 22, padding: '0 8px',
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              borderRadius: 999, fontSize: 10, fontWeight: 700, color: 'var(--text-2)',
+              display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer'
+            }}>
+            <Icon.mic style={{ width: 11, height: 11 }} /> Re-dictate
+          </button>
+        </div>
+        <textarea
+          value={env.notes || ''}
+          onChange={(e) => onChange({ notes: e.target.value })}
+          placeholder="Tap re-dictate to capture findings…"
+          rows={5}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            padding: '8px 10px', borderRadius: 8,
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text)', fontSize: 12, lineHeight: 1.5,
+            fontFamily: 'inherit', resize: 'vertical', minHeight: 96,
+            outline: 'none'
+          }} />
+      </div>
+      {/* Parsed materials pane */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
+            Materials parsed
+          </span>
+          {parsed.length > 0 &&
+          <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>
+            · carried to Build
+          </span>}
+        </div>
+        {parsed.length > 0 ?
+        <ParsedFromMemoList
+          facetId={facet.id}
+          items={parsed}
+          lineItems={env.lineItems || {}}
+          onChange={onChange} /> :
+        <div style={{
+          padding: '14px 12px', borderRadius: 8,
+          border: '1px dashed var(--border-strong)',
+          background: 'var(--surface-2)', color: 'var(--text-3)',
+          fontSize: 11, fontWeight: 600, lineHeight: 1.45, textAlign: 'center'
+        }}>
+          AI didn't find quantifiable materials in this memo. Edit the memo and re-dictate, or add materials manually on Build.
+        </div>}
+      </div>
+    </div>);
 }
 
 // ─── Notes block — two-step dictation ────────────────────────
@@ -789,11 +943,6 @@ function ParsedFromMemoList({ facetId, items, lineItems, onChange }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
-          From the memo · carried to Build
-        </div>
-      </div>
       <div style={{
         borderRadius: 10, background: 'var(--success-bg)', border: '1px solid var(--success)',
         overflow: 'hidden'

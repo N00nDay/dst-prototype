@@ -152,7 +152,6 @@ function PhaseCard({ phase, index, summary, sub, onOpen, disabled }) {
     <div className="card" style={{
       padding: 0, display: 'flex', flexDirection: 'column', height: '100%',
       overflow: 'hidden',
-      borderTop: `3px solid ${isDisabled ? 'var(--border)' : accent.tone}`,
       opacity: isDisabled ? 0.6 : 1
     }}>
       <div style={{ padding: '14px 14px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>

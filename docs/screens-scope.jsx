@@ -181,7 +181,6 @@ function StructureRow({ structure, index = 1, onRename, onToggleScope, onRequest
     <div style={{
       padding: tablet ? '14px 16px' : '12px 14px', borderRadius: 12,
       background: 'var(--surface)', border: '1px solid var(--border)',
-      borderLeft: `3px solid ${tone}`,
       display: 'flex', flexDirection: 'column', gap: 10
     }}>
       {/* Row 1 — index badge, name, count, trash */}

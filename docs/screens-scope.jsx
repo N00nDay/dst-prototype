@@ -294,9 +294,11 @@ function ContinueBar({ tablet, label, sub, enabled, onContinue, onBack, backLabe
             onClick={onBack}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '6px 10px', borderRadius: 8,
+              height: tablet ? 44 : 40,
+              padding: tablet ? '0 18px' : '0 14px',
+              borderRadius: 8,
               background: 'transparent', border: '1px solid var(--border)',
-              color: 'var(--text-2)', fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+              color: 'var(--text-2)', fontSize: tablet ? 14 : 13, fontWeight: 700, letterSpacing: '-0.01em',
               cursor: 'pointer'
             }}>
             <Icon.back style={{ width: 14, height: 14 }} />

@@ -783,8 +783,13 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
       {(structures || []).length > 1 &&
       <BundleSummaryCard structures={structures} proposals={proposals} tablet={tablet} />}
 
-      {/* ── 2. Per-scope sections (Roofing/Siding tiered, Gutters flat) ── */}
-      {PRESENT_SCOPES.map((scope, idx) =>
+      {/* ── 2. Per-scope sections (Roofing/Siding tiered, Gutters flat) ──
+          Phase 2.5 PR-4 — hidden on multi-structure jobs because the
+          BundleSummaryCard already shows the per-structure tier picks
+          and the rep walked the homeowner through them upstream on the
+          Proposal screen. On single-structure jobs the tier cards are
+          still the right surface for showing G/B/B trade-offs. */}
+      {(structures || []).length <= 1 && PRESENT_SCOPES.map((scope, idx) =>
       <ScopeSection
         key={scope.id}
         scope={scope}

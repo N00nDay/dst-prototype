@@ -124,14 +124,20 @@ function ImageCaptureScreen({
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div className="scroll-area" data-screen-label="Inspect — Capture" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
         {/* Intro — page title up top. Structure switcher lives in the
-            AppContextBar phase row (rendered globally in app.jsx). */}
+            AppContextBar phase row (rendered globally in app.jsx). On
+            multi-structure jobs the title names the active building so the
+            rep always knows whose findings they're on, paired with the
+            switcher chip in the header. (Craig, May '26.) */}
         <div style={{ padding: '14px 16px 4px' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-            Capture what you see
+            {isMulti ? `Inspecting ${activeStructure?.name || ''}` : 'Capture what you see'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.45 }}>
             Photograph any condition that matters. Star the ones to include in the homeowner presentation —
             AI groups starred photos into the right scope below.
+            {isMulti && activeIdx < (structures.length - 1) ?
+              ` When this structure is complete, advance to ${structures[activeIdx + 1].name}.` :
+              ''}
           </div>
         </div>
 

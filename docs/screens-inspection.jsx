@@ -264,6 +264,20 @@ function InspectionScreen({
             onSetScopes={(next) => onSetStructureScopes && onSetStructureScopes(activeStructure.id, next)} />
           {!noScopes &&
           <SectionTabs sections={sections} activeSection={activeSection} onSelect={setActiveSection} facet={facet} env={env} items={items} />}
+          {/* Copy-from-previous banner — phase 2.3 B-8. Shown when the
+              active structure is fresh and at least one other structure
+              already has substantial work. One tap deep-clones the source
+              envelope into the active structure. */}
+          {!noScopes &&
+          <CopyFromPreviousBanner
+            structures={structures || []}
+            activeStructure={activeStructure}
+            envelope={envelope}
+            onCopyFrom={(srcId) => {
+              const src = (structures || []).find((s) => s.id === srcId);
+              if (!src) return;
+              setEnvelope(JSON.parse(JSON.stringify(src.envelope || {})));
+            }} />}
         </div>
 
         {/* Content — only the active section's body. (Craig, May '26 v2.) */}
@@ -489,6 +503,115 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
               }}>excluded</span>}
             </button>);
         })}
+      </div>
+    </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// CopyFromPreviousBanner — Phase 2.3 B-8 redesign port.
+// On a multi-structure job, when the active structure has barely any
+// envelope state and at least one other structure has been substantially
+// filled out, surface a one-tap "copy everything" affordance so the rep
+// doesn't have to re-enter every measurement on the second building.
+// The copy is a deep clone (measurements + material/labor line items
+// + packageProducts), so subsequent edits on the destination don't
+// ripple back to the source.
+// ─────────────────────────────────────────────────────────
+function envelopeRichness(envObj) {
+  // Heuristic "completeness" score — counts non-empty measurement values
+  // and line items across all envelopes inside this structure.
+  let score = 0;
+  if (!envObj) return score;
+  Object.values(envObj).forEach((env) => {
+    if (!env || typeof env !== 'object') return;
+    const m = env.measurements || {};
+    score += Object.values(m).filter((v) => v != null && v !== '' && v !== 0).length;
+    ['materials', 'labor', 'equipment', 'disposal'].forEach((sec) => {
+      score += (env.lineItems?.[sec] || []).length;
+    });
+  });
+  return score;
+}
+
+function CopyFromPreviousBanner({ structures, activeStructure, envelope, onCopyFrom }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const activeRichness = envelopeRichness(envelope);
+  const candidates = (structures || []).filter((s) => s.id !== activeStructure.id && envelopeRichness(s.envelope) >= 3);
+  // Only show when the active structure is essentially blank AND another
+  // structure has measurable progress.
+  if (dismissed || activeRichness >= 2 || candidates.length === 0) return null;
+  return (
+    <div style={{ background: 'var(--bg)', padding: '4px 14px 8px' }}>
+      <div style={{
+        background: 'var(--brand-soft)', border: '1.5px solid var(--brand)', borderRadius: 12,
+        padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <span style={{
+            width: 32, height: 32, borderRadius: 8, background: 'var(--brand)',
+            color: 'var(--brand-fg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 700, flexShrink: 0
+          }}>↗</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-soft-fg)', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+              Copy everything from another structure?
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--brand-soft-fg)', opacity: 0.85, marginTop: 3, lineHeight: 1.4 }}>
+              Measurements, materials, labor, packages — anything already filled in. You can edit any field after.
+            </div>
+          </div>
+          <button
+            onClick={() => setDismissed(true)}
+            aria-label="Dismiss"
+            style={{
+              background: 'transparent', border: 0, color: 'var(--brand-soft-fg)',
+              fontSize: 18, lineHeight: 1, cursor: 'pointer', padding: 2, flexShrink: 0
+            }}>×</button>
+        </div>
+        {!pickerOpen ?
+          <button
+            onClick={() => candidates.length === 1 ? onCopyFrom(candidates[0].id) : setPickerOpen(true)}
+            style={{
+              alignSelf: 'flex-start',
+              padding: '8px 14px', borderRadius: 8,
+              background: 'var(--brand)', color: 'var(--brand-fg)',
+              border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer'
+            }}>
+            {candidates.length === 1 ? `Copy from ${candidates[0].name}` : `Choose source · ${candidates.length} available`}
+          </button> :
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {candidates.map((s) =>
+            <button
+              key={s.id}
+              onClick={() => { onCopyFrom(s.id); setPickerOpen(false); setDismissed(true); }}
+              style={{
+                padding: '10px 12px', borderRadius: 8,
+                background: 'var(--surface)', color: 'var(--text)',
+                border: '1px solid var(--border-strong)',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
+                display: 'flex', alignItems: 'center', gap: 10
+              }}>
+                <span style={{
+                  width: 18, height: 18, borderRadius: 5,
+                  background: 'var(--surface-3)', color: 'var(--text-2)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 800, flexShrink: 0
+                }}>{s.name.slice(0, 1).toUpperCase()}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>{s.name}</span>
+                <span style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 600 }}>
+                  {envelopeRichness(s.envelope)} entries
+                </span>
+              </button>
+            )}
+            <button
+              onClick={() => setPickerOpen(false)}
+              style={{
+                padding: '8px 12px', borderRadius: 8,
+                background: 'transparent', color: 'var(--brand-soft-fg)',
+                border: 'none', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+              }}>Cancel</button>
+          </div>}
       </div>
     </div>);
 }

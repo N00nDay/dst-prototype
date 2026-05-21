@@ -144,7 +144,7 @@ function PhaseTabBar({ tabs, activeId, onSelect }) {
 }
 
 // ─────── Brand chip + recording row ───────
-function AppContextBar({ title, recording, recordingTime, sync = null, action = null, leading = null, phaseInfo = null }) {
+function AppContextBar({ title, recording, recordingTime, sync = null, action = null, leading = null, phaseInfo = null, structureSwitcher = null }) {
   // Sync pill removed per Craig — redundant signal at top of every screen.
   const syncPill = null;
 
@@ -173,6 +173,10 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
             {action}
           </div>
         </div>
+        {structureSwitcher &&
+        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 28 }}>
+          {structureSwitcher}
+        </div>}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 22 }}>
           <PhaseProgress phaseInfo={phaseInfo} />
         </div>

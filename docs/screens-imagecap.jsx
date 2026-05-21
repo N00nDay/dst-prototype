@@ -132,16 +132,6 @@ function ImageCaptureScreen({
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
             {isMulti ? `Inspecting ${activeStructure?.name || ''}` : 'Capture what you see'}
           </div>
-          {isMulti &&
-            <div style={{ marginTop: 8 }}>
-              <window.StructureSwitchChip
-                structures={structures}
-                activeStructureId={activeStructureId}
-                setActiveStructureId={setActiveStructureId}
-                activeIdx={activeIdx}
-                onBackToScope={onBackToScope || onBack} />
-            </div>
-          }
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.45 }}>
             Photograph any condition that matters. Star the ones to include in the homeowner presentation —
             AI groups starred photos into the right scope below.

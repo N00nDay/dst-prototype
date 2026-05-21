@@ -454,6 +454,17 @@ function App() {
   { current: PHASE_OF[view], stepLabel: stepLabelByView[view] } :
   null;
 
+  // Structure switcher chip — renders directly under the screen title in
+  // the header on Inspect + Build when there are 2+ structures.
+  const structureSwitcher = (view === 'inspect' || view === 'build') && structures.length > 1 ?
+    <window.StructureSwitchChip
+      structures={structures}
+      activeStructureId={activeStructureId}
+      setActiveStructureId={setActiveStructureId}
+      activeIdx={activeStructureIdx}
+      onBackToScope={() => setView('scope')} /> :
+    null;
+
   const backBtn = (onBack) =>
   <button className="btn btn-sm btn-ghost" aria-label="Back" onClick={onBack} style={{ padding: '0 6px' }}>
       <Icon.back />
@@ -502,7 +513,8 @@ function App() {
           sync={sync}
           action={action}
           leading={leading}
-          phaseInfo={phaseInfo} />
+          phaseInfo={phaseInfo}
+          structureSwitcher={structureSwitcher} />
         }
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>

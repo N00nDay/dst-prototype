@@ -273,20 +273,9 @@ function InspectionScreen({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <div className="scroll-area" data-screen-label="Inspection" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-        {/* Per-structure switcher chip, left-aligned under the title.
-            Replaces the old Structure ribbon. Only renders on multi-structure
-            jobs. (Craig, May '26 cleanup pass.) */}
-        {(structures || []).length > 1 &&
-        <div style={{ padding: '10px 14px 0' }}>
-          <window.StructureSwitchChip
-            structures={structures || []}
-            activeStructureId={activeStructureId}
-            setActiveStructureId={setActiveStructureId}
-            activeIdx={Math.max(0, (structures || []).findIndex((s) => s.id === activeStructureId))}
-            onBackToScope={onBack} />
-        </div>}
         {/* Sticky nav stack — scope tiles + section stepper travel with the
-            rep as they scroll. */}
+            rep as they scroll. The structure switcher chip lives in the
+            AppContextBar header (rendered globally from app.jsx). */}
         <div style={{ position: 'sticky', top: 0, zIndex: 6, background: 'var(--bg)', boxShadow: '0 1px 0 var(--border)' }}>
           <EnvelopePicker
             activeFacet={activeFacet}

@@ -86,42 +86,65 @@ function BatteryGlyph({ c = 'currentColor', pct = 80 }) {
 // jump between substeps of the current phase without backing out to the
 // appointment overview. Sticky to the top of the body so it stays visible
 // while the substep content scrolls.
+// Back-only stepper. Past steps (index < activeIdx) are tappable to navigate
+// back; the active step is highlighted; future steps render muted and inert.
+// The numbered-dot + connector visual matches the in-Build SubStepStrip so the
+// two steppers feel like one family.
 function PhaseTabBar({ tabs, activeId, onSelect }) {
+  const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeId));
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 4,
       background: 'var(--bg)',
       borderBottom: '1px solid var(--border)',
-      padding: '8px 14px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6
+      padding: '10px 14px',
+      display: 'flex', alignItems: 'center', gap: 0
     }}>
-      {tabs.map((t) => {
-        const isActive = t.id === activeId;
+      {tabs.map((t, i) => {
+        const isActive = i === activeIdx;
+        const isPast = i < activeIdx;
+        const isFuture = i > activeIdx;
+        const canTap = isPast;
         return (
-          <button
-            key={t.id}
-            onClick={() => t.id !== activeId && onSelect(t.id)}
-            style={{
-              flex: 1,
-              height: 32, padding: '0 8px',
-              borderRadius: 999, border: 0,
-              background: isActive ? 'var(--brand)' : 'transparent',
-              color: isActive ? 'var(--brand-fg)' : 'var(--text-2)',
-              fontSize: 11, fontWeight: 600, letterSpacing: '-0.01em',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              border: isActive ? 'none' : '1px solid var(--border)',
-              textAlign: 'center'
-            }}>
-            {t.label}
-            </button>);
-
+          <React.Fragment key={t.id}>
+            <button
+              onClick={canTap ? () => onSelect(t.id) : undefined}
+              disabled={!canTap}
+              aria-current={isActive ? 'step' : undefined}
+              style={{
+                flex: 1,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                height: 30, padding: '0 8px',
+                borderRadius: 999, border: 0,
+                background: isActive ? 'var(--brand)' : 'transparent',
+                color: isActive ? 'var(--brand-fg)' : isPast ? 'var(--text-2)' : 'var(--text-4)',
+                fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
+                opacity: isFuture ? 0.4 : 1,
+                cursor: canTap ? 'pointer' : 'default',
+                whiteSpace: 'nowrap',
+                textAlign: 'center'
+              }}>
+              <span style={{
+                width: 16, height: 16, borderRadius: 999,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: isActive ? 'var(--brand-fg)' : isPast ? 'var(--success)' : 'transparent',
+                color: isActive ? 'var(--brand)' : isPast ? '#fff' : 'var(--text-4)',
+                border: isActive ? 'none' : isPast ? 'none' : '1px solid var(--border-strong)',
+                fontSize: 9, fontWeight: 800, flexShrink: 0
+              }}>{isPast ? '✓' : i + 1}</span>
+              {t.label}
+            </button>
+            {i < tabs.length - 1 &&
+              <span style={{ width: 8, height: 1, background: i < activeIdx ? 'var(--success)' : 'var(--border-strong)', flexShrink: 0 }} />
+            }
+          </React.Fragment>);
       })}
     </div>);
 
 }
 
 // ─────── Brand chip + recording row ───────
-function AppContextBar({ title, recording, recordingTime, sync = null, action = null, leading = null, phaseInfo = null, onStepsClick = null, structureSwitcher = null }) {
+function AppContextBar({ title, recording, recordingTime, sync = null, action = null, leading = null, phaseInfo = null }) {
   // Sync pill removed per Craig — redundant signal at top of every screen.
   const syncPill = null;
 
@@ -151,12 +174,7 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 22 }}>
-          <PhaseProgress phaseInfo={phaseInfo} onClick={onStepsClick} />
-          {structureSwitcher &&
-          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
-            {structureSwitcher}
-          </div>
-          }
+          <PhaseProgress phaseInfo={phaseInfo} />
         </div>
       </div>);
 
@@ -188,10 +206,9 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
 //     phase with check marks for completed steps and the active one
 //     highlighted. The handler comes in via onClick (wired to a state
 //     toggle in app.jsx).
-function PhaseProgress({ phaseInfo, onClick }) {
+function PhaseProgress({ phaseInfo }) {
   const PHASES = ['CONNECT', 'SOLVE', 'COMMIT'];
   const currentIdx = PHASES.indexOf(phaseInfo.current);
-  const hasStepLabel = !!phaseInfo.stepLabel;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '2px 0', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
@@ -212,27 +229,6 @@ function PhaseProgress({ phaseInfo, onClick }) {
             </React.Fragment>);
         })}
       </div>
-      {hasStepLabel &&
-        <button
-          type="button"
-          onClick={onClick}
-          aria-label="Show steps in this phase"
-          style={{
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 999,
-            padding: '2px 8px',
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            fontSize: 9, fontWeight: 600, color: 'var(--text-2)',
-            letterSpacing: '-0.005em',
-            cursor: onClick ? 'pointer' : 'default',
-            transition: 'background 120ms ease'
-          }}>
-          <span style={{ color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.08 }}>{phaseInfo.current}</span>
-          <span style={{ color: 'var(--text-4)' }}>·</span>
-          <span>{phaseInfo.stepLabel}</span>
-          {onClick && <span style={{ fontSize: 8, color: 'var(--text-4)', marginLeft: 1 }}>▾</span>}
-        </button>}
     </div>);
 }
 

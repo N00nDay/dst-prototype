@@ -132,6 +132,16 @@ function ImageCaptureScreen({
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
             {isMulti ? `Inspecting ${activeStructure?.name || ''}` : 'Capture what you see'}
           </div>
+          {isMulti &&
+            <div style={{ marginTop: 8 }}>
+              <window.StructureSwitchChip
+                structures={structures}
+                activeStructureId={activeStructureId}
+                setActiveStructureId={setActiveStructureId}
+                activeIdx={activeIdx}
+                onBackToScope={onBackToScope || onBack} />
+            </div>
+          }
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.45 }}>
             Photograph any condition that matters. Star the ones to include in the homeowner presentation —
             AI groups starred photos into the right scope below.
@@ -202,14 +212,17 @@ function ImageCaptureScreen({
           }} />}
       </div>
 
-      {/* Continue cascade — advances to next structure or to Build */}
+      {/* Continue cascade — advances to next structure or to Build.
+          Footer-left is a Back-to-Scope button instead of the structure
+          counter; the structure switcher chip lives in the screen body. */}
       {continueCascade && onContinue &&
       <window.ContinueBar
         tablet={true}
         label={continueCascade.label}
-        sub={continueCascade.sub}
         enabled={true}
-        onContinue={onContinue} />
+        onContinue={onContinue}
+        onBack={onBackToScope || onBack}
+        backLabel="Back to Scope" />
       }
     </div>);
 

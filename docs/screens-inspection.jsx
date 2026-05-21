@@ -164,11 +164,16 @@ function InspectionScreen({
   }, [activeStructure.id, allowedFacets.map((f) => f.id).join('|')]);
 
   // If the active facet doesn't offer the current section (e.g. gutters has
-  // no Materials), snap to the first section it does offer.
+  // no Materials), snap to the first section it does offer. The virtual
+  // 'other' section is allowed whenever the facet offers equipment OR
+  // disposal — both get rendered inside the Other panel.
   useEffect(() => {
     const facet2 = ENVELOPE_FACETS.find((f) => f.id === activeFacet);
-    const secs = (facet2?.sections || ['measurements']).filter((s) => s !== 'photos');
-    if (!secs.includes(activeSection)) setActiveSection(secs[0] || 'measurements');
+    const rawSecs = (facet2?.sections || ['measurements']).filter((s) => s !== 'photos');
+    const hasOther = rawSecs.includes('equipment') || rawSecs.includes('disposal');
+    const stepperIds = ['measurements', 'materials', 'labor'].filter((s) => rawSecs.includes(s));
+    if (hasOther) stepperIds.push('other');
+    if (!stepperIds.includes(activeSection)) setActiveSection(stepperIds[0] || 'measurements');
   }, [activeFacet]);
 
   const facet = ENVELOPE_FACETS.find((f) => f.id === activeFacet);
@@ -268,18 +273,21 @@ function InspectionScreen({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <div className="scroll-area" data-screen-label="Inspection" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-        {/* Sticky nav stack — structure switcher + envelope tabs + section
-                    section accordion-toggles travel with the rep as they scroll. */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 6, background: 'var(--bg)', boxShadow: '0 1px 0 var(--border)' }}>
-          <StructureSwitcher
+        {/* Per-structure switcher chip, left-aligned under the title.
+            Replaces the old Structure ribbon. Only renders on multi-structure
+            jobs. (Craig, May '26 cleanup pass.) */}
+        {(structures || []).length > 1 &&
+        <div style={{ padding: '10px 14px 0' }}>
+          <window.StructureSwitchChip
             structures={structures || []}
             activeStructureId={activeStructureId}
             setActiveStructureId={setActiveStructureId}
-            onAdd={onAddStructure}
-            onDuplicate={onDuplicateStructure}
-            onRename={onRenameStructure}
-            onRemove={onRemoveStructure}
-            onSetScopes={onSetStructureScopes} />
+            activeIdx={Math.max(0, (structures || []).findIndex((s) => s.id === activeStructureId))}
+            onBackToScope={onBack} />
+        </div>}
+        {/* Sticky nav stack — scope tiles + section stepper travel with the
+            rep as they scroll. */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 6, background: 'var(--bg)', boxShadow: '0 1px 0 var(--border)' }}>
           <EnvelopePicker
             activeFacet={activeFacet}
             setActiveFacet={setActiveFacet}
@@ -349,7 +357,7 @@ function InspectionScreen({
               onSetLock={setMeasurementLock} />
             </div>}
 
-            {['materials', 'labor', 'equipment', 'disposal'].map((sec) => {
+            {['materials', 'labor'].map((sec) => {
             if (sec !== activeSection) return null;
             if (!sections.includes(sec) || !facet?.hasPricing) return null;
             return (
@@ -357,6 +365,26 @@ function InspectionScreen({
                   <LineItemsPane envelopeId={activeFacet} section={sec} env={env} updateEnvelope={updateEnvelope} packageProducts={env.packageProducts || {}} />
                 </div>);
           })}
+            {/* Virtual "Other" section: render Equipment then Disposal as
+                two grouped subsections. Underlying section ids stay intact
+                so catalogs and price rollups don't need to change. */}
+            {activeSection === 'other' && facet?.hasPricing && (() => {
+              const hasEq = sections.includes('equipment');
+              const hasDi = sections.includes('disposal');
+              return (
+                <>
+                  {hasEq &&
+                  <div>
+                      <div style={{ padding: '14px 16px 0', fontSize: 11, fontWeight: 800, letterSpacing: 0.1, textTransform: 'uppercase', color: 'var(--text-3)' }}>Equipment</div>
+                      <LineItemsPane envelopeId={activeFacet} section="equipment" env={env} updateEnvelope={updateEnvelope} packageProducts={env.packageProducts || {}} />
+                    </div>}
+                  {hasDi &&
+                  <div>
+                      <div style={{ padding: '14px 16px 0', fontSize: 11, fontWeight: 800, letterSpacing: 0.1, textTransform: 'uppercase', color: 'var(--text-3)' }}>Disposal</div>
+                      <LineItemsPane envelopeId={activeFacet} section="disposal" env={env} updateEnvelope={updateEnvelope} packageProducts={env.packageProducts || {}} />
+                    </div>}
+                </>);
+            })()}
           </div>}
       </div>
 
@@ -409,8 +437,42 @@ function InspectionScreen({
             [facetId]: { ...(s?.[facetId] || {}), measurements: nextMeas }
           }));
         };
-        // Lock everything in the open list, then advance.
-        const lockAllAndContinue = () => {
+        // Section-by-section cascade. Continue first walks Measure →
+        // Materials → Labor → Other within the active scope; only after
+        // Other does it delegate to the structure-level cascade (next
+        // structure or Slides). The lock-all-and-continue modal still
+        // gates the Measure → next transition while any open measurement
+        // rows remain.
+        const facetSecs = (facet?.sections || ['measurements']).filter((s) => s !== 'photos');
+        const hasOther = facetSecs.includes('equipment') || facetSecs.includes('disposal');
+        const stepperIds = ['measurements', 'materials', 'labor'].filter((s) => facetSecs.includes(s));
+        if (hasOther) stepperIds.push('other');
+        const curIdx = stepperIds.indexOf(activeSection);
+        const isLastSection = curIdx === -1 || curIdx >= stepperIds.length - 1;
+        const nextSectionLabel = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
+        const continueLabel = isLastSection ? continueCascade.label : `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
+        const continueSub = isLastSection ? ((continueCascade.sub || '') + extraSub) : '';
+        const onContinueClick = () => {
+          if (!isLastSection) {
+            // Measure → next section still surfaces unlocked-measurement
+            // review (the rows live in the Measure section).
+            if (activeSection === 'measurements' && openRowCount > 0) {
+              setShowContinueReview(true);
+              return;
+            }
+            setActiveSection(stepperIds[curIdx + 1]);
+            return;
+          }
+          if (openRowCount > 0) {
+            setShowContinueReview(true);
+            return;
+          }
+          onContinue();
+        };
+        // When the review modal locks all and advances on the Measure
+        // section, we should advance to the next section (not the
+        // structure cascade) if Measure isn't the last section.
+        const lockAllAndAdvance = () => {
           setEnvelope((s) => {
             const next = { ...s };
             openRows.forEach(({ facetId, fieldKey }) => {
@@ -421,25 +483,26 @@ function InspectionScreen({
             return next;
           });
           setShowContinueReview(false);
-          onContinue();
+          if (!isLastSection) {
+            setActiveSection(stepperIds[curIdx + 1]);
+          } else {
+            onContinue();
+          }
         };
         return (
           <>
             <window.ContinueBar
               tablet={true}
-              label={continueCascade.label}
-              sub={(continueCascade.sub || '') + extraSub}
+              label={continueLabel}
+              sub={continueSub}
               enabled={true}
-              onContinue={() => {
-                if (openRowCount > 0) setShowContinueReview(true);else
-                onContinue();
-              }} />
+              onContinue={onContinueClick} />
             {showContinueReview &&
               <ContinueReviewSheet
                 openRows={openRows}
                 onAdjust={setRow}
                 onCancel={() => setShowContinueReview(false)}
-                onLockAll={lockAllAndContinue} />}
+                onLockAll={lockAllAndAdvance} />}
           </>);
       })()}
     </div>);
@@ -508,8 +571,7 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
   return (
     <div style={{ background: 'var(--bg)', padding: '10px 14px 8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase' }}>Envelopes</div>
-        <div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Tap × to exclude · + to include</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase' }}>Scopes</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
         {PICKER_ENVELOPES.map((e) => {
@@ -518,12 +580,15 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
           const isDone = status.kind === 'done';
           const isActive = !isExcluded && e.id === activeFacet;
           const pct = status.kind === 'progress' ? status.pct : null;
-          const handleClick = () => {
-            if (isExcluded) {
-              if (onSetScopes) onSetScopes([...structureScopes, e.id]);
-            } else {
-              setActiveFacet(e.id);
-            }
+          const ScopeIconCmp = window.ScopeIcon?.[e.id];
+          // Card body click selects the scope as active facet, but only
+          // when included. When excluded, only the explicit + button adds
+          // the scope — clicking the body does nothing. (Craig: "user
+          // should have to explicitly click the + icon button, not the
+          // card only.")
+          const handleCardClick = () => {
+            if (isExcluded) return;
+            setActiveFacet(e.id);
           };
           const toggleScope = (ev) => {
             ev.stopPropagation();
@@ -532,10 +597,12 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
             onSetScopes(structureScopes.filter((x) => x !== e.id));
           };
           return (
-            <button
+            <div
               key={e.id}
-              type="button"
-              onClick={handleClick}
+              role={isExcluded ? undefined : 'button'}
+              tabIndex={isExcluded ? -1 : 0}
+              onClick={handleCardClick}
+              onKeyDown={(ev) => { if (!isExcluded && (ev.key === 'Enter' || ev.key === ' ')) handleCardClick(); }}
               style={{
                 position: 'relative',
                 padding: '18px 8px 14px',
@@ -546,56 +613,56 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
                   (isActive ? '1.5px solid var(--brand)' : '1px solid var(--border)'),
                 opacity: isExcluded ? 0.55 : 1,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                cursor: 'pointer', textAlign: 'center'
+                cursor: isExcluded ? 'default' : 'pointer', textAlign: 'center', userSelect: 'none'
               }}>
-              {/* Top-left toggle */}
-              <span
-                role="button"
-                tabIndex={0}
+              {/* Top-right toggle — explicit add/remove affordance */}
+              <button
+                type="button"
                 aria-label={isExcluded ? `Include ${e.label}` : `Exclude ${e.label}`}
                 onClick={toggleScope}
-                onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') toggleScope(ev); }}
                 style={{
-                  position: 'absolute', top: 6, left: 6,
+                  position: 'absolute', top: 6, right: 6,
                   width: 22, height: 22, borderRadius: 999,
                   background: isExcluded ? 'var(--brand)' : 'var(--surface-2)',
                   color: isExcluded ? 'var(--brand-fg)' : 'var(--text-3)',
                   border: isExcluded ? 'none' : '1px solid var(--border)',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, userSelect: 'none'
+                  cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, userSelect: 'none', padding: 0
                 }}>
                 {isExcluded ? '+' : '×'}
-              </span>
-              {/* Done badge */}
+              </button>
+              {/* Done badge — top-left so it doesn't collide with the toggle */}
               {isDone &&
               <span style={{
-                position: 'absolute', top: 8, right: 8,
+                position: 'absolute', top: 8, left: 8,
                 width: 18, height: 18, borderRadius: 999,
                 background: 'var(--success)', color: '#fff',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 11, fontWeight: 700
               }}>✓</span>}
-              {/* Progress pct */}
+              {/* Progress pct — top-left to match done badge */}
               {pct != null &&
               <span style={{
-                position: 'absolute', top: 8, right: 8,
+                position: 'absolute', top: 8, left: 8,
                 padding: '1px 6px', borderRadius: 999,
                 background: 'var(--surface-2)', color: 'var(--brand-soft-fg)',
                 fontSize: 9, fontWeight: 700
               }}>{pct}%</span>}
+              {/* Scope icon */}
+              <div style={{
+                color: isActive ? 'var(--brand)' : (isDone ? 'var(--success)' : 'var(--text-2)'),
+                marginTop: 4, opacity: isExcluded ? 0.5 : 1
+              }}>
+                {ScopeIconCmp ? <ScopeIconCmp size={36} /> : null}
+              </div>
               <div style={{
                 fontSize: 12, fontWeight: 700,
                 color: isActive ? 'var(--brand-soft-fg)' : (isDone ? 'var(--success)' : 'var(--text-2)'),
-                lineHeight: 1.2, marginTop: 8
+                lineHeight: 1.2, marginTop: 2
               }}>
                 {e.label}
               </div>
-              {isExcluded &&
-              <span style={{
-                fontSize: 9, fontWeight: 600, color: 'var(--text-4)',
-                marginTop: 2
-              }}>excluded</span>}
-            </button>);
+            </div>);
         })}
       </div>
     </div>);
@@ -2601,12 +2668,21 @@ function UnifiedTabStrip({ items, active, onSelect }) {
 // ─────────────────────────────────────────────────────────
 function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
   if (!facet) return null;
-  const labels = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', equipment: 'Equipment', disposal: 'Disposal', photos: 'Photos' };
-  const visible = sections.filter((s) => s !== 'photos');
+  // Equipment + Disposal collapse into a single "Other" step that renders
+  // both as grouped subsections inside the same panel. The underlying
+  // section ids (equipment/disposal) remain intact in catalogs and state.
+  const hasEquipment = sections.includes('equipment');
+  const hasDisposal = sections.includes('disposal');
+  const visibleIds = [];
+  if (sections.includes('measurements')) visibleIds.push('measurements');
+  if (sections.includes('materials')) visibleIds.push('materials');
+  if (sections.includes('labor')) visibleIds.push('labor');
+  if (hasEquipment || hasDisposal) visibleIds.push('other');
+  const labels = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
   return (
     <div style={{ padding: '0 14px 6px' }}>
       <SubStepStrip
-        items={visible.map((sec) => ({ id: sec, label: labels[sec] }))}
+        items={visibleIds.map((sec) => ({ id: sec, label: labels[sec] }))}
         active={activeSection}
         onSelect={onSelect} />
     </div>);

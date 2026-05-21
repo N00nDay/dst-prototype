@@ -42,6 +42,42 @@ const Icon = {
   sparkles: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M5.6 5.6L8.4 8.4M15.6 15.6l2.8 2.8M5.6 18.4L8.4 15.6M15.6 8.4l2.8-2.8" /></svg>
 };
 
+// Per-scope hand-drawn line icons used on the Build scope cards. Ported
+// from the build-redesign canvas. Pass `size` to scale.
+const ScopeIcon = {
+  roofing: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 26 L24 8 L44 26" />
+      <path d="M11 26 L24 16 L37 26" opacity="0.55" />
+      <path d="M18 26 L24 21 L30 26" opacity="0.35" />
+      <line x1="4" y1="26" x2="44" y2="26" />
+    </svg>
+  ),
+  siding: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="7" y="7" width="34" height="26" rx="1.5" />
+      <line x1="7" y1="14" x2="41" y2="14" opacity="0.7" />
+      <line x1="7" y1="21" x2="41" y2="21" opacity="0.7" />
+      <line x1="7" y1="28" x2="41" y2="28" opacity="0.7" />
+    </svg>
+  ),
+  gutters: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 16 L24 6 L42 16" opacity="0.5" />
+      <path d="M6 18 L42 18 L42 25 L6 25 Z" />
+      <line x1="6" y1="22" x2="42" y2="22" opacity="0.45" />
+      <rect x="30" y="25" width="6" height="11" rx="0.5" />
+    </svg>
+  ),
+  windoors: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="11" y="6" width="26" height="28" rx="1.5" />
+      <line x1="24" y1="6" x2="24" y2="34" />
+      <line x1="11" y1="20" x2="37" y2="20" />
+    </svg>
+  )
+};
+
 // ─── Brands ───────────────────────────────────
 const BRANDS = {
   skywalker: {
@@ -594,7 +630,7 @@ const COMMISSIONS = [
 
 
 Object.assign(window, {
-  Icon, BRANDS, APPOINTMENTS, INSPECTION_CATEGORIES, SEED_INSPECTION_ITEMS,
+  Icon, ScopeIcon, BRANDS, APPOINTMENTS, INSPECTION_CATEGORIES, SEED_INSPECTION_ITEMS,
   TIERS, LINE_ITEMS, CUSTOMER, METRICS, COMMISSIONS, NEEDS_TOPICS,
   REPS, SYNC_STATES, NEEDS_SEED, FINDINGS_SEED, PITCH_SLIDES, PITCH_SKIP_REASONS,
   FOLLOWUPS, FOLLOWUP_REASONS, CUSTOMERS, FINANCING_PROVIDER, FINANCING_DECISIONS,

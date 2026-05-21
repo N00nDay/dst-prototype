@@ -185,6 +185,7 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   }, [(structures || []).map((s) => s.id).join('|')]);
 
   // Active structure's proposal — what the UI reads/writes.
+  const activeStructure = (structures || []).find((s) => s.id === activeStructureId) || (structures || [])[0];
   const activeProposal = proposals[activeStructureId] || DEFAULT_PROPOSAL;
   const includedScopes = activeProposal.includedScopes;
   const scopeProducts = activeProposal.scopeProducts;

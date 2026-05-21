@@ -156,7 +156,6 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   // 3l: Phase-steps sheet — opens when the rep taps the step pill in the
   // AppContextBar; lets them jump between in-phase steps freely.
-  const [showStepsSheet, setShowStepsSheet] = useState(false);
   const [activeFacet, setActiveFacet] = useState('roofing'); // facetId for Camera/Dictation tagging
 
   // ── Needs Assessment ──────────────────────────────────
@@ -455,17 +454,6 @@ function App() {
   { current: PHASE_OF[view], stepLabel: stepLabelByView[view] } :
   null;
 
-  // Structure switcher chip — surfaces in the AppContextBar phase row on
-  // per-structure SOLVE steps so reps always know which building they're on.
-  const structureSwitcher = (view === 'inspect') && structures.length > 1 ?
-    <window.StructureSwitchChip
-      structures={structures}
-      activeStructureId={activeStructureId}
-      setActiveStructureId={setActiveStructureId}
-      activeIdx={activeStructureIdx}
-      onBackToScope={() => setView('scope')} /> :
-    null;
-
   const backBtn = (onBack) =>
   <button className="btn btn-sm btn-ghost" aria-label="Back" onClick={onBack} style={{ padding: '0 6px' }}>
       <Icon.back />
@@ -514,9 +502,7 @@ function App() {
           sync={sync}
           action={action}
           leading={leading}
-          phaseInfo={phaseInfo}
-          onStepsClick={phaseInfo ? () => setShowStepsSheet(true) : null}
-          structureSwitcher={structureSwitcher} />
+          phaseInfo={phaseInfo} />
         }
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -758,14 +744,6 @@ function App() {
           {showDictation && <DictationModal onClose={() => setShowDictation(false)} onCommit={commitItem} />}
           {showMissing && <MissingSheet items={missingForSheet} onClose={() => setShowMissing(false)} />}
           {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} />}
-          {showStepsSheet && phaseInfo &&
-          <window.PhaseStepsSheet
-            phase={phaseInfo.current}
-            currentView={view}
-            stepLabelByView={stepLabelByView}
-            onSelect={(v) => { setView(v); setShowStepsSheet(false); }}
-            onClose={() => setShowStepsSheet(false)} />}
-
           <ToastLayer toasts={toasts} />
         </div>
 

@@ -1984,34 +1984,39 @@ function PresenterMenu() {
     setTimeout(() => setToast(null), 2400);
   };
   return (
-    <div style={{ position: 'relative', width: 50, display: 'flex', justifyContent: 'flex-end' }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-label="More options"
-        style={{
-          width: 36, height: 36, borderRadius: 999,
-          background: open ? 'var(--surface-2)' : 'transparent',
-          border: 0, cursor: 'pointer', color: 'var(--text-2)',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, fontWeight: 800, letterSpacing: -1, padding: 0
-        }}>
-        ⋮
-      </button>
-      {open &&
-      <>
+    <>
+      <div style={{ position: 'relative', width: 50, display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-label="More options"
+          style={{
+            width: 36, height: 36, borderRadius: 999,
+            background: open ? 'var(--surface-2)' : 'transparent',
+            border: 0, cursor: 'pointer', color: 'var(--text-2)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, fontWeight: 800, letterSpacing: -1, padding: 0
+          }}>
+          ⋮
+        </button>
+        {open &&
+        <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
           <div style={{
-          position: 'absolute', top: 38, right: 0, zIndex: 51,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 10, minWidth: 240,
-          boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
-        }}>
+            position: 'absolute', top: 38, right: 0, zIndex: 51,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 10, minWidth: 240,
+            boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
+          }}>
             <MenuItem icon={<Icon.cal />} label="Schedule follow-up" sub="If they're not ready today" onClick={() => {setOpen(false);setSheet('followup');}} />
             <MenuItem icon={<Icon.mail />} label="Email proposal" sub="Requires a scheduled follow-up" onClick={() => {setOpen(false);setSheet('email');}} />
           </div>
         </>
-      }
+        }
+      </div>
 
+      {/* Sheet + toast render OUTSIDE the menu's relative wrapper so
+          .sheet's position: absolute resolves up to the app-root rather
+          than the 50px-wide menu column. */}
       {sheet &&
       <FollowupSchedulerSheet
         mode={sheet}
@@ -2033,10 +2038,10 @@ function PresenterMenu() {
         zIndex: 60, boxShadow: 'var(--shadow-lg)',
         maxWidth: 'calc(100vw - 32px)', textAlign: 'center'
       }}>
-          ✓ {toast}
-        </div>
+        ✓ {toast}
+      </div>
       }
-    </div>);
+    </>);
 
 }
 

@@ -179,12 +179,24 @@ function ImageCaptureScreen({
             const removed = new Set(env.removed || []);
             const added = new Set(env.added || []);
             const key = String(idx);
-            if (it.facetId === pickerOpen) {
-              if (removed.has(key)) removed.delete(key);else
-              removed.add(key);
+            const autoMatch = !!it.starred && it.facetId === pickerOpen;
+            const currentlyAttached = (autoMatch && !removed.has(key)) || added.has(key);
+            if (currentlyAttached) {
+              // Detach from this facet only — leave the photo's underlying
+              // star / facetId alone so it remains available elsewhere.
+              if (autoMatch) removed.add(key);
+              added.delete(key);
             } else {
-              if (added.has(key)) added.delete(key);else
-              added.add(key);
+              // Attach to this facet AND star the photo so it surfaces in
+              // the homeowner presentation. Don't overwrite an existing
+              // facetId — just promote it into this facet's added set so
+              // the photo can live on multiple finding cards if needed.
+              if (!it.starred) togglePhoto(idx, { starred: true });
+              if (it.facetId === pickerOpen) {
+                removed.delete(key);
+              } else {
+                added.add(key);
+              }
             }
             setFacetField(pickerOpen, { added: [...added], removed: [...removed] });
           }}

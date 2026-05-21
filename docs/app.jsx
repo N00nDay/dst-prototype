@@ -151,6 +151,9 @@ function App() {
   // phase headers (full-screen photo viewer). (Craig, May '26.)
   const [openPhoto, setOpenPhoto] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
+  // 3l: Phase-steps sheet — opens when the rep taps the step pill in the
+  // AppContextBar; lets them jump between in-phase steps freely.
+  const [showStepsSheet, setShowStepsSheet] = useState(false);
   const [activeFacet, setActiveFacet] = useState('roofing'); // facetId for Camera/Dictation tagging
 
   // ── Needs Assessment ──────────────────────────────────
@@ -501,7 +504,16 @@ function App() {
       <div className={`app-root ${isTablet ? 'tablet' : ''} ${view === 'list' || view === 'commissions' ? 'has-tabbar' : ''}`} data-theme={theme} data-brand={brand}>
         <OSStatusBar device={isTablet ? 'tablet' : 'phone'} theme={theme} />
         {view !== 'financing' && view !== 'present' &&
-        <AppStatusBar title={title} recording={recording} recordingTime={recTime} sync={sync} action={action} leading={leading} phaseInfo={phaseInfo} structureSwitcher={structureSwitcher} />
+        <AppStatusBar
+          title={title}
+          recording={recording}
+          recordingTime={recTime}
+          sync={sync}
+          action={action}
+          leading={leading}
+          phaseInfo={phaseInfo}
+          onStepsClick={phaseInfo ? () => setShowStepsSheet(true) : null}
+          structureSwitcher={structureSwitcher} />
         }
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -743,6 +755,13 @@ function App() {
           {showDictation && <DictationModal onClose={() => setShowDictation(false)} onCommit={commitItem} />}
           {showMissing && <MissingSheet items={missingForSheet} onClose={() => setShowMissing(false)} />}
           {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} />}
+          {showStepsSheet && phaseInfo &&
+          <window.PhaseStepsSheet
+            phase={phaseInfo.current}
+            currentView={view}
+            stepLabelByView={stepLabelByView}
+            onSelect={(v) => { setView(v); setShowStepsSheet(false); }}
+            onClose={() => setShowStepsSheet(false)} />}
 
           <ToastLayer toasts={toasts} />
         </div>

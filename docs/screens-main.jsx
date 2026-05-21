@@ -179,13 +179,21 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
 
 }
 
-// Cross-cutting step-progress indicator (Prompt L). CONNECT · SOLVE · COMMIT
-// markers + current-step pill. Tap step pill → sheet listing all steps.
+// Cross-cutting step-progress indicator (Brief Prompt L).
+// Two rows stacked vertically:
+//  1. CONNECT · SOLVE · COMMIT phase markers — brand-themed for the active
+//     phase, success-tinted for passed phases, muted for upcoming.
+//  2. A current-step pill (e.g. "SOLVE · Build · measurements") that is
+//     tappable; tapping it opens a sheet listing every step in the current
+//     phase with check marks for completed steps and the active one
+//     highlighted. The handler comes in via onClick (wired to a state
+//     toggle in app.jsx).
 function PhaseProgress({ phaseInfo, onClick }) {
   const PHASES = ['CONNECT', 'SOLVE', 'COMMIT'];
   const currentIdx = PHASES.indexOf(phaseInfo.current);
+  const hasStepLabel = !!phaseInfo.stepLabel;
   return (
-    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: onClick ? 'pointer' : 'default', padding: '2px 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '2px 0', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
         {PHASES.map((p, i) => {
           const isCurrent = i === currentIdx;
@@ -202,11 +210,111 @@ function PhaseProgress({ phaseInfo, onClick }) {
               <span style={{ width: 6, height: 1, background: passed ? 'var(--success)' : 'var(--border-strong)' }} />
               }
             </React.Fragment>);
-
         })}
       </div>
+      {hasStepLabel &&
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label="Show steps in this phase"
+          style={{
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 999,
+            padding: '2px 8px',
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontSize: 9, fontWeight: 600, color: 'var(--text-2)',
+            letterSpacing: '-0.005em',
+            cursor: onClick ? 'pointer' : 'default',
+            transition: 'background 120ms ease'
+          }}>
+          <span style={{ color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.08 }}>{phaseInfo.current}</span>
+          <span style={{ color: 'var(--text-4)' }}>·</span>
+          <span>{phaseInfo.stepLabel}</span>
+          {onClick && <span style={{ fontSize: 8, color: 'var(--text-4)', marginLeft: 1 }}>▾</span>}
+        </button>}
     </div>);
+}
 
+// ─────── PhaseStepsSheet ───────
+// Bottom sheet listing every step in the current phase, with check marks
+// for completed steps and a brand highlight on the current one. Reps can
+// tap a step to jump to it directly (forward or backward — same freedom
+// as the back button). Brief Prompt L.
+function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClose }) {
+  // Phase → ordered list of views. Mirrors PHASE_OF + FLOW_VIEWS in app.jsx.
+  const VIEWS_BY_PHASE = {
+    CONNECT: ['apt', 'needs'],
+    SOLVE: ['scope', 'inspect', 'build', 'pitch', 'proposal'],
+    COMMIT: ['present', 'sign', 'deposit', 'welcome', 'handoff']
+  };
+  const FRIENDLY_LABEL = {
+    apt: 'Appointment',
+    needs: 'Needs Assessment',
+    scope: 'Scope · structures',
+    inspect: 'Inspect · capture',
+    build: 'Build · measurements',
+    pitch: 'Slide deck',
+    proposal: 'Build proposal',
+    present: 'Present to homeowner',
+    sign: 'Approve & Sign',
+    deposit: 'Collect deposit',
+    welcome: 'Welcome package · sent',
+    handoff: 'Production handoff'
+  };
+  const steps = (VIEWS_BY_PHASE[phase] || []).map((v) => ({
+    id: v,
+    label: stepLabelByView?.[v] || FRIENDLY_LABEL[v] || v
+  }));
+  const currentIdx = steps.findIndex((s) => s.id === currentView);
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet" style={{ maxHeight: '70%', display: 'flex', flexDirection: 'column' }}>
+        <div className="grabber" />
+        <div style={{ padding: '0 18px 8px', flexShrink: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: 'var(--brand)', textTransform: 'uppercase' }}>{phase}</div>
+          <h3 style={{ margin: '4px 0 4px' }}>Steps in this phase</h3>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.45 }}>
+            Tap a step to jump there. Steps before the current one are checked; steps after are upcoming.
+          </div>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {steps.map((s, i) => {
+            const isCurrent = i === currentIdx;
+            const isPast = currentIdx > -1 && i < currentIdx;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelect && onSelect(s.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', borderRadius: 10,
+                  background: isCurrent ? 'var(--brand-soft)' : 'var(--surface-2)',
+                  border: isCurrent ? '1.5px solid var(--brand)' : '1px solid var(--border)',
+                  cursor: 'pointer', textAlign: 'left'
+                }}>
+                <span style={{
+                  width: 24, height: 24, borderRadius: 999,
+                  background: isPast ? 'var(--success)' : (isCurrent ? 'var(--brand)' : 'var(--surface)'),
+                  color: (isPast || isCurrent) ? '#fff' : 'var(--text-3)',
+                  border: isPast || isCurrent ? 'none' : '1.5px solid var(--border-strong)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800, flexShrink: 0
+                }}>
+                  {isPast ? '✓' : (i + 1)}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: isCurrent ? 700 : 600, color: 'var(--text)' }}>
+                  {s.label}
+                </span>
+                {isCurrent &&
+                  <span className="pill brand" style={{ fontSize: 9, padding: '2px 7px', flexShrink: 0 }}>Current</span>}
+              </button>);
+          })}
+        </div>
+      </div>
+    </>);
 }
 
 // ─────── Tab Bar ───────
@@ -1296,7 +1404,7 @@ function GlobalSearch({ onClose, onAppointmentClick }) {
 Object.assign(window, {
   fmt, fmt0, pct, fmtTime, tierTotal,
   AppStatusBar: AppContextBar, AppContextBar, OSStatusBar, TabBar, ToastLayer,
-  PhaseTabBar,
+  PhaseTabBar, PhaseStepsSheet,
   Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail,
   Commissions, GlobalSearch,
   useToasts

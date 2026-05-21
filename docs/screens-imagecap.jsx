@@ -215,17 +215,38 @@ function ImageCaptureScreen({
       </div>
 
       {/* Continue cascade — advances to next structure or to Build.
-          Footer-left is a Back-to-Scope button instead of the structure
-          counter; the structure switcher chip lives in the screen body. */}
-      {continueCascade && onContinue &&
-      <window.ContinueBar
-        tablet={true}
-        label={continueCascade.label}
-        enabled={true}
-        onContinue={onContinue}
-        onBack={onBackToScope || onBack}
-        backLabel="Back to Scope" />
-      }
+          Gated until the structure has at least one photo AND every
+          visible finding card carries a condition + memo OR is
+          dismissed. Sub-line names what's missing so the rep knows
+          why they're blocked. */}
+      {continueCascade && onContinue && (() => {
+        const photoCount = structurePhotos.length;
+        const incompleteFindings = visibleFacets.filter((f) => {
+          const e = envelope[f.id] || {};
+          if (e.dismissed) return false;
+          const hasCondition = !!e.condition;
+          const hasNotes = (e.notes || '').trim().length > 0;
+          return !(hasCondition && hasNotes);
+        });
+        const needsPhoto = photoCount === 0;
+        const ready = !needsPhoto && incompleteFindings.length === 0;
+        let gateSub = '';
+        if (!ready) {
+          const bits = [];
+          if (needsPhoto) bits.push('1 photo');
+          if (incompleteFindings.length > 0) bits.push(`${incompleteFindings.length} finding${incompleteFindings.length === 1 ? '' : 's'} (condition + memo or dismiss)`);
+          gateSub = `Add ${bits.join(' and ')} to continue`;
+        }
+        return (
+          <window.ContinueBar
+            tablet={true}
+            label={continueCascade.label}
+            sub={ready ? '' : gateSub}
+            enabled={ready}
+            onContinue={onContinue}
+            onBack={onBackToScope || onBack}
+            backLabel="Back to Scope" />);
+      })()}
     </div>);
 
 }

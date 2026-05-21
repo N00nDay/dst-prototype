@@ -392,7 +392,12 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
 // Shows ranges (low → high) since the homeowner hasn't picked a tier yet.
 // Per Craig: "Because this is building the proposal we should show ranges
 // for these numbers low to high."
+// Phase 2.4 P-2: project total range is the primary number; GP and
+// commission relegated to a tighter secondary line so the bottom bar
+// reads as "this is what the homeowner will see" with the rep's
+// numbers as supporting context.
 function ProposalBottomBar({ tablet, grand, canPresent, onPresent }) {
+  const totalShowsRange = grand.low !== grand.high && (grand.low || grand.high);
   return (
     <div style={{
       flexShrink: 0,
@@ -400,13 +405,32 @@ function ProposalBottomBar({ tablet, grand, canPresent, onPresent }) {
       borderTop: '1px solid var(--border)',
       boxShadow: '0 -10px 24px rgba(0,0,0,0.08)',
       padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
-      display: 'flex', alignItems: 'center', gap: tablet ? 18 : 10
+      display: 'flex', alignItems: 'center', gap: tablet ? 18 : 12
     }}>
-      <BarRangeStat label="Total" low={grand.low} high={grand.high} tablet={tablet} color="var(--text)" />
-      <BarSep />
-      <BarRangeStat label="Gross Profit" low={grand.gpLow} high={grand.gpHigh} tablet={tablet} color="var(--success)" />
-      <BarSep />
-      <BarRangeStat label={tablet ? 'Possible Commission' : 'Commission'} low={grand.commLow} high={grand.commHigh} tablet={tablet} color="var(--brand)" />
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.1, flex: '0 1 auto' }}>
+        <span style={{ fontSize: tablet ? 10 : 9, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          Project total range
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: tablet ? (totalShowsRange ? 22 : 26) : (totalShowsRange ? 17 : 20),
+          fontWeight: 700, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums',
+          color: 'var(--text)', marginTop: 3, whiteSpace: 'nowrap'
+        }}>
+          {totalShowsRange ?
+            <>{fmt(grand.low)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 4px' }}>–</span>{fmt(grand.high)}</> :
+            fmt(grand.high || 0)}
+        </span>
+        <span style={{
+          fontSize: tablet ? 10 : 9,
+          color: 'var(--text-3)', fontWeight: 600,
+          marginTop: 3, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'
+        }}>
+          <span style={{ color: 'var(--success)', fontWeight: 700 }}>GP {fmt(grand.gpLow)}–{fmt(grand.gpHigh)}</span>
+          <span style={{ color: 'var(--text-4)', margin: '0 6px' }}>·</span>
+          <span style={{ color: 'var(--brand)', fontWeight: 700 }}>Comm {fmt(grand.commLow)}–{fmt(grand.commHigh)}</span>
+        </span>
+      </div>
       <button
         className="btn btn-primary"
         onClick={onPresent}
@@ -414,9 +438,9 @@ function ProposalBottomBar({ tablet, grand, canPresent, onPresent }) {
         style={{
           marginLeft: 'auto',
           flexShrink: 0,
-          height: tablet ? 44 : 40,
-          padding: tablet ? '0 18px' : '0 12px',
-          fontSize: tablet ? 14 : 12
+          height: tablet ? 48 : 42,
+          padding: tablet ? '0 22px' : '0 16px',
+          fontSize: tablet ? 15 : 13, fontWeight: 700
         }}>
         Present <Icon.arrow />
       </button>

@@ -1378,7 +1378,24 @@ function LineItemsPane({ envelopeId, section, env, updateEnvelope, packageProduc
     setLineItems(next);
   };
   const updateQty = (idx, qty) => {
-    const n = lineItems.map((li, i) => i === idx ? { ...li, qty } : li);
+    // Phase 2.3 B-7: editing a quantity implicitly unlocks the row,
+    // matching the measurements-row unlock-on-edit behavior.
+    const n = lineItems.map((li, i) => {
+      if (i !== idx) return li;
+      const next = { ...li, qty };
+      if (next.state === 'locked') delete next.state;
+      return next;
+    });
+    setLineItems(n);
+  };
+  const setLock = (idx, state) => {
+    const n = lineItems.map((li, i) => {
+      if (i !== idx) return li;
+      const next = { ...li };
+      if (state == null) delete next.state;else
+      next.state = state;
+      return next;
+    });
     setLineItems(n);
   };
   const remove = (idx) => setLineItems(lineItems.filter((_, i) => i !== idx));
@@ -1476,7 +1493,7 @@ function LineItemsPane({ envelopeId, section, env, updateEnvelope, packageProduc
           rows={grouped.partitions.steep}
           envelopeId={envelopeId} section={section}
           colors={colors} setColor={setColor} setGroupColor={setGroupColor}
-          onQty={updateQty} onTap={(idx) => setDetailOpen(idx)} onRemove={remove}
+          onQty={updateQty} onSetLock={setLock} onTap={(idx) => setDetailOpen(idx)} onRemove={remove}
           onRemoveGroup={() => removeGroup({ subsection: 'steep' })} />
           <LineGroup
           title="Roofing — Flat / Low slope"
@@ -1484,7 +1501,7 @@ function LineItemsPane({ envelopeId, section, env, updateEnvelope, packageProduc
           rows={grouped.partitions.flat}
           envelopeId={envelopeId} section={section}
           colors={colors} setColor={setColor} setGroupColor={setGroupColor}
-          onQty={updateQty} onTap={(idx) => setDetailOpen(idx)} onRemove={remove}
+          onQty={updateQty} onSetLock={setLock} onTap={(idx) => setDetailOpen(idx)} onRemove={remove}
           onRemoveGroup={() => removeGroup({ subsection: 'flat' })}
           emptyHint="Add Flintlastic, ISO board, etc. when low-slope roofing is present." />
         </> :
@@ -1500,7 +1517,7 @@ function LineItemsPane({ envelopeId, section, env, updateEnvelope, packageProduc
         return activeMfrs.has(group);
       }).
       map(([group, rows]) =>
-      <LineGroup key={group} title={group} rows={rows} envelopeId={envelopeId} section={section} colors={colors} setColor={setColor} setGroupColor={setGroupColor} onQty={updateQty} onTap={(idx) => setDetailOpen(idx)} onRemove={remove} onRemoveGroup={() => removeGroup({ group })} />
+      <LineGroup key={group} title={group} rows={rows} envelopeId={envelopeId} section={section} colors={colors} setColor={setColor} setGroupColor={setGroupColor} onQty={updateQty} onSetLock={setLock} onTap={(idx) => setDetailOpen(idx)} onRemove={remove} onRemoveGroup={() => removeGroup({ group })} />
       )
       }
 
@@ -1567,7 +1584,7 @@ function LineItemsPane({ envelopeId, section, env, updateEnvelope, packageProduc
 }
 
 // Compact group of line item rows (used in Materials / Labor / Equipment / Disposal pane)
-function LineGroup({ title, rows, envelopeId, section, colors, setColor, setGroupColor, onQty, onTap, onRemove, onRemoveGroup, tint, emptyHint }) {
+function LineGroup({ title, rows, envelopeId, section, colors, setColor, setGroupColor, onQty, onSetLock, onTap, onRemove, onRemoveGroup, tint, emptyHint }) {
   // A "section color" picker shows in the group header when this group has
   // colorable items (shingles / drip edge / etc. in Materials).
   const colorableRows = (rows || []).filter((r) => isColorable(section, r.ce, r.li.custom));
@@ -1685,6 +1702,7 @@ function LineGroup({ title, rows, envelopeId, section, colors, setColor, setGrou
           colors={colors}
           setColor={setColor}
           onQty={onQty}
+          onSetLock={onSetLock}
           onTap={onTap}
           onRemove={onRemove}
           last={i === rows.length - 1} />
@@ -1694,7 +1712,7 @@ function LineGroup({ title, rows, envelopeId, section, colors, setColor, setGrou
 
 }
 
-function LineRow({ r, envelopeId, section, colors, setColor, onQty, onTap, onRemove, last }) {
+function LineRow({ r, envelopeId, section, colors, setColor, onQty, onSetLock, onTap, onRemove, last }) {
   const { li, idx, ce } = r;
   const name = li.custom?.name || ce?.name || '';
   const unit = li.custom?.unit || ce?.unit || '';
@@ -1705,9 +1723,18 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onTap, onRem
   const linkedLabel = linkedKey ? MEASUREMENT_SCHEMA[envelopeId]?.find((f) => f.key === linkedKey)?.label || linkedKey : null;
   const colorable = isColorable(section, ce, !!li.custom);
   const itemColor = colorable && li.id ? colors?.[li.id] || null : null;
+  // Phase 2.3 B-7: per-row lock state matches the measurement-row pattern.
+  const isLocked = li.state === 'locked';
+  const isDismissed = li.state === 'dismissed';
 
   return (
-    <div style={{ padding: '10px 12px', borderBottom: last ? 0 : '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)' }}>
+    <div style={{
+      padding: '10px 12px',
+      borderBottom: last ? 0 : '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: isLocked ? 'var(--success-bg)' : (isDismissed ? 'var(--surface-2)' : 'var(--surface)'),
+      opacity: isDismissed ? 0.55 : 1
+    }}>
       <div
         role="button"
         tabIndex={0}
@@ -1744,7 +1771,28 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onTap, onRem
           onClick={() => onQty(idx, qty + 1)}
           style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0 }}>+</button>
       </div>
-      <div style={{ width: 64, textAlign: 'right', fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(total)}</div>
+      <div style={{ width: 64, textAlign: 'right', fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em', flexShrink: 0, fontVariantNumeric: 'tabular-nums', textDecoration: isDismissed ? 'line-through' : 'none' }}>{fmtMoney(total)}</div>
+      {onSetLock &&
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isLocked) onSetLock(idx, null);
+          else if (isDismissed) onSetLock(idx, null);
+          else onSetLock(idx, 'locked');
+        }}
+        aria-label={isLocked ? 'Unlock row' : (isDismissed ? 'Undo dismiss' : 'Lock row')}
+        title={isLocked ? 'Unlock — re-open this row' : (isDismissed ? 'Undo — restore this row' : 'Lock — commit this row')}
+        style={{
+          width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
+          background: isLocked ? 'var(--success)' : 'transparent',
+          color: isLocked ? '#fff' : (isDismissed ? 'var(--brand)' : 'var(--text-3)'),
+          border: isLocked ? 'none' : (isDismissed ? '1px solid var(--brand)' : '1px solid var(--border)'),
+          cursor: 'pointer', fontSize: 11, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+        {isLocked ? '🔒' : (isDismissed ? '↺' : '🔓')}
+      </button>}
       {onRemove &&
       <button
         type="button"

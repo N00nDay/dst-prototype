@@ -294,7 +294,11 @@ function InspectionScreen({
                 product-association pattern: each starts empty, tap opens a
                 bottom drawer listing the products available for that tier.
                 Not sticky — scrolls with the envelope body. */}
-            {PACKAGE_FACETS.has(activeFacet) &&
+            {/* Phase 2.3 B-9: G/B/B package picker now lives ON the Materials
+                sub-step instead of always at the top of the screen. The
+                picker is contextual to picking materials, so collocating
+                it with material rows makes the relationship explicit. */}
+            {PACKAGE_FACETS.has(activeFacet) && activeSection === 'materials' &&
           <PackageSelector
             facetId={activeFacet}
             packageProducts={env.packageProducts || {}}

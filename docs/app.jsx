@@ -154,9 +154,15 @@ function App() {
   // phase headers (full-screen photo viewer). (Craig, May '26.)
   const [openPhoto, setOpenPhoto] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
-  // 3l: Phase-steps sheet — opens when the rep taps the step pill in the
-  // AppContextBar; lets them jump between in-phase steps freely.
   const [activeFacet, setActiveFacet] = useState('roofing'); // facetId for Camera/Dictation tagging
+  // Furthest SOLVE step the rep has reached. The PhaseTabBar uses this to
+  // know which forward steps are revisitable — if you've already been to
+  // Build, you can tap Build from Inspect without going through Continue.
+  const [farthestSolveStepIdx, setFarthestSolveStepIdx] = useState(0);
+  useEffect(() => {
+    const idx = SOLVE_TABS.findIndex((t) => t.id === view);
+    if (idx > farthestSolveStepIdx) setFarthestSolveStepIdx(idx);
+  }, [view]);
 
   // ── Needs Assessment ──────────────────────────────────
   const [needsFields, setNeedsFields] = useState(NEEDS_SEED);
@@ -522,6 +528,7 @@ function App() {
           <PhaseTabBar
             tabs={SOLVE_TABS}
             activeId={view}
+            farthestIdx={farthestSolveStepIdx}
             onSelect={(id) => setView(id)} />
           }
           {view !== 'present' && COMMIT_TABS_FN(deferred).some((t) => (t.views || [t.id]).includes(view)) && (() => {

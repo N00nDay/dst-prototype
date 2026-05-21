@@ -82,60 +82,64 @@ function BatteryGlyph({ c = 'currentColor', pct = 80 }) {
 
 }
 
-// Sub-step tab strip rendered INSIDE phase pages (SOLVE / COMMIT). Lets reps
-// jump between substeps of the current phase without backing out to the
-// appointment overview. Sticky to the top of the body so it stays visible
-// while the substep content scrolls.
-// Back-only stepper. Past steps (index < activeIdx) are tappable to navigate
-// back; the active step is highlighted; future steps render muted and inert.
-// The numbered-dot + connector visual matches the in-Build SubStepStrip so the
-// two steppers feel like one family.
-function PhaseTabBar({ tabs, activeId, onSelect }) {
+// Top-of-page stepper for SOLVE phase. Tap rules:
+//   - any past step (i < active): tappable, goes back
+//   - the active step: current location, inert
+//   - a future step that the rep has already reached (i <= farthestIdx):
+//     tappable so they can jump forward without using Continue
+//   - any future step they haven't reached yet: muted and inert
+// Visual is intentionally light — no pill backgrounds, thin connectors,
+// small numbered dots. Matches the in-Build SubStepStrip family.
+function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
   const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeId));
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 4,
       background: 'var(--bg)',
       borderBottom: '1px solid var(--border)',
-      padding: '10px 14px',
+      padding: '6px 12px',
       display: 'flex', alignItems: 'center', gap: 0
     }}>
       {tabs.map((t, i) => {
         const isActive = i === activeIdx;
         const isPast = i < activeIdx;
-        const isFuture = i > activeIdx;
-        const canTap = isPast;
+        const isCompletedAhead = i > activeIdx && i <= farthestIdx;
+        const isUnreached = i > farthestIdx;
+        const canTap = isPast || isCompletedAhead;
         return (
           <React.Fragment key={t.id}>
             <button
+              type="button"
               onClick={canTap ? () => onSelect(t.id) : undefined}
               disabled={!canTap}
               aria-current={isActive ? 'step' : undefined}
               style={{
-                flex: 1,
+                flex: '0 1 auto',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                height: 30, padding: '0 8px',
-                borderRadius: 999, border: 0,
-                background: isActive ? 'var(--brand)' : 'transparent',
-                color: isActive ? 'var(--brand-fg)' : isPast ? 'var(--text-2)' : 'var(--text-4)',
-                fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
-                opacity: isFuture ? 0.4 : 1,
+                padding: '4px 6px',
+                background: 'transparent', border: 0,
+                color: isActive ? 'var(--text)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
+                fontSize: 11, fontWeight: isActive ? 700 : 600, letterSpacing: '-0.01em',
                 cursor: canTap ? 'pointer' : 'default',
-                whiteSpace: 'nowrap',
-                textAlign: 'center'
+                whiteSpace: 'nowrap'
               }}>
               <span style={{
-                width: 16, height: 16, borderRadius: 999,
+                width: 18, height: 18, borderRadius: 999,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: isActive ? 'var(--brand-fg)' : isPast ? 'var(--success)' : 'transparent',
-                color: isActive ? 'var(--brand)' : isPast ? '#fff' : 'var(--text-4)',
-                border: isActive ? 'none' : isPast ? 'none' : '1px solid var(--border-strong)',
-                fontSize: 9, fontWeight: 800, flexShrink: 0
+                background: isActive ? 'var(--brand)' : isPast ? 'var(--brand)' : 'transparent',
+                color: (isActive || isPast) ? 'var(--brand-fg)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
+                border: (isActive || isPast) ? 'none' : `1px solid ${isUnreached ? 'var(--border)' : 'var(--border-strong)'}`,
+                fontSize: 10, fontWeight: 700, lineHeight: 1, flexShrink: 0
               }}>{isPast ? '✓' : i + 1}</span>
               {t.label}
             </button>
             {i < tabs.length - 1 &&
-              <span style={{ width: 8, height: 1, background: i < activeIdx ? 'var(--success)' : 'var(--border-strong)', flexShrink: 0 }} />
+              <span style={{
+                flex: '1 1 auto',
+                height: 1,
+                background: i < farthestIdx ? 'var(--brand)' : 'var(--border)',
+                minWidth: 8
+              }} />
             }
           </React.Fragment>);
       })}

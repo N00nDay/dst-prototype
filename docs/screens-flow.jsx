@@ -139,20 +139,43 @@ function CustomerEditDialog({ label, initial, type, tablet, onClose, onSave }) {
 // Three-card phase chain — CONNECT / SOLVE / COMMIT. Each card is a single
 // entry point. Tabs for sub-steps live INSIDE the phase pages (PhaseTabBar
 // rendered above the body in app.jsx), not on these cards.
-function PhaseCard({ phase, summary, sub, onOpen, disabled }) {
+const PHASE_ACCENTS = {
+  CONNECT: { tone: 'oklch(0.65 0.13 200)', soft: 'oklch(0.95 0.04 200)' },
+  SOLVE:   { tone: 'var(--brand)',         soft: 'var(--brand-soft)'    },
+  COMMIT:  { tone: 'var(--success)',       soft: 'var(--success-bg)'    }
+};
+
+function PhaseCard({ phase, index, summary, sub, onOpen, disabled }) {
   const isDisabled = disabled || !onOpen;
+  const accent = PHASE_ACCENTS[phase] || PHASE_ACCENTS.SOLVE;
   return (
-    <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.1, color: 'var(--brand)', textTransform: 'uppercase' }}>
-        {phase}
+    <div className="card" style={{
+      padding: 0, display: 'flex', flexDirection: 'column', height: '100%',
+      overflow: 'hidden',
+      borderTop: `3px solid ${isDisabled ? 'var(--border)' : accent.tone}`,
+      opacity: isDisabled ? 0.6 : 1
+    }}>
+      <div style={{ padding: '14px 14px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{
+          width: 26, height: 26, borderRadius: 999, flexShrink: 0,
+          background: isDisabled ? 'var(--surface-2)' : accent.soft,
+          color: isDisabled ? 'var(--text-4)' : accent.tone,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, fontWeight: 800, letterSpacing: '-0.01em'
+        }}>{index}</span>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: isDisabled ? 'var(--text-4)' : accent.tone, textTransform: 'uppercase' }}>
+          {phase}
+        </div>
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>{summary}</div>
+      <div style={{ padding: '0 14px 12px', flex: 1 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>{summary}</div>
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.45 }}>{sub}</div>
       </div>
-      <button className="btn btn-primary btn-block" onClick={isDisabled ? undefined : onOpen} disabled={isDisabled}>
-        Enter {phase.toLowerCase()} <Icon.arrow />
-      </button>
+      <div style={{ padding: '0 14px 14px' }}>
+        <button className="btn btn-primary btn-block" onClick={isDisabled ? undefined : onOpen} disabled={isDisabled}>
+          Enter {phase.toLowerCase()} <Icon.arrow />
+        </button>
+      </div>
     </div>);
 
 }
@@ -164,23 +187,123 @@ function QuickAction({ href, label, Glyph, target }) {
       href={href}
       target={target}
       rel={target === '_blank' ? 'noreferrer' : undefined}
-      className="card"
       style={{
         textDecoration: 'none', color: 'var(--text)',
-        padding: '12px 8px',
+        padding: '10px 6px',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-        cursor: 'pointer', minHeight: 64
+        cursor: 'pointer', minHeight: 64,
+        borderRadius: 12,
+        background: 'var(--surface)', border: '1px solid var(--border)'
       }}>
       <span style={{
-        width: 30, height: 30, borderRadius: 999,
-        background: 'var(--brand-soft)', color: 'var(--brand-soft-fg)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center'
+        width: 34, height: 34, borderRadius: 999,
+        background: 'var(--brand)', color: 'var(--brand-fg)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 4px 10px rgba(20,15,5,0.10)'
       }}>
         <Glyph />
       </span>
-      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '-0.01em' }}>{label}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em' }}>{label}</span>
     </a>);
 
+}
+
+// Hero card — anchors the appointment screen with customer identity,
+// appointment context, quick actions, and the Start CTA. Replaces the
+// previous flat "Start Appointment" button with something that reads as
+// the page's anchor.
+function AppointmentHero({ appt, custName, custInsurance, telHref, smsHref, mailHref, mapsHref, recording, recordingTime, onStart, tablet }) {
+  const initials = (custName || '?').split(/[\s&]+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const addressLine = appt?.address || CUSTOMER.address;
+  return (
+    <div style={{
+      margin: tablet ? '14px 28px 4px' : '14px 16px 4px',
+      borderRadius: 16, overflow: 'hidden',
+      border: '1px solid var(--border)',
+      background: 'linear-gradient(135deg, var(--brand-soft) 0%, var(--surface) 70%)',
+      position: 'relative'
+    }}>
+      <div style={{
+        padding: tablet ? '20px 22px 18px' : '16px 16px 14px',
+        display: 'flex', alignItems: 'flex-start', gap: 14
+      }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+          background: 'var(--brand)', color: 'var(--brand-fg)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+          boxShadow: '0 10px 22px rgba(20,15,5,0.14)'
+        }}>{initials}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 22 : 19, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--text)' }}>
+            {custName}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
+            <Icon.pin style={{ width: 12, height: 12, color: 'var(--text-3)' }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLine}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+            {appt?.when &&
+            <HeroChip icon={<Icon.cal />} label={appt.when} />}
+            {appt?.trade &&
+            <HeroChip icon={<Icon.shield />} label={appt.trade} />}
+            {appt?.leadSource &&
+            <HeroChip label={appt.leadSource} muted />}
+            {appt?.est &&
+            <HeroChip label={`Est. ${appt.est}`} muted />}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick actions — sit inside the hero so they read as part of the customer card */}
+      <div style={{
+        padding: tablet ? '0 22px 14px' : '0 16px 12px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 8
+      }}>
+        <QuickAction href={telHref} label="Call" Glyph={Icon.phone} />
+        <QuickAction href={smsHref} label="Text" Glyph={Icon.sms} />
+        <QuickAction href={mapsHref} label="Directions" Glyph={Icon.directions || Icon.pin} target="_blank" />
+        <QuickAction href={mailHref} label="Email" Glyph={Icon.mail} />
+      </div>
+
+      {/* Start CTA / recording status */}
+      <div style={{ padding: tablet ? '0 22px 18px' : '0 16px 14px' }}>
+        {!recording ?
+        <button className="btn btn-primary btn-lg btn-block" onClick={onStart} style={{ height: 50, fontSize: 14, fontWeight: 700, boxShadow: '0 10px 22px rgba(var(--brand-rgb, 30,40,255),0.15)' }}>
+            <Icon.flash /> Start Appointment
+          </button> :
+        <div style={{
+          padding: '12px 14px',
+          borderRadius: 10,
+          background: 'var(--danger-bg)', color: 'var(--danger)',
+          border: '1px solid var(--danger)',
+          display: 'flex', alignItems: 'center', gap: 10
+        }}>
+            <span className="rec-dot" style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Appointment in progress</div>
+              <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>Rilla is recording · {fmtTime(recordingTime)}</div>
+            </div>
+          </div>}
+      </div>
+    </div>);
+}
+
+function HeroChip({ icon, label, muted }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 8px', borderRadius: 999,
+      background: muted ? 'var(--surface-2)' : 'var(--surface)',
+      border: '1px solid var(--border)',
+      color: muted ? 'var(--text-3)' : 'var(--text-2)',
+      fontSize: 11, fontWeight: 600, letterSpacing: '-0.005em'
+    }}>
+      {icon && <span style={{ color: 'var(--text-3)', display: 'inline-flex' }}>{icon}</span>}
+      {label}
+    </span>);
 }
 
 function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, onOpenNeeds, onOpenInspection, onOpenBuild, onOpenProposal, onOpenPresent, onOpenSign, onOpenDeposit, onOpenHandoff, items, needsConfirmed = 0, findingsDiscussed = 0, tablet = false, solveCompleted = false }) {
@@ -200,51 +323,68 @@ function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, on
 
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-      <div style={{ padding: '14px 16px 0' }}>
-        {!recording ?
-        <button className="btn btn-primary btn-lg btn-block" onClick={onStart}>
-            <Icon.flash /> Start Appointment
-          </button> :
+      <AppointmentHero
+        appt={appt}
+        custName={custName}
+        custInsurance={custInsurance}
+        telHref={telHref}
+        smsHref={smsHref}
+        mailHref={mailHref}
+        mapsHref={mapsHref}
+        recording={recording}
+        recordingTime={recordingTime}
+        onStart={onStart}
+        tablet={tablet} />
 
-        <div className="card card-pad">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="rec-dot" />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Appointment in progress</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Rilla is recording · {fmtTime(recordingTime)}</div>
-              </div>
+      {/* Appointment-context card — surfaces lead-source / notes the rep
+          jotted earlier so they walk in primed. */}
+      {(appt?.notes || appt?.leadSource) &&
+      <div style={{ padding: tablet ? '6px 28px 0' : '6px 16px 0' }}>
+        <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <span style={{
+            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+            background: 'var(--brand-soft)', color: 'var(--brand-soft-fg)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Icon.list />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.1, color: 'var(--text-3)', textTransform: 'uppercase' }}>
+              Heads up for this visit
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span className="ai-mark" style={{ marginTop: 3, flexShrink: 0 }} />
-              <span>Rilla captures audio for coaching review. Needs-assessment fields are typed or written by hand — AI cleans up handwriting on save.</span>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
+              {appt?.notes || appt?.leadSource}
             </div>
           </div>
-        }
-      </div>
+        </div>
+      </div>}
 
       {recording &&
       <>
           <div className="section-label">The IHS Selling Way</div>
           <div
           style={{
-            padding: '0 16px',
+            padding: tablet ? '0 28px' : '0 16px',
             display: 'grid',
             gridTemplateColumns: tablet ? 'repeat(3, 1fr)' : '1fr',
-            gap: tablet ? 12 : 8,
+            gap: tablet ? 12 : 10,
             alignItems: 'stretch'
           }}>
             <PhaseCard
             phase="CONNECT"
+            index={1}
             summary="Needs Assessment"
             sub="Listen first. Capture goals, decision-makers, timeline, and constraints. Rep types or writes — AI cleans up handwriting on save."
             onOpen={onOpenNeeds} />
             <PhaseCard
             phase="SOLVE"
+            index={2}
             summary="Inspect · Build · Proposal"
             sub="Photograph and dictate findings, build measurements and line items per scope of work, then assemble the proposal with live pricing."
             onOpen={onOpenInspection} />
             <PhaseCard
             phase="COMMIT"
+            index={3}
             summary="Present · Sign & Deposit · Welcome"
             sub="Present the proposal, capture signature + deposit, and send the welcome package. Defer to follow-up if not signing today."
             onOpen={onOpenPresent}
@@ -253,21 +393,8 @@ function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, on
         </>
       }
 
-      <div className="section-label">Customer</div>
-      <div style={{ padding: '0 16px' }}>
-        {/* Quick actions — Call / Text / Directions / Email (DST-PREP-05) */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 8,
-          marginBottom: 10
-        }}>
-          <QuickAction href={telHref} label="Call" Glyph={Icon.phone} />
-          <QuickAction href={smsHref} label="Text" Glyph={Icon.sms} />
-          <QuickAction href={mapsHref} label="Directions" Glyph={Icon.directions || Icon.pin} target="_blank" />
-          <QuickAction href={mailHref} label="Email" Glyph={Icon.mail} />
-        </div>
-
+      <div className="section-label">Customer details</div>
+      <div style={{ padding: tablet ? '0 28px' : '0 16px' }}>
         <div className="card">
           <CustomerRow label="Name" value={custName} onChange={setCustName} tablet={tablet} />
           <CustomerRow label="Email" value={custEmail} onChange={setCustEmail} tablet={tablet} type="email" />

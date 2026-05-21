@@ -823,6 +823,7 @@ function TierPillar({ scope, tierId, rollup, onOpenWarrantyDrawer, setDiscount, 
           rollup={rollup}
           product={rollup.product}
           warranty={rollup.warranty}
+          scopeId={scope.id}
           onOpenWarrantyDrawer={onOpenWarrantyDrawer}
           setDiscount={setDiscount}
           accent={accent} />}
@@ -831,15 +832,31 @@ function TierPillar({ scope, tierId, rollup, onOpenWarrantyDrawer, setDiscount, 
 }
 
 // ─── Per-pillar breakdown: summary + cost/charge/GP + slider + warranty ───
-function PillarBreakdown({ rollup, product, warranty, onOpenWarrantyDrawer, setDiscount, accent }) {
-  const { subtotal, cost, total, gp, discount } = rollup;
-  const gpPct = total > 0 ? gp / total : 0;
-  const baseMarginPct = 1 - COST_RATIO; // 0.35
+// Per-scope GP thresholds expressed as markup % (gp / cost * 100).
+// Below `approval`: needs manager sign-off. Above `overcharge`: flagged
+// as a potential overcharge of the homeowner. Anything between is
+// inside the rep's normal selling range. All ranges top out at 100%.
+const GP_THRESHOLDS = {
+  roofing:  { approval: 30, overcharge: 50 },
+  siding:   { approval: 30, overcharge: 50 },
+  windoors: { approval: 30, overcharge: 55 }
+};
+const DEFAULT_GP_THRESHOLDS = { approval: 40, overcharge: 60 };
 
-  const atFloor = discount >= subtotal - cost - 1;
-  const onGpChange = (newGp) => {
-    const newCharge = cost / (1 - newGp);
-    const newDiscount = Math.max(0, Math.round(subtotal - newCharge));
+function PillarBreakdown({ rollup, product, warranty, scopeId, onOpenWarrantyDrawer, setDiscount, accent }) {
+  const { subtotal, cost, total, gp, discount } = rollup;
+  // Slider is now driven by markup % (gp / cost) rather than margin %
+  // (gp / total). Reps think in markup; thresholds (approval / over-
+  // charge) are expressed in markup terms too.
+  const markupPct = cost > 0 ? gp / cost : 0;
+  const thresholds = GP_THRESHOLDS[scopeId] || DEFAULT_GP_THRESHOLDS;
+
+  const onMarkupChange = (newMarkup) => {
+    // Target total to land at the requested markup. Discount goes
+    // negative when the rep pushes markup above subtotal/cost − 1
+    // (i.e. an upcharge above the catalog price).
+    const targetTotal = cost * (1 + newMarkup);
+    const newDiscount = Math.round(subtotal - targetTotal);
     setDiscount(newDiscount);
   };
 
@@ -852,32 +869,34 @@ function PillarBreakdown({ rollup, product, warranty, onOpenWarrantyDrawer, setD
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <MiniCell label="Cost" value={fmt(cost)} />
         <MiniCell label="Charge" value={fmt(total)} accent />
-        <MiniCell label="Gross Profit" value={fmt(gp)} sub={(gpPct * 100).toFixed(1) + '%'} />
-        <MiniCell label="Discount" value={fmt(discount)} sub={discount ? 'applied' : 'none'} />
+        <MiniCell label="Gross Profit" value={fmt(gp)} sub={(markupPct * 100).toFixed(1) + '% markup'} />
+        <MiniCell label={discount < 0 ? 'Upcharge' : 'Discount'} value={fmt(Math.abs(discount))} sub={discount === 0 ? 'none' : discount < 0 ? 'above list' : 'applied'} />
       </div>
 
-      {/* GP slider */}
+      {/* GP slider — 0% to 100% markup, with per-scope warning zones. */}
       <div onClick={(e) => e.stopPropagation()} style={{ paddingTop: 2 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 2 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.04, textTransform: 'uppercase' }}>Adjust GP %</span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: atFloor ? 'var(--danger)' : accent, fontVariantNumeric: 'tabular-nums' }}>
-            {(gpPct * 100).toFixed(1)}%
+          <span style={{ fontSize: 10, fontWeight: 700, color: accent, fontVariantNumeric: 'tabular-nums' }}>
+            {(markupPct * 100).toFixed(1)}%
           </span>
         </div>
         <input
           type="range"
           min={0}
-          max={baseMarginPct * 1000}
+          max={1000}
           step={1}
-          value={Math.round(gpPct * 1000)}
-          onChange={(e) => onGpChange(parseInt(e.target.value, 10) / 1000)}
+          value={Math.min(1000, Math.max(0, Math.round(markupPct * 1000)))}
+          onChange={(e) => onMarkupChange(parseInt(e.target.value, 10) / 1000)}
           style={{ width: '100%', accentColor: accent }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, color: 'var(--text-4)', fontWeight: 600 }}>
           <span>0%</span>
-          <span>{(baseMarginPct * 100).toFixed(0)}% list</span>
+          <span>{thresholds.approval}%</span>
+          <span>{thresholds.overcharge}%</span>
+          <span>100%</span>
         </div>
         {/* Always-present status row — reserved height so warnings don't shift layout. */}
-        <PillarSliderStatus atFloor={atFloor} discount={discount} subtotal={subtotal} />
+        <PillarSliderStatus markupPct={markupPct} thresholds={thresholds} />
       </div>
 
       {/* Warranty selector — opens drawer on click. */}
@@ -905,12 +924,20 @@ function PillarBreakdown({ rollup, product, warranty, onOpenWarrantyDrawer, setD
 // ─── Always-rendered status line under the GP slider ─────────
 // Reserves a fixed footprint so the appearance of a warning doesn't
 // reflow the pillar (Craig: "I don't like how this causes UI shift").
-function PillarSliderStatus({ atFloor, discount, subtotal }) {
-  const overCap = !atFloor && discount > subtotal * 0.10;
+function PillarSliderStatus({ markupPct, thresholds }) {
+  // Per-scope markup % thresholds. Below `approval`: deal needs
+  // manager sign-off. At or above `overcharge`: rep is potentially
+  // squeezing the homeowner. Middle band is normal selling range.
+  const pct = (markupPct || 0) * 100;
   let tone = 'neutral';
-  let label = 'Within rep cap';
-  if (atFloor) {tone = 'danger';label = 'At cost · GP can\u2019t go negative';}
-  else if (overCap) {tone = 'warn';label = 'Approval needed · exceeds 10% cap';}
+  let label = 'Within selling range';
+  if (pct < thresholds.approval) {
+    tone = 'warn';
+    label = `Approval needed · below ${thresholds.approval}% markup`;
+  } else if (pct >= thresholds.overcharge) {
+    tone = 'danger';
+    label = `Potential overcharge · above ${thresholds.overcharge}% markup`;
+  }
 
   const toneStyles = {
     neutral: { bg: 'transparent', color: 'var(--text-4)', dot: 'var(--text-4)' },

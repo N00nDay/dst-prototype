@@ -43,14 +43,44 @@ function ScopeScreen({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div className="scroll-area" data-screen-label="Scope" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-        {/* Intro */}
-        <div style={{ padding: tablet ? '24px 28px 6px' : '16px 16px 6px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.1, color: 'var(--brand)', textTransform: 'uppercase' }}>SOLVE · Scope</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 28 : 22, fontWeight: 700, letterSpacing: '-0.025em', marginTop: 4, lineHeight: 1.15 }}>
-            What are we working on today?
-          </div>
-          <div style={{ fontSize: tablet ? 13 : 12, color: 'var(--text-3)', marginTop: 6, maxWidth: 560, lineHeight: 1.5 }}>
-            Name each building you'll inspect and tap the scopes of work that apply.
+        {/* Hero — tinted card with brand icon, structure count chip, and
+            intro copy. Pulls the screen's anchor into the first viewport
+            so the page doesn't open on a flat title. */}
+        <div style={{ padding: tablet ? '16px 28px 6px' : '14px 16px 6px' }}>
+          <div style={{
+            borderRadius: 16, overflow: 'hidden',
+            border: '1px solid var(--border)',
+            background: 'linear-gradient(135deg, var(--brand-soft) 0%, var(--surface) 75%)',
+            padding: tablet ? '18px 22px' : '14px 16px',
+            display: 'flex', alignItems: 'flex-start', gap: 14
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+              background: 'var(--brand)', color: 'var(--brand-fg)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 10px 22px rgba(20,15,5,0.14)'
+            }}>
+              <Icon.home style={{ width: 22, height: 22 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.1, color: 'var(--brand)', textTransform: 'uppercase' }}>SOLVE · Scope</div>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '2px 8px', borderRadius: 999,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  fontSize: 10, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '-0.005em'
+                }}>
+                  {structures.length} structure{structures.length === 1 ? '' : 's'} on this job
+                </span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 26 : 21, fontWeight: 700, letterSpacing: '-0.025em', marginTop: 4, lineHeight: 1.15 }}>
+                What are we working on today?
+              </div>
+              <div style={{ fontSize: tablet ? 13 : 12, color: 'var(--text-3)', marginTop: 6, maxWidth: 560, lineHeight: 1.5 }}>
+                Name each building you'll inspect and tap the scopes of work that apply.
+              </div>
+            </div>
           </div>
         </div>
 
@@ -61,10 +91,11 @@ function ScopeScreen({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {structures.map((s) =>
+            {structures.map((s, i) =>
             <StructureRow
               key={s.id}
               structure={s}
+              index={i + 1}
               onRename={(name) => onRenameStructure(s.id, name)}
               onToggleScope={(scopeId) => {
                 const scopes = s.scopes || [];
@@ -119,7 +150,19 @@ function ScopeScreen({
 // Scope pills wrap onto a new line below the name (Craig, May '26 —
 // the row layout has to scale to many scopes, so pills get their own
 // row and are sized a touch smaller).
-function StructureRow({ structure, onRename, onToggleScope, onRequestDelete, canDelete, tablet }) {
+// Soft palette used to tint the index badge + the left accent strip on
+// each structure row. Cycles by index so multi-structure jobs read as a
+// visual progression instead of a flat repeating list.
+const STRUCTURE_TONES = [
+  'var(--brand)',
+  'oklch(0.65 0.16 195)',
+  'oklch(0.72 0.16 145)',
+  'oklch(0.7 0.17 30)',
+  'oklch(0.68 0.16 280)'
+];
+
+function StructureRow({ structure, index = 1, onRename, onToggleScope, onRequestDelete, canDelete, tablet }) {
+  const tone = STRUCTURE_TONES[(index - 1) % STRUCTURE_TONES.length];
   const [draft, setDraft] = useScopeState(structure.name);
   const ref = window.React.useRef(null);
 
@@ -138,16 +181,17 @@ function StructureRow({ structure, onRename, onToggleScope, onRequestDelete, can
     <div style={{
       padding: tablet ? '14px 16px' : '12px 14px', borderRadius: 12,
       background: 'var(--surface)', border: '1px solid var(--border)',
+      borderLeft: `3px solid ${tone}`,
       display: 'flex', flexDirection: 'column', gap: 10
     }}>
       {/* Row 1 — index badge, name, count, trash */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
           width: 28, height: 28, borderRadius: 6,
-          background: 'var(--brand)', color: 'var(--brand-fg)',
+          background: tone, color: '#fff',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 13, fontWeight: 800, flexShrink: 0
-        }}>{structure.idx ?? '·'}</span>
+        }}>{index}</span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
           <span

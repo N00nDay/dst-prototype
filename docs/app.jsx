@@ -221,6 +221,12 @@ function App() {
   const [addons, setAddons] = useState({});
   const [swaps, setSwaps] = useState({});
   const [discounts, setDiscounts] = useState({});
+  // Per-structure proposal state (Phase 2.5 PR-3 lift). Each structure
+  // carries its own includedScopes / scopeProducts / scopeDiscount /
+  // scopeWarranty. Lives at app.jsx so Present (ComparisonSlide) can
+  // read per-structure tier picks without a back-channel from the
+  // Proposal builder.
+  const [proposals, setProposals] = useState({});
 
   // ── Close-out state ───────────────────────────────────
   const [signed, setSigned] = useState(null);
@@ -632,6 +638,7 @@ function App() {
             addons={addons} setAddons={setAddons}
             swaps={swaps} setSwaps={setSwaps}
             discounts={discounts} setDiscounts={setDiscounts}
+            proposals={proposals} setProposals={setProposals}
             onBack={() => setView('apt')}
             onPresent={() => setView('present')} />
           }
@@ -651,6 +658,7 @@ function App() {
             setSelectedTier={setSelectedTier}
             rollupForTier={(id) => null}
             structures={structures}
+            proposals={proposals}
             onBack={() => setView('apt')}
             onContinue={() => setView('sign')} />
           }

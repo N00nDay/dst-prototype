@@ -163,26 +163,17 @@ const DEFAULT_PROPOSAL = {
   scopeWarranty: {}
 };
 
-function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, onBack, onPresent }) {
+function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, proposals = {}, setProposals, onBack, onPresent }) {
   // Pricing presentation mode. All-in = one project total view; By-structure
   // = per-structure tabs. The underlying state is now per-structure (M-1..M-3
   // landed); modes just affect which structures the UI surfaces.
   const [pricingMode, setPricingMode] = useState((structures || []).length > 1 ? 'by' : 'allin');
 
   // ─── Per-structure proposal state ───────────────────────────
-  // Each structure carries its own includedScopes / scopeProducts /
-  // scopeDiscount / scopeWarranty. The active structure's proposal is what
-  // the scope cards render and edit. Aggregate rollups walk every
-  // structure to produce grand totals + per-structure breakdowns for the
-  // structure tabs and downstream Present surface. Add-ons remain global
-  // for now — splitting them per structure is a follow-up (PR-3 timeline).
-  const [proposals, setProposals] = useState(() => {
-    const seed = {};
-    (structures || []).forEach((s) => { seed[s.id] = { ...DEFAULT_PROPOSAL }; });
-    return seed;
-  });
-  // Lazy-init proposals for any structure that was added after first mount.
+  // proposals lives at app.jsx (PR-3 lift) so Present can read per-structure
+  // tier picks. Lazy-init any structure not yet in the proposals bag.
   useEffect(() => {
+    if (!setProposals) return;
     const missing = (structures || []).filter((s) => !proposals[s.id]);
     if (missing.length) {
       setProposals((p) => {

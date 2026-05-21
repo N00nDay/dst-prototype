@@ -149,6 +149,10 @@ function InspectionScreen({
   // tabs (Measurements · Materials · Labor · Equipment · Disposal) and only
   // the active section's body is rendered.
   const [activeSection, setActiveSection] = useState('measurements');
+  // Phase 2.3 B-6: Continue-review modal. Tapping Continue with open rows
+  // surfaces a sheet listing them all so the rep can lock or adjust in
+  // one place before advancing.
+  const [showContinueReview, setShowContinueReview] = useState(false);
 
   // If active structure's scopes shrink and they no longer include the
   // active facet, snap to the first available scope.
@@ -365,33 +369,78 @@ function InspectionScreen({
       {!noScopes && <DictateFab onDictate={() => onDictate(activeFacet)} bottomOffset={32} />}
 
       {/* Continue cascade — advances to next structure on Build, or to
-          Slides on the last structure. Phase 2.3 B-6: when any measurement
-          row across this structure is still open (has a value but not
-          locked, and isn't dismissed), surface the count in the sub-line
-          so the rep sees the gap before they move on. Doesn't block
-          continuing — soft signal, like the redesign's review prompt. */}
+          Slides on the last structure. Phase 2.3 B-6: open measurements
+          across this structure are surfaced as a count in the sub-line,
+          AND tapping Continue with open rows opens a review modal that
+          lets the rep lock-all-and-continue in one step (or adjust
+          individual rows before locking). */}
       {continueCascade && onContinue && (() => {
-        const openRowCount = (activeStructure.scopes || []).reduce((n, fid) => {
+        // Build the open-rows list, grouped by envelope facet.
+        const openRows = [];
+        (activeStructure.scopes || []).forEach((fid) => {
           const e = (envelope || {})[fid] || {};
           const schema = MEASUREMENT_SCHEMA[fid] || [];
           const locks = e.measurementLocks || {};
           const meas = e.measurements || {};
-          return n + schema.reduce((m, f) => {
-            const hasValue = meas[f.key] != null && meas[f.key] !== '' && meas[f.key] !== 0;
+          const facetMeta = ENVELOPE_FACETS.find((f) => f.id === fid);
+          schema.forEach((f) => {
+            const v = meas[f.key];
+            const hasValue = v != null && v !== '' && v !== 0;
             const lockState = locks[f.key] || 'open';
-            return m + (hasValue && lockState === 'open' ? 1 : 0);
-          }, 0);
-        }, 0);
+            if (hasValue && lockState === 'open') {
+              openRows.push({
+                facetId: fid, facetLabel: facetMeta?.label || fid,
+                fieldKey: f.key, fieldLabel: f.label, unit: f.unit, value: v, step: f.step || 1, isText: !!f.isText
+              });
+            }
+          });
+        });
+        const openRowCount = openRows.length;
         const extraSub = openRowCount > 0 ?
           ` · ${openRowCount} measurement${openRowCount === 1 ? '' : 's'} still open` :
           '';
+        // Adjust a single row's value (used inside the review modal). Honors
+        // the same recompute-line-items path setMeasurement uses.
+        const setRow = (facetId, key, value) => {
+          const e = (envelope || {})[facetId] || {};
+          const nextMeas = { ...(e.measurements || {}), [key]: value };
+          setEnvelope((s) => ({
+            ...s,
+            [facetId]: { ...(s?.[facetId] || {}), measurements: nextMeas }
+          }));
+        };
+        // Lock everything in the open list, then advance.
+        const lockAllAndContinue = () => {
+          setEnvelope((s) => {
+            const next = { ...s };
+            openRows.forEach(({ facetId, fieldKey }) => {
+              const e = next[facetId] || {};
+              const locks = { ...(e.measurementLocks || {}), [fieldKey]: 'locked' };
+              next[facetId] = { ...e, measurementLocks: locks };
+            });
+            return next;
+          });
+          setShowContinueReview(false);
+          onContinue();
+        };
         return (
-          <window.ContinueBar
-            tablet={true}
-            label={continueCascade.label}
-            sub={(continueCascade.sub || '') + extraSub}
-            enabled={true}
-            onContinue={onContinue} />);
+          <>
+            <window.ContinueBar
+              tablet={true}
+              label={continueCascade.label}
+              sub={(continueCascade.sub || '') + extraSub}
+              enabled={true}
+              onContinue={() => {
+                if (openRowCount > 0) setShowContinueReview(true);else
+                onContinue();
+              }} />
+            {showContinueReview &&
+              <ContinueReviewSheet
+                openRows={openRows}
+                onAdjust={setRow}
+                onCancel={() => setShowContinueReview(false)}
+                onLockAll={lockAllAndContinue} />}
+          </>);
       })()}
     </div>);
 
@@ -659,6 +708,100 @@ function CopyFromPreviousBanner({ structures, activeStructure, envelope, onCopyF
           </div>}
       </div>
     </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// ContinueReviewSheet — Phase 2.3 B-6 redesign port.
+// Bottom-sheet modal shown when the rep taps Continue with open
+// measurement rows. Lists every open row with inline +/- steppers so
+// the rep can adjust before locking. Two actions: Cancel returns to
+// the screen without locking anything; "Lock all & continue" locks
+// every listed row and advances to the next step.
+// ─────────────────────────────────────────────────────────
+function ContinueReviewSheet({ openRows, onAdjust, onCancel, onLockAll }) {
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onCancel} />
+      <div className="sheet" style={{ maxHeight: '85%', display: 'flex', flexDirection: 'column' }}>
+        <div className="grabber" />
+        <div style={{ padding: '0 18px 12px', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            {openRows.length} row{openRows.length === 1 ? '' : 's'} still open
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.45 }}>
+            Lock them with their current values to continue, or adjust the numbers below first. Cancel returns without locking.
+          </div>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {openRows.map((r) =>
+          <div key={`${r.facetId}.${r.fieldKey}`} style={{
+            padding: '10px 12px', borderRadius: 10,
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', gap: 10
+          }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 6, background: 'var(--surface-3)',
+                color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>🔓</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{r.fieldLabel}</div>
+                <div style={{
+                  fontSize: 9, color: 'var(--text-3)', marginTop: 1,
+                  textTransform: 'uppercase', letterSpacing: 0.08, fontWeight: 700
+                }}>{r.facetLabel}</div>
+              </div>
+              {/* Inline stepper for adjustments */}
+              {!r.isText &&
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 2,
+                flexShrink: 0
+              }}>
+                <button
+                  type="button"
+                  onClick={() => onAdjust(r.facetId, r.fieldKey, Math.max(0, (Number(r.value) || 0) - r.step))}
+                  style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
+                  aria-label="decrease">−</button>
+                <span style={{
+                  minWidth: 56, textAlign: 'center',
+                  fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em'
+                }}>
+                  {r.value} <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{r.unit}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onAdjust(r.facetId, r.fieldKey, (Number(r.value) || 0) + r.step)}
+                  style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
+                  aria-label="increase">+</button>
+              </div>}
+              {r.isText &&
+              <span style={{
+                minWidth: 56, textAlign: 'center',
+                fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                color: 'var(--text)'
+              }}>{r.value}</span>}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '10px 18px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexShrink: 0 }}>
+          <button
+            type="button"
+            className="btn btn-block"
+            style={{ flex: 1 }}
+            onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            style={{ flex: 1 }}
+            onClick={onLockAll}>
+            Lock all & continue
+          </button>
+        </div>
+      </div>
+    </>);
 }
 
 // ─────────────────────────────────────────────────────────

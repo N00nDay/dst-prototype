@@ -204,8 +204,28 @@ function InspectionScreen({
     if (Object.prototype.hasOwnProperty.call(nextPending, key) && String(nextPending[key]) === String(value)) {
       delete nextPending[key];
     }
-    updateEnvelope({ measurements: nextMeasurements, pendingMeas: nextPending, lineItems: recomputeLineItems(nextMeasurements) });
+    // Editing a locked row implicitly unlocks it so the new value is
+    // visible as "open" again — the rep didn't ask to keep their old
+    // commitment when they changed the number.
+    const locks = env.measurementLocks || {};
+    const nextLocks = { ...locks };
+    if (nextLocks[key] === 'locked') delete nextLocks[key];
+    updateEnvelope({ measurements: nextMeasurements, pendingMeas: nextPending, lineItems: recomputeLineItems(nextMeasurements), measurementLocks: nextLocks });
   };
+
+  // ─── Per-measurement lock / dismiss state (Phase 2.3 B-4) ────
+  // measurementLocks: { [key]: 'locked' | 'dismissed' } per envelope.
+  // Absence of a key === 'open'. Locked rows render in soft green;
+  // dismissed rows strike through and offer Undo. Continue gate uses
+  // the open count to flag rows that still need attention. (B-6.)
+  const setMeasurementLock = (key, state) => {
+    const locks = env.measurementLocks || {};
+    const next = { ...locks };
+    if (state == null) delete next[key];else
+    next[key] = state;
+    updateEnvelope({ measurementLocks: next });
+  };
+  const measurementLocks = env.measurementLocks || {};
 
   const applyOnePending = (key) => {
     const pending = env.pendingMeas || {};
@@ -320,7 +340,9 @@ function InspectionScreen({
               pendingMeas={env.pendingMeas || {}}
               onApplyPending={applyOnePending}
               onDismissPending={dismissPending}
-              onApplyOne={applyOneAerial} />
+              onApplyOne={applyOneAerial}
+              locks={measurementLocks}
+              onSetLock={setMeasurementLock} />
             </div>}
 
             {['materials', 'labor', 'equipment', 'disposal'].map((sec) => {
@@ -343,15 +365,34 @@ function InspectionScreen({
       {!noScopes && <DictateFab onDictate={() => onDictate(activeFacet)} bottomOffset={32} />}
 
       {/* Continue cascade — advances to next structure on Build, or to
-          Slides on the last structure. */}
-      {continueCascade && onContinue && (
-        <window.ContinueBar
-          tablet={true}
-          label={continueCascade.label}
-          sub={continueCascade.sub}
-          enabled={true}
-          onContinue={onContinue} />
-      )}
+          Slides on the last structure. Phase 2.3 B-6: when any measurement
+          row across this structure is still open (has a value but not
+          locked, and isn't dismissed), surface the count in the sub-line
+          so the rep sees the gap before they move on. Doesn't block
+          continuing — soft signal, like the redesign's review prompt. */}
+      {continueCascade && onContinue && (() => {
+        const openRowCount = (activeStructure.scopes || []).reduce((n, fid) => {
+          const e = (envelope || {})[fid] || {};
+          const schema = MEASUREMENT_SCHEMA[fid] || [];
+          const locks = e.measurementLocks || {};
+          const meas = e.measurements || {};
+          return n + schema.reduce((m, f) => {
+            const hasValue = meas[f.key] != null && meas[f.key] !== '' && meas[f.key] !== 0;
+            const lockState = locks[f.key] || 'open';
+            return m + (hasValue && lockState === 'open' ? 1 : 0);
+          }, 0);
+        }, 0);
+        const extraSub = openRowCount > 0 ?
+          ` · ${openRowCount} measurement${openRowCount === 1 ? '' : 's'} still open` :
+          '';
+        return (
+          <window.ContinueBar
+            tablet={true}
+            label={continueCascade.label}
+            sub={(continueCascade.sub || '') + extraSub}
+            enabled={true}
+            onContinue={onContinue} />);
+      })()}
     </div>);
 
 }
@@ -979,7 +1020,7 @@ function SourceBanner({ facet, env, measurements, aerial, onChange, onApplyAll }
 // ─────────────────────────────────────────────────────────
 // Measurements pane
 // ─────────────────────────────────────────────────────────
-function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendingMeas, onApplyPending, onDismissPending, onApplyOne }) {
+function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendingMeas, onApplyPending, onDismissPending, onApplyOne, locks, onSetLock }) {
   const schema = MEASUREMENT_SCHEMA[facetId] || [];
   // Group by `group`
   const grouped = useMemo(() => {
@@ -1011,6 +1052,8 @@ function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendi
             onApply={() => onApplyOne(f.key)}
             onApplyPending={() => onApplyPending(f.key)}
             onDismissPending={() => onDismissPending(f.key)}
+            lockState={locks?.[f.key] || 'open'}
+            onSetLock={(state) => onSetLock && onSetLock(f.key, state)}
             last={idx === fields.length - 1} />
           )}
           </div>
@@ -1023,15 +1066,32 @@ function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendi
 
 }
 
-function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onApply, onApplyPending, onDismissPending, last }) {
+function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onApply, onApplyPending, onDismissPending, lockState = 'open', onSetLock, last }) {
   const empty = value == null || value === '';
   const aerialAvailable = aerialValue != null && aerialValue !== '' && aerialValue !== 0;
   const matchesAerial = aerialAvailable && String(value) === String(aerialValue);
   const pendingAvailable = pendingValue != null && pendingValue !== '' && String(pendingValue) !== String(value);
+  // Phase 2.3 B-5: visual lock state. Locked rows render in soft green;
+  // dismissed rows strike through the label and dim the input. Open
+  // rows render the existing chrome. Steppers and the input stay
+  // editable in all states — editing implicitly unlocks (handled in
+  // setMeasurement upstream).
+  const isLocked = lockState === 'locked';
+  const isDismissed = lockState === 'dismissed';
   return (
-    <div style={{ padding: '12px 14px', borderBottom: last ? 0 : '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{
+      padding: '12px 14px',
+      borderBottom: last ? 0 : '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: isLocked ? 'var(--success-bg)' : (isDismissed ? 'var(--surface-2)' : 'transparent'),
+      opacity: isDismissed ? 0.55 : 1
+    }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em' }}>{field.label}</div>
+        <div style={{
+          fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em',
+          textDecoration: isDismissed ? 'line-through' : 'none',
+          color: isLocked ? 'var(--success)' : 'inherit'
+        }}>{field.label}</div>
         {field.hint && <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{field.hint}</div>}
         {pendingAvailable &&
         <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
@@ -1113,9 +1173,33 @@ function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onA
           onClick={() => onChange((Number(value) || 0) + (field.step || 1))}
           style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0 }}
           aria-label="increase">+</button>}
-        {/* Per-row clear button removed — Craig (May '26 v4): users should not
-                    be able to remove measurements once they're entered. Edit the
-                    value in place instead. */}
+        {/* Phase 2.3 B-5: lock/dismiss toggle.
+            - Open + has value → lock button (commits the row as final).
+            - Open + empty     → dismiss button (mark N/A so it doesn't
+              show up in the open-count gate).
+            - Locked           → unlock button.
+            - Dismissed        → Undo button. */}
+        {onSetLock && !field.isText &&
+        <button
+          type="button"
+          onClick={() => {
+            if (isLocked) onSetLock(null);
+            else if (isDismissed) onSetLock(null);
+            else if (empty) onSetLock('dismissed');
+            else onSetLock('locked');
+          }}
+          aria-label={isLocked ? 'Unlock row' : (isDismissed ? 'Undo dismiss' : (empty ? 'Mark not applicable' : 'Lock row'))}
+          title={isLocked ? 'Unlock — re-open this row' : (isDismissed ? 'Undo — restore this row' : (empty ? 'Mark not applicable' : 'Lock — commit this row'))}
+          style={{
+            width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0,
+            background: isLocked ? 'var(--success)' : (isDismissed ? 'transparent' : 'transparent'),
+            color: isLocked ? '#fff' : (isDismissed ? 'var(--brand)' : 'var(--text-3)'),
+            border: isLocked ? 'none' : (isDismissed ? '1px solid var(--brand)' : '1px solid var(--border)'),
+            cursor: 'pointer', fontSize: 11, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+          {isLocked ? '🔒' : (isDismissed ? '↺' : (empty ? '⊘' : '🔓'))}
+        </button>}
       </div>
     </div>);
 

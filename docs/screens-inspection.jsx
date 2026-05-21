@@ -724,24 +724,26 @@ function envelopeStatusFor(facetId, structureScopes, envelopeState) {
 }
 
 function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope, onSetScopes }) {
+  // Active (included) scopes sort to the left; excluded ones follow.
+  // Within each bucket the canonical PICKER_ENVELOPES order is kept.
+  const orderedScopes = useMemo(() => {
+    const included = PICKER_ENVELOPES.filter((e) => (structureScopes || []).includes(e.id));
+    const excluded = PICKER_ENVELOPES.filter((e) => !(structureScopes || []).includes(e.id));
+    return [...included, ...excluded];
+  }, [(structureScopes || []).join('|')]);
   return (
-    <div style={{ background: 'var(--bg)', padding: '10px 14px 8px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+    <div style={{ background: 'var(--bg)', padding: '8px 14px 6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase' }}>Scopes</div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${PICKER_ENVELOPES.length}, 1fr)`, gap: 8 }}>
-        {PICKER_ENVELOPES.map((e) => {
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${orderedScopes.length}, 1fr)`, gap: 8 }}>
+        {orderedScopes.map((e) => {
           const status = envelopeStatusFor(e.id, structureScopes, envelope);
           const isExcluded = status.kind === 'excluded';
           const isDone = status.kind === 'done';
           const isActive = !isExcluded && e.id === activeFacet;
           const pct = status.kind === 'progress' ? status.pct : null;
           const ScopeIconCmp = window.ScopeIcon?.[e.id];
-          // Card body click selects the scope as active facet, but only
-          // when included. When excluded, only the explicit + button adds
-          // the scope — clicking the body does nothing. (Craig: "user
-          // should have to explicitly click the + icon button, not the
-          // card only.")
           const handleCardClick = () => {
             if (isExcluded) return;
             setActiveFacet(e.id);
@@ -761,14 +763,14 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
               onKeyDown={(ev) => { if (!isExcluded && (ev.key === 'Enter' || ev.key === ' ')) handleCardClick(); }}
               style={{
                 position: 'relative',
-                padding: '18px 8px 14px',
-                borderRadius: 12,
+                padding: '10px 6px 8px',
+                borderRadius: 10,
                 background: isExcluded ? 'transparent' : (isActive ? 'var(--brand-soft)' : 'var(--surface)'),
                 border: isExcluded ?
                   '1px dashed var(--border-strong)' :
                   (isActive ? '1.5px solid var(--brand)' : '1px solid var(--border)'),
                 opacity: isExcluded ? 0.55 : 1,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 cursor: isExcluded ? 'default' : 'pointer', textAlign: 'center', userSelect: 'none'
               }}>
               {/* Top-right toggle — explicit add/remove affordance */}
@@ -777,44 +779,44 @@ function EnvelopePicker({ activeFacet, setActiveFacet, structureScopes, envelope
                 aria-label={isExcluded ? `Include ${e.label}` : `Exclude ${e.label}`}
                 onClick={toggleScope}
                 style={{
-                  position: 'absolute', top: 6, right: 6,
-                  width: 22, height: 22, borderRadius: 999,
+                  position: 'absolute', top: 4, right: 4,
+                  width: 18, height: 18, borderRadius: 999,
                   background: isExcluded ? 'var(--brand)' : 'var(--surface-2)',
                   color: isExcluded ? 'var(--brand-fg)' : 'var(--text-3)',
                   border: isExcluded ? 'none' : '1px solid var(--border)',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, userSelect: 'none', padding: 0
+                  cursor: 'pointer', fontSize: 12, fontWeight: 700, lineHeight: 1, userSelect: 'none', padding: 0
                 }}>
                 {isExcluded ? '+' : '×'}
               </button>
               {/* Done badge — top-left so it doesn't collide with the toggle */}
               {isDone &&
               <span style={{
-                position: 'absolute', top: 8, left: 8,
-                width: 18, height: 18, borderRadius: 999,
+                position: 'absolute', top: 4, left: 4,
+                width: 14, height: 14, borderRadius: 999,
                 background: 'var(--success)', color: '#fff',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700
+                fontSize: 9, fontWeight: 700
               }}>✓</span>}
-              {/* Progress pct — top-left to match done badge */}
               {pct != null &&
               <span style={{
-                position: 'absolute', top: 8, left: 8,
-                padding: '1px 6px', borderRadius: 999,
+                position: 'absolute', top: 4, left: 4,
+                padding: '1px 5px', borderRadius: 999,
                 background: 'var(--surface-2)', color: 'var(--brand-soft-fg)',
                 fontSize: 9, fontWeight: 700
               }}>{pct}%</span>}
-              {/* Scope icon */}
               <div style={{
                 color: isActive ? 'var(--brand)' : (isDone ? 'var(--success)' : 'var(--text-2)'),
-                marginTop: 4, opacity: isExcluded ? 0.5 : 1
+                opacity: isExcluded ? 0.5 : 1,
+                marginTop: 2
               }}>
-                {ScopeIconCmp ? <ScopeIconCmp size={36} /> : null}
+                {ScopeIconCmp ? <ScopeIconCmp size={26} /> : null}
               </div>
               <div style={{
-                fontSize: 12, fontWeight: 700,
+                fontSize: 10.5, fontWeight: 700,
                 color: isActive ? 'var(--brand-soft-fg)' : (isDone ? 'var(--success)' : 'var(--text-2)'),
-                lineHeight: 1.2, marginTop: 2
+                lineHeight: 1.2,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%'
               }}>
                 {e.label}
               </div>
@@ -1620,27 +1622,31 @@ function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onA
         <button
           type="button"
           onClick={() => onChange(Math.max(0, (Number(value) || 0) - (field.step || 1)))}
-          style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0 }}
+          disabled={isLocked}
+          style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0, opacity: isLocked ? 0.4 : 1 }}
           aria-label="decrease">−</button>}
-        <div style={{ display: 'inline-flex', alignItems: 'center', width: field.isText ? 80 : 90, height: 32, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', padding: '0 8px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', width: field.isText ? 80 : 90, height: 32, border: '1px solid var(--border)', borderRadius: 6, background: isLocked ? 'var(--surface-2)' : 'var(--surface)', padding: '0 8px', opacity: isLocked ? 0.7 : 1 }}>
           <input
             type={field.isText ? 'text' : 'number'}
             value={empty ? '' : value}
             step={field.step || 1}
             placeholder="—"
+            readOnly={isLocked}
+            disabled={isLocked}
             onChange={(e) => {
               const raw = e.target.value;
               if (field.isText) onChange(raw);else
               onChange(raw === '' ? null : parseFloat(raw));
             }}
-            style={{ flex: 1, minWidth: 0, height: '100%', border: 0, outline: 'none', fontSize: 13, fontWeight: 700, textAlign: 'right', background: 'transparent', fontVariantNumeric: 'tabular-nums', color: empty ? 'var(--text-3)' : 'var(--text)' }} />
+            style={{ flex: 1, minWidth: 0, height: '100%', border: 0, outline: 'none', fontSize: 13, fontWeight: 700, textAlign: 'right', background: 'transparent', fontVariantNumeric: 'tabular-nums', color: empty ? 'var(--text-3)' : 'var(--text)', cursor: isLocked ? 'not-allowed' : 'text' }} />
           {field.unit && <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 4, flexShrink: 0 }}>{field.unit}</span>}
         </div>
         {!field.isText &&
         <button
           type="button"
           onClick={() => onChange((Number(value) || 0) + (field.step || 1))}
-          style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0 }}
+          disabled={isLocked}
+          style={{ width: 28, height: 32, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: 16, fontWeight: 600, color: 'var(--text-2)', padding: 0, opacity: isLocked ? 0.4 : 1 }}
           aria-label="increase">+</button>}
         {/* Row affordances — always two slots, contextual content:
             - Open      → [X dismiss] + [lock] (lock only when row has value)
@@ -2262,16 +2268,20 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onSetLock, o
         <button
           type="button"
           onClick={() => onQty(idx, Math.max(0, qty - 1))}
-          style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0 }}>−</button>
+          disabled={isLocked}
+          style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0, opacity: isLocked ? 0.4 : 1 }}>−</button>
         <input
           type="number"
           value={li.qty == null ? '' : li.qty}
+          readOnly={isLocked}
+          disabled={isLocked}
           onChange={(e) => onQty(idx, e.target.value === '' ? 0 : parseFloat(e.target.value))}
-          style={{ width: 48, height: 28, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', textAlign: 'center', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', outline: 'none' }} />
+          style={{ width: 48, height: 28, border: '1px solid var(--border)', borderRadius: 6, background: isLocked ? 'var(--surface-2)' : 'var(--surface)', textAlign: 'center', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', outline: 'none', cursor: isLocked ? 'not-allowed' : 'text', opacity: isLocked ? 0.7 : 1 }} />
         <button
           type="button"
           onClick={() => onQty(idx, qty + 1)}
-          style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0 }}>+</button>
+          disabled={isLocked}
+          style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0, opacity: isLocked ? 0.4 : 1 }}>+</button>
       </div>
       <div style={{ width: 64, textAlign: 'right', fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em', flexShrink: 0, fontVariantNumeric: 'tabular-nums', textDecoration: isDismissed ? 'line-through' : 'none' }}>{fmtMoney(total)}</div>
       {/* Same affordance pattern as measurement rows:

@@ -161,29 +161,30 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
 
 
   // Two-row layout when we're inside the in-appointment flow.
+  // Row 1: back/title + CONNECT·SOLVE·COMMIT + REC/action.
+  // Row 2: structure picker (left-aligned) — always rendered when there's
+  //        an active structure, even for single-structure jobs.
   if (phaseInfo) {
     return (
       <div className="app-status" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '6px 14px 6px', minHeight: 64, gap: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
             {leading}
             <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {title}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <PhaseProgress phaseInfo={phaseInfo} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {recPill}
             {syncPill}
             {action}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', height: 28 }}>
-          {structureSwitcher &&
-          <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
-            {structureSwitcher}
-          </div>}
-          <PhaseProgress phaseInfo={phaseInfo} />
-        </div>
+        {structureSwitcher &&
+        <div style={{ display: 'flex', alignItems: 'center', height: 26 }}>
+          {structureSwitcher}
+        </div>}
       </div>);
 
   }

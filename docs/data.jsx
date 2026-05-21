@@ -75,6 +75,46 @@ const ScopeIcon = {
       <line x1="24" y1="6" x2="24" y2="34" />
       <line x1="11" y1="20" x2="37" y2="20" />
     </svg>
+  ),
+  repairs: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Wrench */}
+      <path d="M28 6 a8 8 0 0 0 -7.5 11 L7 30.5 a3 3 0 0 0 4.5 4.5 L25 21.5 A8 8 0 1 0 28 6 z" />
+      <circle cx="28" cy="14" r="2" opacity="0.4" />
+    </svg>
+  ),
+  solar: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Panel with grid of cells */}
+      <rect x="7" y="9" width="34" height="22" rx="1.5" />
+      <line x1="7" y1="16.3" x2="41" y2="16.3" opacity="0.55" />
+      <line x1="7" y1="23.6" x2="41" y2="23.6" opacity="0.55" />
+      <line x1="18.3" y1="9" x2="18.3" y2="31" opacity="0.55" />
+      <line x1="29.6" y1="9" x2="29.6" y2="31" opacity="0.55" />
+      <line x1="20" y1="34" x2="28" y2="34" />
+    </svg>
+  ),
+  other: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Box with a small star — catch-all scope */}
+      <rect x="9" y="8" width="30" height="24" rx="2" />
+      <path d="M24 14 L25.6 18.4 L30 18.6 L26.4 21.4 L27.8 26 L24 23.4 L20.2 26 L21.6 21.4 L18 18.6 L22.4 18.4 Z" opacity="0.55" />
+    </svg>
+  ),
+  trim: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Picture-frame style trim */}
+      <rect x="6" y="6" width="36" height="28" rx="1" />
+      <rect x="12" y="11" width="24" height="18" rx="0.5" opacity="0.5" />
+    </svg>
+  ),
+  insulation: ({ size = 40 } = {}) => (
+    <svg width={size} height={size} viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Stacked batts */}
+      <path d="M6 10 q4 -4 8 0 t8 0 t8 0 t8 0 t8 0" opacity="0.7" />
+      <path d="M6 18 q4 -4 8 0 t8 0 t8 0 t8 0 t8 0" opacity="0.55" />
+      <path d="M6 26 q4 -4 8 0 t8 0 t8 0 t8 0 t8 0" opacity="0.4" />
+    </svg>
   )
 };
 

@@ -149,7 +149,7 @@ function ImageCaptureScreen({
           Siding, Gutters, Windows & Doors). We inspect the whole envelope
           regardless of which scopes are being quoted on this structure. */}
       <div className="section-label">Findings{isMulti ? ` · ${activeStructure?.name || ''}` : ''}</div>
-      <div style={{ padding: '0 16px 110px', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+      <div style={{ padding: '0 16px 110px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {visibleFacets.map((f) =>
           <EnvelopeCard
             key={f.id}
@@ -598,7 +598,7 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>Photos in presentation</div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4 }}>
           {attachedIndices.map((idx) => {
             const it = items[idx];
             const key = String(idx);
@@ -875,42 +875,80 @@ function ParsedFromMemoList({ facetId, items, lineItems, onChange }) {
           </div>
         )}
       </div>
-      {/* Inline catalog picker — pops below the row being changed. */}
       {pickerFor && catalog.length > 0 &&
-      <div style={{
-        marginTop: 6,
-        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
-        padding: '6px', maxHeight: 180, overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 2
-      }}>
-        <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', padding: '4px 6px' }}>Pick a material</div>
-        {catalog.slice(0, 12).map((c) =>
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => swapMaterial(pickerFor, c)}
-          style={{
-            textAlign: 'left', background: 'transparent', border: 0,
-            padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: 11, color: 'var(--text)', fontWeight: 600
-          }}>
-            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-            <span style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase' }}>{c.unit}</span>
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setPickerFor(null)}
-          style={{
-            marginTop: 4, textAlign: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)',
-            padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
-            fontSize: 11, color: 'var(--text-3)', fontWeight: 700
-          }}>
-          Cancel
-        </button>
-      </div>}
+      <MaterialPickerSheet
+        currentLabel={(items || []).find((p) => p.catalogId === pickerFor)?.label || ''}
+        catalog={catalog}
+        onPick={(entry) => swapMaterial(pickerFor, entry)}
+        onClose={() => setPickerFor(null)} />}
     </div>);
+}
+
+// ─── Bottom-drawer material picker ────────────────────────────
+// Replaces the inline catalog popover. Lets the rep swap which catalog
+// item a memo-parsed line is mapped to — searchable, grouped, full-height.
+function MaterialPickerSheet({ currentLabel, catalog, onPick, onClose }) {
+  const [q, setQ] = useState('');
+  const filtered = useMemo(() => {
+    const needle = q.toLowerCase().trim();
+    if (!needle) return catalog;
+    return catalog.filter((c) => c.name.toLowerCase().includes(needle) || (c.group || '').toLowerCase().includes(needle));
+  }, [q, catalog]);
+  const byGroup = useMemo(() => {
+    const g = {};
+    for (const c of filtered) {
+      const k = c.group || 'Other';
+      (g[k] = g[k] || []).push(c);
+    }
+    return g;
+  }, [filtered]);
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet" style={{ maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
+        <div className="grabber" />
+        <div style={{ padding: '0 16px 8px', flexShrink: 0 }}>
+          <h3 style={{ margin: '0 0 4px' }}>Change material</h3>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
+            Currently: <strong style={{ color: 'var(--text-2)' }}>{currentLabel || '—'}</strong>
+          </div>
+          <input
+            type="text"
+            value={q}
+            placeholder="Search materials…"
+            onChange={(e) => setQ(e.target.value)}
+            style={{ width: '100%', height: 38, border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', fontSize: 14, background: 'var(--surface)', outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ overflow: 'auto', padding: '0 16px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {Object.keys(byGroup).length === 0 &&
+          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text-3)' }}>
+            No matches for "{q}".
+          </div>}
+          {Object.entries(byGroup).map(([group, rows]) =>
+          <div key={group}>
+              <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4 }}>{group}</div>
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                {rows.map((c, i) =>
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onPick(c)}
+                style={{
+                  width: '100%', textAlign: 'left', background: 'transparent',
+                  border: 0, borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  padding: '10px 12px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8
+                }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.005em' }}>{c.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.04, textTransform: 'uppercase', flexShrink: 0 }}>{c.unit}</span>
+                </button>
+              )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>);
 }
 
 function NotesBlock({ facetId, env, onChange, onApplyParsed }) {
@@ -1244,7 +1282,8 @@ function StructureSwitchChip({ structures, activeStructureId, setActiveStructure
           {activeIdx + 1}
         </span>
         {active.name}
-        <span style={{ fontSize: 9, opacity: 0.7, fontWeight: 600 }}>{activeIdx + 1} of {structures.length}</span>
+        {structures.length > 1 &&
+        <span style={{ fontSize: 9, opacity: 0.7, fontWeight: 600 }}>{activeIdx + 1} of {structures.length}</span>}
         <span style={{ fontSize: 10 }}>▾</span>
       </button>
       {open &&

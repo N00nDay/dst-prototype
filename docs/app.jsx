@@ -468,9 +468,11 @@ function App() {
   { current: PHASE_OF[view], stepLabel: stepLabelByView[view] } :
   null;
 
-  // Structure switcher chip — renders directly under the screen title in
-  // the header on Inspect + Build when there are 2+ structures.
-  const structureSwitcher = (view === 'inspect' || view === 'build') && structures.length > 1 ?
+  // Structure switcher chip — renders in the header on Inspect + Build.
+  // Always shows (even on single-structure jobs) so the rep has a
+  // consistent place to confirm which building they're on and to add
+  // another structure from the dropdown.
+  const structureSwitcher = (view === 'inspect' || view === 'build') && structures.length >= 1 ?
     <window.StructureSwitchChip
       structures={structures}
       activeStructureId={activeStructureId}

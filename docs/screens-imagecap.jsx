@@ -164,7 +164,7 @@ function ImageCaptureScreen({
       </div>
 
       {/* Capture FABs — Photo + Dictate */}
-      <CaptureFabs onCapture={() => onCapture(activeFacet)} onDictate={() => onDictate(activeFacet)} />
+      <CaptureFabs onCapture={() => onCapture(activeFacet)} />
 
       {/* Manual-attach photo picker per envelope */}
       {pickerOpen &&
@@ -949,10 +949,13 @@ function DismissReasonSheet({ facet, onClose, onConfirm }) {
 
 }
 
-// ─── Photo + Dictate FAB row ─────────────────────────────────
-function CaptureFabs({ onCapture, onDictate }) {
+// ─── Photo FAB row ───────────────────────────────────────────
+// Dictate FAB removed — dictation that produces structured findings +
+// material counts is intended to live behind a single flow, not as a
+// standalone capture affordance on this screen.
+function CaptureFabs({ onCapture }) {
   return (
-    <div style={{ position: 'absolute', bottom: 44, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 14, pointerEvents: 'none', zIndex: 25 }}>
+    <div style={{ position: 'absolute', bottom: 44, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 25 }}>
       <button
         onClick={onCapture}
         aria-label="Capture photo"
@@ -965,19 +968,6 @@ function CaptureFabs({ onCapture, onDictate }) {
           cursor: 'pointer'
         }}>
         <Icon.cam style={{ width: 22, height: 22 }} />
-      </button>
-      <button
-        onClick={onDictate}
-        aria-label="Dictate quantity"
-        title="Dictate"
-        style={{
-          pointerEvents: 'auto', width: 56, height: 56, padding: 0, borderRadius: 999,
-          background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 12px 28px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06)',
-          cursor: 'pointer'
-        }}>
-        <Icon.mic style={{ width: 22, height: 22 }} />
       </button>
     </div>);
 

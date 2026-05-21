@@ -21,6 +21,8 @@ function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlid
     selectedTier={selectedTier}
     setSelectedTier={setSelectedTier}
     rollupForTier={rollupForTier}
+    structures={structures}
+    proposals={proposals}
     onBack={onBack}
     onContinue={onContinue} />;
 }
@@ -175,7 +177,7 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
 }
 
 // ─────── Present: full presentation (Approach + Findings + Proposal preview) ───────
-function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, onBack, onContinue }) {
+function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, structures, proposals, onBack, onContinue }) {
   // Append a final comparison slide that the homeowner uses to pick their tier.
   const allSlides = useMemo(
     () => [...slides, { id: '__comparison', label: 'Your options', kind: 'comparison', title: 'Choose your roof.' }],

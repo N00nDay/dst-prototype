@@ -230,9 +230,12 @@ function App() {
     });
     return [...findingSlides, ...pitchSlides];
   }, [structures, items, pitchSlides]);
-  // Reorder only persists Core Six order; finding slides re-compose from state.
-  const handleSetPitchSlides = (newSlides) => {
-    setPitchSlides(newSlides.filter((s) => s.kind !== 'finding'));
+  // Reorder only persists Core Six order; finding slides re-compose from
+  // state. Accepts either a fresh array or the functional-update form so
+  // callers can do `setSlides(prev => ...)` against the combined list.
+  const handleSetPitchSlides = (next) => {
+    const resolved = typeof next === 'function' ? next(composedPitchSlides) : next;
+    setPitchSlides((resolved || []).filter((s) => s.kind !== 'finding'));
   };
 
   // ── Proposal Builder ──────────────────────────────────

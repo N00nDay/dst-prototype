@@ -284,7 +284,8 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
             tablet={tablet}
             structures={structures}
             activeStructureId={activeStructureId}
-            onSelect={setActiveStructureId} />
+            onSelect={setActiveStructureId}
+            grand={grand} />
         )}
 
         {/* SCOPES */}
@@ -937,7 +938,15 @@ function PricingModeToggle({ tablet, mode, onChange, structures }) {
 
 // ─── Structure tabs (By-structure mode) ───────────────────────
 // Horizontal snap-grid so condo complexes can scroll cleanly past 3-4 tabs.
-function StructureTabs({ tablet, structures, activeStructureId, onSelect }) {
+// Each tab carries a price range derived from a proportional split of the
+// project rollup (weighted by the structure's scope count). This is a
+// transitional placeholder — until per-structure pricing lands in the
+// model (plan: phase 2.4 P-3), every structure shares the same proposal
+// state and the only honest per-structure dimension we have is "how many
+// envelopes does this building cover." A future commit will replace the
+// weighting with real per-structure totals. (Craig, May '26 — P-1.)
+function StructureTabs({ tablet, structures, activeStructureId, onSelect, grand }) {
+  const totalScopes = structures.reduce((n, s) => n + (s.scopes || []).length, 0);
   return (
     <div style={{ padding: tablet ? '0 28px 12px' : '0 16px 10px' }}>
       <div style={{
@@ -950,6 +959,11 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect }) {
       }}>
         {structures.map((s, i) => {
           const isActive = s.id === activeStructureId;
+          const scopeCount = (s.scopes || []).length;
+          const weight = totalScopes > 0 ? scopeCount / totalScopes : 0;
+          const sLow = grand ? Math.round(grand.low * weight) : 0;
+          const sHigh = grand ? Math.round(grand.high * weight) : 0;
+          const showRange = grand && sHigh > 0;
           return (
             <button
               key={s.id}
@@ -974,11 +988,20 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect }) {
                 }}>{i + 1}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? 'var(--text)' : 'var(--text-2)', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
               </div>
-              <span style={{
-                fontSize: 11, color: 'var(--text-3)', fontWeight: 600
-              }}>
-                {(s.scopes || []).length} envelope{(s.scopes || []).length === 1 ? '' : 's'}
-              </span>
+              {showRange ?
+                <span style={{
+                  fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+                  color: isActive ? 'var(--text)' : 'var(--text-3)',
+                  fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {fmt(sLow)}<span style={{ color: 'var(--text-4)', fontWeight: 600, margin: '0 2px' }}>–</span>{fmt(sHigh)}
+                </span> :
+                <span style={{
+                  fontSize: 11, color: 'var(--text-3)', fontWeight: 600
+                }}>
+                  {scopeCount} envelope{scopeCount === 1 ? '' : 's'}
+                </span>}
             </button>);
 
         })}

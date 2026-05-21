@@ -6,7 +6,7 @@ This is **not a live application.** There is no backend, no data store, no real 
 
 ## Live prototype
 
-> _Live URL goes here after GitHub Pages is enabled. Will be `https://<github-username>.github.io/<repo-name>/`._
+<https://n00nday.github.io/dst-prototype/>
 
 ## Running locally
 

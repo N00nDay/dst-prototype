@@ -526,7 +526,7 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
           glance ("2 photos · 4 materials parsed") instead of just photo
           count, so the rep doesn't have to scan the card to know what's
           on it. */}
-      <div style={{ padding: '12px 14px 10px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: '12px 14px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
         {ScopeIconCmp &&
         <div style={{
           width: 36, height: 36, borderRadius: 8, flexShrink: 0,
@@ -544,26 +544,6 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
             <> · <span style={{ color: 'var(--success)', fontWeight: 700 }}>{parsedCount} material{parsedCount === 1 ? '' : 's'} parsed</span></>}
           </div>
         </div>
-        {/* Inline segmented condition control replaces the full-row pill row. */}
-        <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
-          {CONDITIONS.map((c, i) => {
-            const active = c.id === condition;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onChange({ condition: active ? null : c.id })}
-                aria-pressed={active}
-                style={{
-                  padding: '6px 12px',
-                  border: 0, borderLeft: i === 0 ? 'none' : '1px solid var(--border)',
-                  background: active ? c.tone : 'var(--surface)',
-                  color: active ? '#fff' : 'var(--text-2)',
-                  fontSize: 11, fontWeight: 700, letterSpacing: '-0.005em',
-                  cursor: 'pointer'
-                }}>{c.label}</button>);
-          })}
-        </div>
         <button
           type="button"
           onClick={onDismiss}
@@ -578,6 +558,29 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
           }}>
           <Icon.x style={{ width: 12, height: 12 }} />
         </button>
+      </div>
+
+      {/* Condition selector — own row, full width, equal-width buttons.
+          Reps tap big targets, fast. */}
+      <div style={{ padding: '0 14px 10px', display: 'flex', gap: 6 }}>
+        {CONDITIONS.map((c) => {
+          const active = c.id === condition;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onChange({ condition: active ? null : c.id })}
+              aria-pressed={active}
+              style={{
+                flex: 1, minWidth: 0,
+                padding: '10px 8px', borderRadius: 8,
+                border: active ? `1.5px solid ${c.tone}` : '1px solid var(--border)',
+                background: active ? c.tone : 'var(--surface)',
+                color: active ? '#fff' : 'var(--text-2)',
+                fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
+                cursor: 'pointer'
+              }}>{c.label}</button>);
+        })}
       </div>
 
       {/* ─── Dictation panel ────────────────────────────────────
@@ -754,23 +757,11 @@ function DictationPanel({ facet, env, onChange, hasDictation }) {
           <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
             Memo
           </span>
-          <button
-            type="button"
-            onClick={beginDictate}
-            title="Re-dictate findings for this scope"
-            style={{
-              marginLeft: 'auto', height: 22, padding: '0 8px',
-              border: '1px solid var(--border)', background: 'var(--surface)',
-              borderRadius: 999, fontSize: 10, fontWeight: 700, color: 'var(--text-2)',
-              display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer'
-            }}>
-            <Icon.mic style={{ width: 11, height: 11 }} /> Re-dictate
-          </button>
         </div>
         <textarea
           value={env.notes || ''}
           onChange={(e) => onChange({ notes: e.target.value })}
-          placeholder="Tap re-dictate to capture findings…"
+          placeholder="Edit your dictated findings…"
           rows={5}
           style={{
             width: '100%', boxSizing: 'border-box',
@@ -804,7 +795,7 @@ function DictationPanel({ facet, env, onChange, hasDictation }) {
           background: 'var(--surface-2)', color: 'var(--text-3)',
           fontSize: 11, fontWeight: 600, lineHeight: 1.45, textAlign: 'center'
         }}>
-          AI didn't find quantifiable materials in this memo. Edit the memo and re-dictate, or add materials manually on Build.
+          AI didn't find quantifiable materials in this memo. Add them manually on Build · Materials.
         </div>}
       </div>
     </div>);

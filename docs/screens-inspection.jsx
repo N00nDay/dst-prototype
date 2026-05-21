@@ -161,9 +161,6 @@ function InspectionScreen({
   // tabs (Measurements · Materials · Labor · Equipment · Disposal) and only
   // the active section's body is rendered.
   const [activeSection, setActiveSection] = useState('measurements');
-  // Phase 2.3 B-6: Continue-review modal. Tapping Continue with open rows
-  // surfaces a sheet listing them all so the rep can lock or adjust in
-  // one place before advancing.
   const [showContinueReview, setShowContinueReview] = useState(false);
   // Scroll the section content back to top on every section / facet
   // switch so the rep doesn't land mid-page after navigating.
@@ -171,6 +168,22 @@ function InspectionScreen({
   useEffect(() => {
     if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
   }, [activeSection, activeFacet, activeStructureId]);
+
+  // Track which scopes the rep has actually visited on this structure.
+  // The Continue cascade uses this to know whether a scope counts as
+  // "complete" — a scope that was added on Build but never opened should
+  // be considered incomplete so Continue advances to it, not past it.
+  // Stored as a Set keyed by `${structureId}:${facetId}`.
+  const [visitedScopes, setVisitedScopes] = useState(() => new Set([`${activeStructureId}:${activeFacet}`]));
+  useEffect(() => {
+    setVisitedScopes((prev) => {
+      const key = `${activeStructureId}:${activeFacet}`;
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, [activeStructureId, activeFacet]);
 
   // If active structure's scopes shrink and they no longer include the
   // active facet, snap to the first available scope.
@@ -579,6 +592,10 @@ function InspectionScreen({
         const isScopeComplete = (facetId) => {
           const f = ENVELOPE_FACETS.find((x) => x.id === facetId);
           if (!f) return true;
+          // A scope counts as complete only if the rep has actually been
+          // there. Scopes added on Build but never opened stay incomplete
+          // so Continue advances to them.
+          if (!visitedScopes.has(`${activeStructureId}:${facetId}`)) return false;
           return sectionsForFacet(f).every((sec) => openCountFor(facetId, sec) === 0);
         };
         const nextIncompleteFacet = () => {

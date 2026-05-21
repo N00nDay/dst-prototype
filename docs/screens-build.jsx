@@ -163,7 +163,7 @@ const DEFAULT_PROPOSAL = {
   scopeWarranty: {}
 };
 
-function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, proposals = {}, setProposals, pricingMode, setPricingMode, onBack, onPresent }) {
+function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, setStructureScopes, proposals = {}, setProposals, pricingMode, setPricingMode, onBack, onPresent }) {
   // pricingMode + setPricingMode are lifted to app.jsx so the Presentation
   // screen can read the rep's choice and emit one comparison slide (allin)
   // vs one per structure (by).
@@ -186,9 +186,15 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   // Active structure's proposal — what the UI reads/writes.
   const activeStructure = (structures || []).find((s) => s.id === activeStructureId) || (structures || [])[0];
   const activeProposal = proposals[activeStructureId] || DEFAULT_PROPOSAL;
-  const includedScopes = activeProposal.includedScopes;
   const scopeDiscount = activeProposal.scopeDiscount;
   const scopeWarranty = activeProposal.scopeWarranty;
+  // includedScopes is derived from the structure's Scope-page selection
+  // rather than maintained as a separate per-proposal toggle map. The
+  // Scope screen is the single source of truth for "which scopes apply
+  // to this building"; the toggle here writes through to it.
+  const scopesFor = (structure) =>
+    SCOPE_CATALOG.reduce((acc, sc) => ({ ...acc, [sc.id]: (structure?.scopes || []).includes(sc.id) }), {});
+  const includedScopes = scopesFor(activeStructure);
 
   // Per-structure add-ons. Shape: { [structureId]: { [addonId]: true } }.
   // Reads via activeAddons; writes through setActiveAddons target the
@@ -216,9 +222,17 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
       [activeStructureId]: { ...(p[activeStructureId] || DEFAULT_PROPOSAL), ...patch }
     }));
   };
+  // Toggling a scope here writes through to the structure's scope list
+  // so Scope and Proposal stay in sync (single source of truth).
+  // Non-Proposal scopes selected on the Scope screen (repairs, solar,
+  // other, trim, insulation) are preserved as-is.
   const setIncludedScopes = (updater) => {
+    if (!setStructureScopes || !activeStructure) return;
     const next = typeof updater === 'function' ? updater(includedScopes) : updater;
-    updateActiveProposal({ includedScopes: next });
+    const all = activeStructure.scopes || [];
+    const nonCatalog = all.filter((id) => !SCOPE_CATALOG.find((sc) => sc.id === id));
+    const nextCatalog = SCOPE_CATALOG.filter((sc) => next[sc.id]).map((sc) => sc.id);
+    setStructureScopes(activeStructure.id, [...nonCatalog, ...nextCatalog]);
   };
 
   // Read the package product / dismissal picked on the Build page for a
@@ -272,10 +286,11 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   const perStructure = useMemo(() => {
     return (structures || []).map((s) => {
       const proposal = proposals[s.id] || DEFAULT_PROPOSAL;
+      const sScopes = scopesFor(s);
       let low = 0, high = 0, gpLow = 0, gpHigh = 0;
       const scopeRollups = {};
       SCOPE_CATALOG.forEach((sc) => {
-        if (!proposal.includedScopes[sc.id]) return;
+        if (!sScopes[sc.id]) return;
         const pillarTotals = [];
         const pillarGPs = [];
         TIER_IDS.forEach((t) => {
@@ -332,15 +347,14 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   // dismissed on Build don't count toward readiness — the rep needs at
   // least one actual product to present a price.)
   const allReady = (structures || []).every((s) => {
-    const p = proposals[s.id] || DEFAULT_PROPOSAL;
+    const sScopes = scopesFor(s);
     return SCOPE_CATALOG.every((sc) => {
-      if (!p.includedScopes[sc.id]) return true;
+      if (!sScopes[sc.id]) return true;
       return TIER_IDS.some((t) => getStructurePackageProduct(s, sc.id, t));
     });
   });
   const totalEnabledScopes = (structures || []).reduce((n, s) => {
-    const p = proposals[s.id] || DEFAULT_PROPOSAL;
-    return n + Object.values(p.includedScopes).filter(Boolean).length;
+    return n + Object.values(scopesFor(s)).filter(Boolean).length;
   }, 0);
   const canPresent = totalEnabledScopes > 0 && allReady;
 

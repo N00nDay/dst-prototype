@@ -167,14 +167,16 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
   if (phaseInfo) {
     return (
       <div className="app-status" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '6px 14px 6px', minHeight: 64, gap: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
             {leading}
-            <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {title}
             </div>
           </div>
-          <PhaseProgress phaseInfo={phaseInfo} />
+          <div style={{ flexShrink: 0 }}>
+            <PhaseProgress phaseInfo={phaseInfo} />
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {recPill}
             {syncPill}
@@ -219,7 +221,7 @@ function PhaseProgress({ phaseInfo }) {
   const PHASES = ['CONNECT', 'SOLVE', 'COMMIT'];
   const currentIdx = PHASES.indexOf(phaseInfo.current);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '2px 0', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '2px 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
         {PHASES.map((p, i) => {
           const isCurrent = i === currentIdx;

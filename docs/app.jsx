@@ -673,6 +673,7 @@ function App() {
             structures={structures}
             activeStructureId={activeStructureId}
             setActiveStructureId={setActiveStructureId}
+            setStructureScopes={setStructureScopes}
             addons={addons} setAddons={setAddons}
             swaps={swaps} setSwaps={setSwaps}
             discounts={discounts} setDiscounts={setDiscounts}

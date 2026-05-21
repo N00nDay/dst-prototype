@@ -154,86 +154,162 @@ const findProduct = (scope, tierId, productId) => {
   return scope.tiers[tierId]?.products?.find((p) => p.id === productId) || null;
 };
 
+// Default proposal shape for a freshly added structure. (Used by the
+// per-structure pricing model — Phase 2.4 M-1..M-3.)
+const DEFAULT_PROPOSAL = {
+  includedScopes: { roofing: true, siding: true, gutters: false, windoors: false },
+  scopeProducts: {},
+  scopeDiscount: {},
+  scopeWarranty: {}
+};
+
 function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, onBack, onPresent }) {
   // Pricing presentation mode. All-in = one project total view; By-structure
-  // = per-structure tabs with that structure's scopes scoped down. Underlying
-  // data is shared across modes today (a v2 will scope per structure).
+  // = per-structure tabs. The underlying state is now per-structure (M-1..M-3
+  // landed); modes just affect which structures the UI surfaces.
   const [pricingMode, setPricingMode] = useState((structures || []).length > 1 ? 'by' : 'allin');
 
-  // Per-scope inclusion.
-  const [includedScopes, setIncludedScopes] = useState({ roofing: true, siding: true, gutters: false, windoors: false });
-  // Selected product per (scope, tier). Shape: { [scopeId]: { good: 'pid', better: 'pid', best: 'pid' } }
-  const [scopeProducts, setScopeProducts] = useState({});
-  // Discount per (scope, tier).
-  const [scopeDiscount, setScopeDiscount] = useState({});
-  // Warranty per (scope, tier).  Value 'none' means "None" explicitly.
-  const [scopeWarranty, setScopeWarranty] = useState({});
+  // ─── Per-structure proposal state ───────────────────────────
+  // Each structure carries its own includedScopes / scopeProducts /
+  // scopeDiscount / scopeWarranty. The active structure's proposal is what
+  // the scope cards render and edit. Aggregate rollups walk every
+  // structure to produce grand totals + per-structure breakdowns for the
+  // structure tabs and downstream Present surface. Add-ons remain global
+  // for now — splitting them per structure is a follow-up (PR-3 timeline).
+  const [proposals, setProposals] = useState(() => {
+    const seed = {};
+    (structures || []).forEach((s) => { seed[s.id] = { ...DEFAULT_PROPOSAL }; });
+    return seed;
+  });
+  // Lazy-init proposals for any structure that was added after first mount.
+  useEffect(() => {
+    const missing = (structures || []).filter((s) => !proposals[s.id]);
+    if (missing.length) {
+      setProposals((p) => {
+        const next = { ...p };
+        missing.forEach((s) => { next[s.id] = { ...DEFAULT_PROPOSAL }; });
+        return next;
+      });
+    }
+  }, [(structures || []).map((s) => s.id).join('|')]);
+
+  // Active structure's proposal — what the UI reads/writes.
+  const activeProposal = proposals[activeStructureId] || DEFAULT_PROPOSAL;
+  const includedScopes = activeProposal.includedScopes;
+  const scopeProducts = activeProposal.scopeProducts;
+  const scopeDiscount = activeProposal.scopeDiscount;
+  const scopeWarranty = activeProposal.scopeWarranty;
+
   const [includedAddons, setIncludedAddons] = useState({});
 
   // Drawer state — single-instance, parameterized.
   const [productDrawer, setProductDrawer] = useState(null); // { scopeId, tierId }
   const [warrantyDrawer, setWarrantyDrawer] = useState(null); // { scopeId, tierId }
 
-  // Rollup for a single (scope, tier) pillar. Returns null if no product picked.
-  const pillarRollup = (scope, tierId) => {
-    const productId = scopeProducts[scope.id]?.[tierId];
+  // Writer that targets the active structure's proposal.
+  const updateActiveProposal = (patch) => {
+    setProposals((p) => ({
+      ...p,
+      [activeStructureId]: { ...(p[activeStructureId] || DEFAULT_PROPOSAL), ...patch }
+    }));
+  };
+  const setIncludedScopes = (updater) => {
+    const next = typeof updater === 'function' ? updater(includedScopes) : updater;
+    updateActiveProposal({ includedScopes: next });
+  };
+
+  // Rollup for a single (scope, tier) pillar from a specific proposal.
+  // Returns { productId: null } when no product is picked yet.
+  const pillarRollupFor = (proposal, scope, tierId) => {
+    const productId = proposal.scopeProducts[scope.id]?.[tierId];
     const product = findProduct(scope, tierId, productId);
     if (!product) return { productId: null };
     const subtotal = product.subtotal;
     const cost = Math.round(subtotal * COST_RATIO);
-    const discount = scopeDiscount[scope.id]?.[tierId] || 0;
+    const discount = proposal.scopeDiscount[scope.id]?.[tierId] || 0;
     const total = Math.max(cost, subtotal - discount);
     const gp = total - cost;
-    const warranty = scopeWarranty[scope.id]?.[tierId] ?? product.warranties[0];
+    const warranty = proposal.scopeWarranty[scope.id]?.[tierId] ?? product.warranties[0];
     return { productId, product, subtotal, cost, discount, total, gp, warranty };
   };
 
+  // Rollup for the active structure — used by the scope card pillars.
+  const pillarRollup = (scope, tierId) => pillarRollupFor(activeProposal, scope, tierId);
+
   const setProduct = (scopeId, tierId, productId) => {
-    setScopeProducts((s) => ({ ...s, [scopeId]: { ...s[scopeId], [tierId]: productId } }));
-    // Reset warranty & discount for that pillar so they re-derive from the new product.
-    setScopeWarranty((s) => {const c = { ...s, [scopeId]: { ...s[scopeId] } };delete c[scopeId][tierId];return c;});
-    setScopeDiscount((s) => {const c = { ...s, [scopeId]: { ...s[scopeId] } };delete c[scopeId][tierId];return c;});
+    setProposals((p) => {
+      const prev = p[activeStructureId] || DEFAULT_PROPOSAL;
+      const nextProducts = { ...prev.scopeProducts, [scopeId]: { ...prev.scopeProducts[scopeId], [tierId]: productId } };
+      // Reset warranty & discount for that pillar so they re-derive from the new product.
+      const nextWarranty = { ...prev.scopeWarranty, [scopeId]: { ...prev.scopeWarranty[scopeId] } };
+      delete nextWarranty[scopeId][tierId];
+      const nextDiscount = { ...prev.scopeDiscount, [scopeId]: { ...prev.scopeDiscount[scopeId] } };
+      delete nextDiscount[scopeId][tierId];
+      return { ...p, [activeStructureId]: { ...prev, scopeProducts: nextProducts, scopeWarranty: nextWarranty, scopeDiscount: nextDiscount } };
+    });
   };
 
   const setDiscount = (scopeId, tierId, v) => {
-    setScopeDiscount((s) => ({ ...s, [scopeId]: { ...s[scopeId], [tierId]: v } }));
+    setProposals((p) => {
+      const prev = p[activeStructureId] || DEFAULT_PROPOSAL;
+      return { ...p, [activeStructureId]: { ...prev, scopeDiscount: { ...prev.scopeDiscount, [scopeId]: { ...prev.scopeDiscount[scopeId], [tierId]: v } } } };
+    });
   };
 
   const setWarranty = (scopeId, tierId, w) => {
-    setScopeWarranty((s) => ({ ...s, [scopeId]: { ...s[scopeId], [tierId]: w } }));
+    setProposals((p) => {
+      const prev = p[activeStructureId] || DEFAULT_PROPOSAL;
+      return { ...p, [activeStructureId]: { ...prev, scopeWarranty: { ...prev.scopeWarranty, [scopeId]: { ...prev.scopeWarranty[scopeId], [tierId]: w } } } };
+    });
   };
 
-  // Range rollup: low = min across configured pillars per scope, high = max.
-  // Add-ons: selected ones lock in; unselected contribute to the high end of range.
-  const grand = useMemo(() => {
-    let low = 0,high = 0,gpLow = 0,gpHigh = 0;
-    SCOPE_CATALOG.forEach((s) => {
-      if (!includedScopes[s.id]) return;
-      const pillarTotals = [];
-      const pillarGPs = [];
-      TIER_IDS.forEach((t) => {
-        const r = pillarRollup(s, t);
-        if (r.productId) {
-          pillarTotals.push(r.total);
-          pillarGPs.push(r.gp);
+  // ─── Per-structure rollups + grand aggregate ─────────────────
+  // Each entry: { structureId, name, low, high, gpLow, gpHigh, scopeRollups }
+  // where scopeRollups[scopeId] = { low, high, gpLow, gpHigh } per scope
+  // (used by Present's per-scope summary cards).
+  const perStructure = useMemo(() => {
+    return (structures || []).map((s) => {
+      const proposal = proposals[s.id] || DEFAULT_PROPOSAL;
+      let low = 0, high = 0, gpLow = 0, gpHigh = 0;
+      const scopeRollups = {};
+      SCOPE_CATALOG.forEach((sc) => {
+        if (!proposal.includedScopes[sc.id]) return;
+        const pillarTotals = [];
+        const pillarGPs = [];
+        TIER_IDS.forEach((t) => {
+          const r = pillarRollupFor(proposal, sc, t);
+          if (r.productId) {
+            pillarTotals.push(r.total);
+            pillarGPs.push(r.gp);
+          }
+        });
+        if (pillarTotals.length) {
+          const sLow = Math.min(...pillarTotals);
+          const sHigh = Math.max(...pillarTotals);
+          const sGpLow = Math.min(...pillarGPs);
+          const sGpHigh = Math.max(...pillarGPs);
+          low += sLow; high += sHigh; gpLow += sGpLow; gpHigh += sGpHigh;
+          scopeRollups[sc.id] = { low: sLow, high: sHigh, gpLow: sGpLow, gpHigh: sGpHigh };
         }
       });
-      if (pillarTotals.length) {
-        low += Math.min(...pillarTotals);
-        high += Math.max(...pillarTotals);
-        gpLow += Math.min(...pillarGPs);
-        gpHigh += Math.max(...pillarGPs);
-      }
+      return { structureId: s.id, name: s.name, low, high, gpLow, gpHigh, scopeRollups };
+    });
+  }, [proposals, (structures || []).map((s) => s.id + ':' + s.name).join('|')]);
+
+  // Grand rollup: sum of per-structure totals, then global add-ons.
+  const grand = useMemo(() => {
+    let low = 0, high = 0, gpLow = 0, gpHigh = 0;
+    perStructure.forEach((ps) => {
+      low += ps.low; high += ps.high; gpLow += ps.gpLow; gpHigh += ps.gpHigh;
     });
     // Add-ons: selected ones go in both low and high; un-selected only inflate high.
     PROPOSAL_ADDONS.forEach((a) => {
       const aCost = Math.round(a.price * COST_RATIO);
       const aGp = a.price - aCost;
       if (includedAddons[a.id]) {
-        low += a.price;high += a.price;
-        gpLow += aGp;gpHigh += aGp;
+        low += a.price; high += a.price;
+        gpLow += aGp; gpHigh += aGp;
       } else {
-        // Possibility of upsell at presentation — only inflate the high end.
         high += a.price;
         gpHigh += aGp;
       }
@@ -241,15 +317,23 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
     const commLow = Math.round(gpLow * COMMISSION_RATE);
     const commHigh = Math.round(gpHigh * COMMISSION_RATE);
     return { low, high, gpLow, gpHigh, commLow, commHigh };
-  }, [includedScopes, includedAddons, scopeProducts, scopeDiscount]);
+  }, [perStructure, includedAddons]);
 
   const enabledScopeCount = Object.values(includedScopes).filter(Boolean).length;
-  // Ready to present when every included scope has at least one tier with a product associated.
-  const allReady = SCOPE_CATALOG.every((s) => {
-    if (!includedScopes[s.id]) return true;
-    return TIER_IDS.some((t) => scopeProducts[s.id]?.[t]);
+  // Ready to present when every included scope on EVERY structure has at
+  // least one tier with a product associated.
+  const allReady = (structures || []).every((s) => {
+    const p = proposals[s.id] || DEFAULT_PROPOSAL;
+    return SCOPE_CATALOG.every((sc) => {
+      if (!p.includedScopes[sc.id]) return true;
+      return TIER_IDS.some((t) => p.scopeProducts[sc.id]?.[t]);
+    });
   });
-  const canPresent = enabledScopeCount > 0 && allReady;
+  const totalEnabledScopes = (structures || []).reduce((n, s) => {
+    const p = proposals[s.id] || DEFAULT_PROPOSAL;
+    return n + Object.values(p.includedScopes).filter(Boolean).length;
+  }, 0);
+  const canPresent = totalEnabledScopes > 0 && allReady;
 
   // Drawer scope helpers
   const drawerScope = productDrawer ? SCOPE_CATALOG.find((s) => s.id === productDrawer.scopeId) : null;

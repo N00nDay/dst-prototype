@@ -775,6 +775,16 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
         </div>
       </div>
 
+      {/* ── 1b. Multi-structure bundle banner ───────────────────
+          PR-2 redesign port — when more than one structure is in
+          scope, surface the bundle composition up front so the
+          homeowner can see what 'all-in' means before reading the
+          per-scope tier cards. (PR-3 will pull real per-structure
+          tier picks once the proposal state lifts to app.jsx;
+          today this card lists structures + scope counts.) */}
+      {(structures || []).length > 1 &&
+      <BundleSummaryCard structures={structures} tablet={tablet} />}
+
       {/* ── 2. Per-scope sections (Roofing/Siding tiered, Gutters flat) ── */}
       {PRESENT_SCOPES.map((scope, idx) =>
       <ScopeSection
@@ -1181,6 +1191,62 @@ function FlatCard({ scope, selected, onSelect, monthly, tablet }) {
       }
     </>);
 
+}
+
+// ─── Bundle summary card (multi-structure) ────────────────────
+// Phase 2.5 PR-2 redesign port. Shown above the scope cards on the
+// presentation slide when structures.length > 1. Lists every building
+// in the bundle along with its scope count so the homeowner can see
+// the composition of the all-in price the rep is about to walk them
+// through. Per-structure tier picks come from the Build screen's
+// multi-structure proposal state (M-1..M-3); wiring that data into
+// this card is PR-3 work, deferred until proposal state lifts to
+// app.jsx.
+function BundleSummaryCard({ structures, tablet }) {
+  const scopeLabel = (id) => ({ roofing: 'Roofing', siding: 'Siding', gutters: 'Gutters', windoors: 'Windows & Doors' })[id] || id;
+  return (
+    <div className="card" style={{
+      padding: tablet ? '18px 22px' : '14px 16px',
+      background: 'var(--surface)',
+      border: '1px solid var(--brand)',
+      borderRadius: 14
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: 'var(--brand)', textTransform: 'uppercase' }}>
+          Bundled project · {structures.length} structures
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>One number, all buildings</div>
+      </div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 20 : 17, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 12 }}>
+        Here's everything that's included.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {structures.map((s, i) =>
+        <div key={s.id} style={{
+          padding: '10px 12px',
+          borderRadius: 10,
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 12
+        }}>
+            <span style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: 'var(--brand)', color: 'var(--brand-fg)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 800, flexShrink: 0
+            }}>{i + 1}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>{s.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, fontWeight: 600 }}>
+                {(s.scopes || []).length === 0 ?
+                  'No scopes selected' :
+                  (s.scopes || []).map(scopeLabel).join(' · ')}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>);
 }
 
 function HeroPill({ icon, label }) {

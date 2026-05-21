@@ -51,7 +51,7 @@ function ScopeScreen({
             What are we working on today?
           </div>
           <div style={{ fontSize: tablet ? 13 : 12, color: 'var(--text-3)', marginTop: 6, maxWidth: 560, lineHeight: 1.5 }}>
-            Name each building you'll inspect and tap the scopes of work that apply.
+            Name each building you'll inspect and tap the scopes of work that apply. Inspect, Build, and Proposal all run one structure at a time from here.
           </div>
         </div>
 
@@ -59,6 +59,9 @@ function ScopeScreen({
         <div style={{ padding: tablet ? '14px 28px 0' : '12px 16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.1, color: 'var(--text-3)', textTransform: 'uppercase' }}>Structures</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+              {structures.length} on this job
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -90,6 +93,23 @@ function ScopeScreen({
             <Icon.plus style={{ width: 14, height: 14 }} />
             Add Additional Structure
           </button>
+
+          {/* Tip card — explains why structures matter and the come-back rule. */}
+          <div style={{
+            marginTop: 12, padding: '12px 14px', borderRadius: 12,
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'flex-start', gap: 10
+          }}>
+            <span style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: 'var(--brand-soft)', color: 'var(--brand-soft-fg)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 800, flexShrink: 0
+            }}>i</span>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              Each structure gets its own inspection, build, and pricing slide. You can come back here to add more later — but inspection won't run on structures that aren't here yet.
+            </div>
+          </div>
         </div>
 
         {/* Spacer so the Continue bar doesn't cover content */}
@@ -101,7 +121,7 @@ function ScopeScreen({
         tablet={tablet}
         label="Continue to Inspect"
         sub={allReady ?
-        `${structures.length} structure${structures.length === 1 ? '' : 's'} · ${totalScopes} scope${totalScopes === 1 ? '' : 's'}` :
+        `${structures.length} structure${structures.length === 1 ? '' : 's'} · ${totalScopes} envelope${totalScopes === 1 ? '' : 's'}` :
         'Select at least one scope of work to continue'}
         enabled={allReady}
         onContinue={onContinue} />

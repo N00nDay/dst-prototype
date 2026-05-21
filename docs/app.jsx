@@ -9,17 +9,22 @@
 /* global PresentMode, SignaturePad, MissingSheet */
 /* global FinancingScreen */
 /* global WalkthroughScreen, DepositScreen, WelcomePackageScreen, HandoffScreen */
-/* global TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakToggle, TweakSelect */
 /* global GlobalSearch */
 
 const { useState, useEffect, useRef, useMemo } = React;
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "device": "phone",
-  "repId": "cole",
-  "theme": "light",
-  "syncState": "recent"
-} /*EDITMODE-END*/;
+// Production defaults — formerly tweakable via the dev-only Tweaks panel,
+// which has been removed in favor of values that match the live rep
+// experience. `device` is the form factor (phone vs tablet preview);
+// `repId` resolves the authenticated rep from REPS (in prod this comes
+// from the SSO session); `theme` is the visual theme. `syncState` is
+// vestigial — the sync-indicator pill is no longer rendered.
+const APP_DEFAULTS = {
+  device: 'phone',
+  repId: 'cole',
+  theme: 'light',
+  syncState: 'recent'
+};
 
 // Linear flow inside an appointment (CONNECT → SOLVE → COMMIT).
 // Scope is the first SOLVE step — the rep names structures + picks
@@ -56,11 +61,14 @@ deferred ?
 
 
 function App() {
-  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const { device, repId, theme, syncState } = tweaks;
+  // Static defaults (formerly tweakable). `device` and `repId` are fixed
+  // to match the live rep experience; `syncState` is vestigial.
+  const { device, repId, syncState } = APP_DEFAULTS;
+  // Theme is local React state so Settings → theme picker keeps working.
+  const [theme, setTheme] = useState(APP_DEFAULTS.theme);
 
-  // Rep is derived from authenticated session (IDP-01).
-  // In mock, Tweaks switches between rep profiles.
+  // Rep is derived from authenticated session (IDP-01). In mock, the
+  // active rep is whichever repId APP_DEFAULTS points at.
   const rep = REPS[repId] || REPS.cole;
   const brand = rep.brand; // brand follows the rep's primary assignment
 
@@ -521,7 +529,7 @@ function App() {
               {tab === 'dashboard' && <Dashboard brand={brand} rep={rep} onAppointmentClick={handleAppointmentClick} onCommissionsClick={() => setView('commissions')} onFollowupClick={(f) => {setSelectedFollowup(f);setView('followup');}} />}
               {tab === 'schedule' && <Schedule onAppointmentClick={handleAppointmentClick} />}
               {tab === 'customers' && <Customers onAppointmentClick={handleAppointmentClick} onOpenCustomer={(c) => {setSelectedCustomer(c);setView('customer');}} />}
-              {tab === 'settings' && <Settings brand={brand} theme={theme} setTheme={(t) => setTweak('theme', t)} rep={rep} onLogout={() => setAuthed(false)} />}
+              {tab === 'settings' && <Settings brand={brand} theme={theme} setTheme={setTheme} rep={rep} onLogout={() => setAuthed(false)} />}
             </>
           }
 
@@ -758,44 +766,17 @@ function App() {
 
   };
 
-  // ── Outer host with device frame + switcher ──────────
+  // ── Outer host with device frame ─────────────────────
+  // The dev-only Phone/Tablet switcher row was removed alongside the
+  // Tweaks panel; device is now fixed at the app-default value. For
+  // tablet preview during design review, change APP_DEFAULTS.device.
   return (
     <div className="shell-bg" data-host-theme={theme}>
-      <div className="device-switcher">
-        <button className={device === 'phone' ? 'active' : ''} onClick={() => setTweak('device', 'phone')}>
-          <span style={{ display: 'inline-block', width: 8, height: 12, border: '1.5px solid currentColor', borderRadius: 2 }} />
-          Phone
-        </button>
-        <button className={device === 'tablet' ? 'active' : ''} onClick={() => setTweak('device', 'tablet')}>
-          <span style={{ display: 'inline-block', width: 14, height: 11, border: '1.5px solid currentColor', borderRadius: 2 }} />
-          Tablet
-        </button>
-      </div>
-
       <div className={isTablet ? 'tablet-frame' : 'phone-frame'} data-screen-label={isTablet ? 'Tablet' : 'Phone'}>
         <div className="device-screen">
           {renderApp()}
         </div>
       </div>
-
-      <TweaksPanel title="Tweaks">
-        <TweakSection label="Device">
-          <TweakRadio value={device} onChange={(v) => setTweak('device', v)}
-          options={[{ value: 'phone', label: 'Phone' }, { value: 'tablet', label: 'Tablet' }]} />
-        </TweakSection>
-        <TweakSection label="Authenticated rep (dev only)">
-          <TweakSelect value={repId} onChange={(v) => setTweak('repId', v)}
-          options={[{ value: 'cole', label: 'Cole · Skywalker · General' }, { value: 'rita', label: 'Rita · Valentine · Senior' }]} />
-        </TweakSection>
-        <TweakSection label="Theme">
-          <TweakRadio value={theme} onChange={(v) => setTweak('theme', v)}
-          options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
-        </TweakSection>
-        <TweakSection label="Sync state (dev)">
-          <TweakRadio value={syncState} onChange={(v) => setTweak('syncState', v)}
-          options={[{ value: 'recent', label: 'Synced' }, { value: 'syncing', label: 'Syncing' }, { value: 'offline', label: 'Offline' }]} />
-        </TweakSection>
-      </TweaksPanel>
     </div>);
 
 }

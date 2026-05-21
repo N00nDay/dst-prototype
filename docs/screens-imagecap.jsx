@@ -149,7 +149,7 @@ function ImageCaptureScreen({
           Siding, Gutters, Windows & Doors). We inspect the whole envelope
           regardless of which scopes are being quoted on this structure. */}
       <div className="section-label">Findings{isMulti ? ` · ${activeStructure?.name || ''}` : ''}</div>
-      <div style={{ padding: '0 16px 110px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '0 16px 110px', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
         {visibleFacets.map((f) =>
           <EnvelopeCard
             key={f.id}
@@ -570,15 +570,35 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
       </div>
 
       {/* Notes — two-step: dictate findings first, then editable text appears.
-            (Craig, May '26.) */}
-      <NotesBlock facetId={facet.id} env={env} onChange={onChange} />
+            Dictation also returns structured line items the LLM extracted
+            from the memo; those get routed onto envelope.lineItems and
+            echoed back on the card via ParsedFromMemoStrip below. */}
+      <NotesBlock
+        facetId={facet.id}
+        env={env}
+        onChange={onChange}
+        onApplyParsed={(parsed) => {
+          const updated = applyParsedFromMemo(env, parsed);
+          onChange({ lineItems: updated.lineItems, parsedFromMemo: updated.parsedFromMemo });
+        }} />
+
+      {/* Carry-forward summary: what the memo parser pulled out, sent to
+          Build · Materials on this scope. Each chip can be dismissed if
+          the rep wants to drop it from the parse summary. */}
+      {(env.parsedFromMemo || []).length > 0 &&
+      <ParsedFromMemoStrip
+        items={env.parsedFromMemo || []}
+        onRemove={(catalogId) => {
+          const next = (env.parsedFromMemo || []).filter((p) => p.catalogId !== catalogId);
+          onChange({ parsedFromMemo: next });
+        }} />}
 
       {/* Attached photos */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>Photos in presentation</div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
           {attachedIndices.map((idx) => {
             const it = items[idx];
             const key = String(idx);
@@ -641,30 +661,140 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
 // short processing spinner). Step 2: transcribed text appears in an editable
 // textarea so the rep can clean it up before it ships in the report.
 // (Craig, May '26.)
+// Mock dictation output. In production, the rep's audio is transcribed and
+// routed through an LLM with structured outputs — `notes` is the qualitative
+// narrative the homeowner sees, `parsed` is the structured line items the
+// LLM pulled out and routes onto that scope's Build · Materials list.
+// For the prototype the LLM is faked: every facet returns a fixed parse so
+// the carry-forward UX is testable without a real STT/LLM round trip.
 const MOCK_DICTATION_BY_FACET = {
-  roofing:
-  "Asphalt shingles showing widespread granule loss on south and west " +
-  "exposures. Several lifted shingles near the ridge. Step flashing at the " +
-  "chimney is loose and rusting. Pipe boots are cracked and should be replaced.",
-  siding:
-  "Vinyl siding on the north elevation has impact damage near the hose bib " +
-  "and two panels are pulling away at the bottom course. Chalking visible " +
-  "across the west wall. No rot at the trim.",
-  gutters:
-  "Gutters along the front are sagging and pulling away from the fascia " +
-  "near the downspout. Inside corner is leaking. Several spike-and-ferrule " +
-  "hangers have backed out. Recommend new seamless run with hidden hangers.",
-  windoors:
-  "Front entry door has a failed weatherstrip and visible daylight at the " +
-  "threshold. Two upstairs windows have foggy glass indicating failed seals. " +
-  "All other units operate smoothly with intact screens.",
-  attic:
-  "Attic insulation is uneven with bare spots near the eaves. Bath fan " +
-  "vents directly into the attic. Ridge vent is partially blocked. No " +
-  "active moisture but staining on the north sheathing suggests past leaks."
+  roofing: {
+    notes:
+      "Asphalt shingles showing widespread granule loss on south and west " +
+      "exposures. Several lifted shingles near the ridge. Step flashing at the " +
+      "chimney is loose and rusting. Pipe boots are cracked and should be replaced.",
+    parsed: [
+      { catalogId: 'pipe_boot_14',  section: 'materials', label: 'Pipe Boot 1–4″',     qty: 4,  unit: 'PC' },
+      { catalogId: 'step_flash_pc', section: 'materials', label: 'Step Flashing',      qty: 8,  unit: 'PC' }
+    ]
+  },
+  siding: {
+    notes:
+      "Vinyl siding on the north elevation has impact damage near the hose bib " +
+      "and two panels are pulling away at the bottom course. Chalking visible " +
+      "across the west wall. No rot at the trim.",
+    parsed: [
+      { catalogId: 'siding_panel', section: 'materials', label: 'Replacement panels', qty: 2, unit: 'EA' }
+    ]
+  },
+  gutters: {
+    notes:
+      "Gutters along the front are sagging and pulling away from the fascia " +
+      "near the downspout. Inside corner is leaking. Several spike-and-ferrule " +
+      "hangers have backed out. Recommend new seamless run with hidden hangers.",
+    parsed: [
+      { catalogId: 'gutter_seamless', section: 'materials', label: 'Seamless gutter run', qty: 48, unit: 'FT' },
+      { catalogId: 'downspout',       section: 'materials', label: 'Downspout',           qty: 2,  unit: 'EA' }
+    ]
+  },
+  windoors: {
+    notes:
+      "Front entry door has a failed weatherstrip and visible daylight at the " +
+      "threshold. Two upstairs windows have foggy glass indicating failed seals. " +
+      "All other units operate smoothly with intact screens.",
+    parsed: [
+      { catalogId: 'weatherstrip', section: 'materials', label: 'Door weatherstrip', qty: 1, unit: 'EA' },
+      { catalogId: 'igu_replace',  section: 'materials', label: 'IGU replacement',   qty: 2, unit: 'EA' }
+    ]
+  },
+  attic: {
+    notes:
+      "Attic insulation is uneven with bare spots near the eaves. Bath fan " +
+      "vents directly into the attic. Ridge vent is partially blocked. No " +
+      "active moisture but staining on the north sheathing suggests past leaks.",
+    parsed: [
+      { catalogId: 'blown_insulation', section: 'materials', label: 'Blown-in insulation top-up', qty: 600, unit: 'SF' },
+      { catalogId: 'bath_fan_vent',    section: 'materials', label: 'Bath fan vent kit',          qty: 1,   unit: 'EA' }
+    ]
+  }
 };
 
-function NotesBlock({ facetId, env, onChange }) {
+// Apply parsed line items to the envelope. If the catalog id already exists
+// in env.lineItems[section] (the auto-derived take-off does this for most
+// roofing/siding items), update the qty in place; otherwise append a new
+// row tagged `fromMemo` so the Build screen knows where it came from. We
+// also stash the parsed list on env.parsedFromMemo so the finding card can
+// echo the carry-forward summary without re-parsing.
+function applyParsedFromMemo(env, parsed) {
+  const lineItems = { ...(env.lineItems || {}) };
+  (parsed || []).forEach((p) => {
+    const sec = p.section || 'materials';
+    const rows = [...(lineItems[sec] || [])];
+    const idx = rows.findIndex((r) => r.id === p.catalogId);
+    if (idx >= 0) {
+      rows[idx] = { ...rows[idx], qty: p.qty, fromMemo: true };
+    } else {
+      rows.push({ id: p.catalogId, qty: p.qty, fromMemo: true, custom: { name: p.label, unit: p.unit, price: 0 } });
+    }
+    lineItems[sec] = rows;
+  });
+  return { ...env, lineItems, parsedFromMemo: parsed || [] };
+}
+
+// ─── Parsed-from-memo carry-forward strip ─────────────────────
+// Compact chip list shown on the EnvelopeCard after dictation runs. Each
+// chip names the catalog item and the qty the LLM extracted from the
+// memo. Tap × to drop the chip from this summary (the line item itself
+// remains on Build · Materials; the rep can adjust there).
+function ParsedFromMemoStrip({ items, onRemove }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
+          Carried to Build · Materials
+        </div>
+        <span style={{
+          fontSize: 9, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '-0.005em'
+        }}>· from your memo</span>
+      </div>
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {items.map((it) =>
+        <span
+          key={it.catalogId}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 4px 4px 9px', borderRadius: 999,
+            background: 'var(--success-bg)', color: 'var(--success)',
+            border: '1px solid var(--success)',
+            fontSize: 10.5, fontWeight: 700, letterSpacing: '-0.005em',
+            lineHeight: 1.2
+          }}>
+          {it.label}
+          <span style={{
+            background: 'var(--success)', color: '#fff',
+            padding: '1px 6px', borderRadius: 999,
+            fontSize: 10, fontVariantNumeric: 'tabular-nums'
+          }}>×{it.qty}{it.unit ? ` ${it.unit.toLowerCase()}` : ''}</span>
+          <button
+            type="button"
+            onClick={() => onRemove(it.catalogId)}
+            aria-label={`Remove ${it.label} from summary`}
+            title="Remove from this summary (Build line item stays)"
+            style={{
+              width: 16, height: 16, padding: 0, borderRadius: 999,
+              background: 'transparent', color: 'var(--success)', border: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer'
+            }}>
+            <Icon.x style={{ width: 9, height: 9 }} />
+          </button>
+        </span>
+        )}
+      </div>
+    </div>);
+}
+
+function NotesBlock({ facetId, env, onChange, onApplyParsed }) {
   const [status, setStatus] = useState(env.notes ? 'ready' : 'idle');
   // status: 'idle' | 'recording' | 'ready'
 
@@ -672,10 +802,9 @@ function NotesBlock({ facetId, env, onChange }) {
     setStatus('recording');
     // Mock processing — in production this is replaced by streaming STT.
     setTimeout(() => {
-      // Pick text by inferring facet from existing onChange callsite \u2014 we
-      // don't have direct access to facet.id here, so fall back generically.
-      const text = MOCK_DICTATION_BY_FACET[facetId] || MOCK_DICTATION_BY_FACET.roofing;
-      onChange({ notes: text });
+      const mock = MOCK_DICTATION_BY_FACET[facetId] || MOCK_DICTATION_BY_FACET.roofing;
+      onChange({ notes: mock.notes || mock });
+      if (onApplyParsed && Array.isArray(mock.parsed)) onApplyParsed(mock.parsed);
       setStatus('ready');
     }, 1400);
   };

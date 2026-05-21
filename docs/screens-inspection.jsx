@@ -427,41 +427,79 @@ function InspectionScreen({
           lets the rep lock-all-and-continue in one step (or adjust
           individual rows before locking). */}
       {continueCascade && onContinue && (() => {
-        // Build the open-rows list, grouped by envelope facet.
+        // Build the open-rows list for the CURRENT section, across every
+        // included scope on the active structure. Measure surveys the
+        // measurement schema; Materials/Labor survey lineItems for that
+        // section; Other surveys equipment + disposal lineItems combined.
+        const sectionForSurvey = activeSection;
+        const sectionsToSurvey = sectionForSurvey === 'other' ? ['equipment', 'disposal'] : [sectionForSurvey];
         const openRows = [];
         (activeStructure.scopes || []).forEach((fid) => {
           const e = (envelope || {})[fid] || {};
-          const schema = MEASUREMENT_SCHEMA[fid] || [];
-          const locks = e.measurementLocks || {};
-          const meas = e.measurements || {};
           const facetMeta = ENVELOPE_FACETS.find((f) => f.id === fid);
-          schema.forEach((f) => {
-            const v = meas[f.key];
-            const lockState = locks[f.key] || 'open';
-            // Flag every row that's neither locked nor dismissed. Empty
-            // rows count too — the rep should explicitly dismiss them
-            // (mark N/A) or fill + lock them before continuing.
-            if (lockState === 'open') {
-              openRows.push({
-                facetId: fid, facetLabel: facetMeta?.label || fid,
-                fieldKey: f.key, fieldLabel: f.label, unit: f.unit, value: v, step: f.step || 1, isText: !!f.isText
+          const facetLabel = facetMeta?.label || fid;
+          if (sectionForSurvey === 'measurements') {
+            const schema = MEASUREMENT_SCHEMA[fid] || [];
+            const locks = e.measurementLocks || {};
+            const meas = e.measurements || {};
+            schema.forEach((f) => {
+              const v = meas[f.key];
+              const lockState = locks[f.key] || 'open';
+              if (lockState === 'open') {
+                openRows.push({
+                  kind: 'measurement',
+                  facetId: fid, facetLabel,
+                  fieldKey: f.key, fieldLabel: f.label, unit: f.unit, value: v,
+                  step: f.step || 1, isText: !!f.isText
+                });
+              }
+            });
+          } else {
+            sectionsToSurvey.forEach((sec) => {
+              const items = e.lineItems?.[sec] || [];
+              const catalog = (CATALOGS[fid] && CATALOGS[fid][sec]) || [];
+              items.forEach((li, idx) => {
+                const lockState = li.state || 'open';
+                if (lockState !== 'open') return;
+                const ce = li.custom ? null : catalog.find((c) => c.id === li.id);
+                const name = li.custom?.name || ce?.name || '(unnamed)';
+                const unit = li.custom?.unit || ce?.unit || '';
+                openRows.push({
+                  kind: 'lineItem',
+                  facetId: fid, facetLabel,
+                  section: sec, itemIdx: idx,
+                  fieldLabel: name, unit, value: li.qty ?? 0,
+                  step: 1, isText: false
+                });
               });
-            }
-          });
+            });
+          }
         });
         const openRowCount = openRows.length;
+        const sectionRowNoun = sectionForSurvey === 'measurements' ? 'measurement' : 'row';
         const extraSub = openRowCount > 0 ?
-          ` · ${openRowCount} measurement${openRowCount === 1 ? '' : 's'} still open` :
+          ` · ${openRowCount} ${sectionRowNoun}${openRowCount === 1 ? '' : 's'} still open` :
           '';
-        // Adjust a single row's value (used inside the review modal). Honors
-        // the same recompute-line-items path setMeasurement uses.
-        const setRow = (facetId, key, value) => {
-          const e = (envelope || {})[facetId] || {};
-          const nextMeas = { ...(e.measurements || {}), [key]: value };
-          setEnvelope((s) => ({
-            ...s,
-            [facetId]: { ...(s?.[facetId] || {}), measurements: nextMeas }
-          }));
+        // Adjust a single row's value (used inside the review modal). Routes
+        // by row kind: measurement edits the measurement map (and recomputes
+        // any auto-linked line items downstream via setMeasurement upstream),
+        // line item edits the qty in place.
+        const setRow = (row, value) => {
+          if (row.kind === 'measurement') {
+            const e = (envelope || {})[row.facetId] || {};
+            const nextMeas = { ...(e.measurements || {}), [row.fieldKey]: value };
+            setEnvelope((s) => ({
+              ...s,
+              [row.facetId]: { ...(s?.[row.facetId] || {}), measurements: nextMeas }
+            }));
+            return;
+          }
+          // line item
+          setEnvelope((s) => {
+            const e = s?.[row.facetId] || {};
+            const items = (e.lineItems?.[row.section] || []).map((li, i) => i === row.itemIdx ? { ...li, qty: value } : li);
+            return { ...s, [row.facetId]: { ...e, lineItems: { ...(e.lineItems || {}), [row.section]: items } } };
+          });
         };
         // Section-by-section cascade. Continue first walks Measure →
         // Materials → Labor → Other within the active scope; only after
@@ -478,33 +516,34 @@ function InspectionScreen({
         const nextSectionLabel = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
         const continueLabel = isLastSection ? continueCascade.label : `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
         const continueSub = isLastSection ? ((continueCascade.sub || '') + extraSub) : '';
+        // Continue gate fires on EVERY section now — any open
+        // (unlocked + undismissed) rows in the active section open the
+        // review drawer before we advance to the next section / structure.
         const onContinueClick = () => {
-          if (!isLastSection) {
-            // Measure → next section still surfaces unlocked-measurement
-            // review (the rows live in the Measure section).
-            if (activeSection === 'measurements' && openRowCount > 0) {
-              setShowContinueReview(true);
-              return;
-            }
-            setActiveSection(stepperIds[curIdx + 1]);
-            return;
-          }
           if (openRowCount > 0) {
             setShowContinueReview(true);
             return;
           }
+          if (!isLastSection) {
+            setActiveSection(stepperIds[curIdx + 1]);
+            return;
+          }
           onContinue();
         };
-        // When the review modal locks all and advances on the Measure
-        // section, we should advance to the next section (not the
-        // structure cascade) if Measure isn't the last section.
+        // Lock everything currently open, then advance — section step if
+        // we're not on the last section, else structure cascade.
         const lockAllAndAdvance = () => {
           setEnvelope((s) => {
             const next = { ...s };
-            openRows.forEach(({ facetId, fieldKey }) => {
-              const e = next[facetId] || {};
-              const locks = { ...(e.measurementLocks || {}), [fieldKey]: 'locked' };
-              next[facetId] = { ...e, measurementLocks: locks };
+            openRows.forEach((row) => {
+              const e = next[row.facetId] || {};
+              if (row.kind === 'measurement') {
+                const locks = { ...(e.measurementLocks || {}), [row.fieldKey]: 'locked' };
+                next[row.facetId] = { ...e, measurementLocks: locks };
+              } else {
+                const items = (e.lineItems?.[row.section] || []).map((li, i) => i === row.itemIdx ? { ...li, state: 'locked' } : li);
+                next[row.facetId] = { ...e, lineItems: { ...(e.lineItems || {}), [row.section]: items } };
+              }
             });
             return next;
           });
@@ -826,56 +865,59 @@ function ContinueReviewSheet({ openRows, onAdjust, onCancel, onLockAll }) {
           </div>
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {openRows.map((r) =>
-          <div key={`${r.facetId}.${r.fieldKey}`} style={{
-            padding: '10px 12px', borderRadius: 10,
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', gap: 10
-          }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: 6, background: 'var(--surface-3)',
-                color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-              }}>🔓</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{r.fieldLabel}</div>
-                <div style={{
-                  fontSize: 9, color: 'var(--text-3)', marginTop: 1,
-                  textTransform: 'uppercase', letterSpacing: 0.08, fontWeight: 700
-                }}>{r.facetLabel}</div>
-              </div>
-              {/* Inline stepper for adjustments */}
-              {!r.isText &&
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 2,
-                flexShrink: 0
+          {openRows.map((r, i) => {
+            const rowKey = r.kind === 'lineItem' ?
+              `${r.facetId}.${r.section}.${r.itemIdx}` :
+              `${r.facetId}.${r.fieldKey}`;
+            return (
+              <div key={rowKey} style={{
+                padding: '10px 12px', borderRadius: 10,
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 10
               }}>
-                <button
-                  type="button"
-                  onClick={() => onAdjust(r.facetId, r.fieldKey, Math.max(0, (Number(r.value) || 0) - r.step))}
-                  style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
-                  aria-label="decrease">−</button>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 6, background: 'var(--surface-3)',
+                  color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>🔓</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{r.fieldLabel}</div>
+                  <div style={{
+                    fontSize: 9, color: 'var(--text-3)', marginTop: 1,
+                    textTransform: 'uppercase', letterSpacing: 0.08, fontWeight: 700
+                  }}>{r.facetLabel}{r.kind === 'lineItem' && r.section ? ` · ${r.section}` : ''}</div>
+                </div>
+                {!r.isText &&
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 2,
+                  flexShrink: 0
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => onAdjust(r, Math.max(0, (Number(r.value) || 0) - r.step))}
+                    style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
+                    aria-label="decrease">−</button>
+                  <span style={{
+                    minWidth: 56, textAlign: 'center',
+                    fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em'
+                  }}>
+                    {r.value} <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{r.unit}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onAdjust(r, (Number(r.value) || 0) + r.step)}
+                    style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
+                    aria-label="increase">+</button>
+                </div>}
+                {r.isText &&
                 <span style={{
                   minWidth: 56, textAlign: 'center',
-                  fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em'
-                }}>
-                  {r.value} <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{r.unit}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onAdjust(r.facetId, r.fieldKey, (Number(r.value) || 0) + r.step)}
-                  style={{ width: 28, height: 28, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text-3)', cursor: 'pointer' }}
-                  aria-label="increase">+</button>
-              </div>}
-              {r.isText &&
-              <span style={{
-                minWidth: 56, textAlign: 'center',
-                fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                color: 'var(--text)'
-              }}>{r.value}</span>}
-            </div>
-          )}
+                  fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                  color: 'var(--text)'
+                }}>{r.value}</span>}
+              </div>);
+          })}
         </div>
         <div style={{ padding: '10px 18px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexShrink: 0 }}>
           <button
@@ -2141,27 +2183,64 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onSetLock, o
           style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0 }}>+</button>
       </div>
       <div style={{ width: 64, textAlign: 'right', fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em', flexShrink: 0, fontVariantNumeric: 'tabular-nums', textDecoration: isDismissed ? 'line-through' : 'none' }}>{fmtMoney(total)}</div>
-      {onSetLock &&
+      {/* Same affordance pattern as measurement rows:
+          - open      → [X dismiss] + [lock]
+          - locked    → [unlock]
+          - dismissed → [undo] */}
+      {onSetLock && isLocked &&
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isLocked) onSetLock(idx, null);
-          else if (isDismissed) onSetLock(idx, null);
-          else onSetLock(idx, 'locked');
-        }}
-        aria-label={isLocked ? 'Unlock row' : (isDismissed ? 'Undo dismiss' : 'Lock row')}
-        title={isLocked ? 'Unlock — re-open this row' : (isDismissed ? 'Undo — restore this row' : 'Lock — commit this row')}
+        onClick={(e) => {e.stopPropagation();onSetLock(idx, null);}}
+        aria-label="Unlock row"
+        title="Unlock — re-open this row"
         style={{
           width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
-          background: isLocked ? 'var(--success)' : 'transparent',
-          color: isLocked ? '#fff' : (isDismissed ? 'var(--brand)' : 'var(--text-3)'),
-          border: isLocked ? 'none' : (isDismissed ? '1px solid var(--brand)' : '1px solid var(--border)'),
+          background: 'var(--success)', color: '#fff', border: 'none',
           cursor: 'pointer', fontSize: 11, fontWeight: 700,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-        {isLocked ? '🔒' : (isDismissed ? '↺' : '🔓')}
-      </button>}
+        }}>🔒</button>}
+      {onSetLock && isDismissed &&
+      <button
+        type="button"
+        onClick={(e) => {e.stopPropagation();onSetLock(idx, null);}}
+        aria-label="Undo dismiss"
+        title="Undo — restore this row"
+        style={{
+          width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
+          background: 'transparent', color: 'var(--brand)',
+          border: '1px solid var(--brand)',
+          cursor: 'pointer', fontSize: 13, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+        }}>↺</button>}
+      {onSetLock && !isLocked && !isDismissed &&
+      <>
+        <button
+          type="button"
+          onClick={(e) => {e.stopPropagation();onSetLock(idx, 'dismissed');}}
+          aria-label="Dismiss row (mark not applicable)"
+          title="Dismiss — mark this row not applicable"
+          style={{
+            width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
+            background: 'transparent', color: 'var(--text-3)',
+            border: '1px solid var(--border)',
+            cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+          <Icon.x />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {e.stopPropagation();onSetLock(idx, 'locked');}}
+          aria-label="Lock row"
+          title="Lock — commit this row"
+          style={{
+            width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
+            background: 'transparent', color: 'var(--text-3)',
+            border: '1px solid var(--border)',
+            cursor: 'pointer', fontSize: 11, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>🔓</button>
+      </>}
       {onRemove &&
       <button
         type="button"

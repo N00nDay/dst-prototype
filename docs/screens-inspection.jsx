@@ -2936,20 +2936,27 @@ function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
 function SubStepStrip({ items, active, onSelect }) {
   if (!items || items.length === 0) return null;
   const activeIdx = Math.max(0, items.findIndex((it) => it.id === active));
+  // Each step button gets an equal slice of width (flex: 1). With the
+  // circle horizontally centered inside its button, the first circle's
+  // center sits at half-a-slice from the container's left, the last at
+  // half-a-slice from the right. Express the baseline and progress fill
+  // as percentages of the container so they line up regardless of width.
+  const halfSlicePct = 100 / (items.length * 2);
+  const progressPct = items.length > 1 ? (activeIdx / items.length) * 100 : 0;
   return (
     <div style={{ padding: '4px 0 2px' }}>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        {/* Connecting baseline */}
+        {/* Connecting baseline — from first-circle center to last-circle center. */}
         <div style={{
-          position: 'absolute', top: 13, left: 14, right: 14, height: 2,
+          position: 'absolute', top: 13, left: `${halfSlicePct}%`, right: `${halfSlicePct}%`, height: 2,
           background: 'var(--border)', zIndex: 0
         }} />
-        {/* Brand progress fill up to active step */}
-        {items.length > 1 &&
+        {/* Brand progress fill — same start, ending at the active circle center. */}
+        {items.length > 1 && activeIdx > 0 &&
         <div style={{
-          position: 'absolute', top: 13, left: 14, height: 2,
+          position: 'absolute', top: 13, left: `${halfSlicePct}%`, height: 2,
           background: 'var(--brand)', zIndex: 0,
-          width: `calc(${(activeIdx / (items.length - 1)) * 100}% - ${(activeIdx / (items.length - 1)) * 28}px)`
+          width: `${progressPct}%`
         }} />}
         {items.map((it, i) => {
           const isActive = it.id === active;

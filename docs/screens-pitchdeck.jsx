@@ -6,7 +6,7 @@
 
 const { useState, useMemo } = window;
 
-function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, onBack, onContinue }) {
+function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, proposals, onBack, onContinue }) {
   if (mode === 'pick') {
     return <SlidePicker
       brand={brand} rep={rep} tablet={tablet}
@@ -256,7 +256,8 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
           setSelectedTier={setSelectedTier}
           rollupForTier={rollupForTier}
           rep={rep}
-          structures={structures} /> :
+          structures={structures}
+          proposals={proposals} /> :
 
         <SlideStage slide={current} tablet={tablet} brandObj={brandObj} skipped={!!skips[current.id]} onOpenPhoto={(i) => setOpenPhoto({ slide: current, photoIndex: i })} />
         }
@@ -697,7 +698,7 @@ function materialsFor(scopeId, tierId) {
   return MATERIALS_BY_TIER[`${scopeId}.${tierId || 'flat'}`] || [];
 }
 
-function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures }) {
+function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures, proposals }) {
   // 7.99% APR / 120 mo financing — matches FinancingScreen assumption.
   const monthly = (total) => {
     const r = 0.0799 / 12,n = 120;
@@ -776,14 +777,11 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
       </div>
 
       {/* ── 1b. Multi-structure bundle banner ───────────────────
-          PR-2 redesign port — when more than one structure is in
-          scope, surface the bundle composition up front so the
-          homeowner can see what 'all-in' means before reading the
-          per-scope tier cards. (PR-3 will pull real per-structure
-          tier picks once the proposal state lifts to app.jsx;
-          today this card lists structures + scope counts.) */}
+          PR-2 + PR-3 redesign port — bundle composition up front,
+          with per-structure tier picks per scope so the homeowner
+          can see at a glance what each building got. */}
       {(structures || []).length > 1 &&
-      <BundleSummaryCard structures={structures} tablet={tablet} />}
+      <BundleSummaryCard structures={structures} proposals={proposals} tablet={tablet} />}
 
       {/* ── 2. Per-scope sections (Roofing/Siding tiered, Gutters flat) ── */}
       {PRESENT_SCOPES.map((scope, idx) =>
@@ -1194,16 +1192,43 @@ function FlatCard({ scope, selected, onSelect, monthly, tablet }) {
 }
 
 // ─── Bundle summary card (multi-structure) ────────────────────
-// Phase 2.5 PR-2 redesign port. Shown above the scope cards on the
-// presentation slide when structures.length > 1. Lists every building
-// in the bundle along with its scope count so the homeowner can see
-// the composition of the all-in price the rep is about to walk them
-// through. Per-structure tier picks come from the Build screen's
-// multi-structure proposal state (M-1..M-3); wiring that data into
-// this card is PR-3 work, deferred until proposal state lifts to
-// app.jsx.
-function BundleSummaryCard({ structures, tablet }) {
-  const scopeLabel = (id) => ({ roofing: 'Roofing', siding: 'Siding', gutters: 'Gutters', windoors: 'Windows & Doors' })[id] || id;
+// Phase 2.5 PR-2 + PR-3 redesign port. Shown above the scope cards on
+// the presentation slide when structures.length > 1. Organized by
+// scope (Roofing, Siding, Gutters, Windows & Doors); within each scope
+// each participating structure shows the tier that was picked for it
+// upstream in the Build screen. (Proposals state lifted to app.jsx in
+// PR-3a; this card consumes it.)
+const PR3_TIER_LABEL = { good: 'Good', better: 'Better', best: 'Best' };
+const PR3_TIER_COLOR = {
+  good: 'var(--text-3)',
+  better: 'var(--brand)',
+  best: 'var(--success)'
+};
+const PR3_ALL_SCOPES = [
+  { id: 'roofing', label: 'Roofing' },
+  { id: 'siding', label: 'Siding' },
+  { id: 'gutters', label: 'Gutters' },
+  { id: 'windoors', label: 'Windows & Doors' }
+];
+
+// Derive a structure's picked tier per scope from the proposals bag.
+// Order of preference: best > better > good (the highest tier that has
+// any product picked counts as the rep's intended pick for the homeowner
+// preview). Returns null if no products are picked for that scope.
+function pickedTierFor(proposal, scopeId) {
+  const sp = proposal?.scopeProducts?.[scopeId];
+  if (!sp) return null;
+  if (sp.best) return 'best';
+  if (sp.better) return 'better';
+  if (sp.good) return 'good';
+  return null;
+}
+
+function BundleSummaryCard({ structures, proposals, tablet }) {
+  // Only render a scope row if at least one structure has it included.
+  const activeScopes = PR3_ALL_SCOPES.filter((sc) =>
+    (structures || []).some((s) => (s.scopes || []).includes(sc.id))
+  );
   return (
     <div className="card" style={{
       padding: tablet ? '18px 22px' : '14px 16px',
@@ -1220,31 +1245,48 @@ function BundleSummaryCard({ structures, tablet }) {
       <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 20 : 17, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 12 }}>
         Here's everything that's included.
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {structures.map((s, i) =>
-        <div key={s.id} style={{
-          padding: '10px 12px',
-          borderRadius: 10,
-          background: 'var(--surface-2)',
-          border: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: 12
-        }}>
-            <span style={{
-              width: 24, height: 24, borderRadius: 6,
-              background: 'var(--brand)', color: 'var(--brand-fg)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 800, flexShrink: 0
-            }}>{i + 1}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>{s.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, fontWeight: 600 }}>
-                {(s.scopes || []).length === 0 ?
-                  'No scopes selected' :
-                  (s.scopes || []).map(scopeLabel).join(' · ')}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {activeScopes.map((sc, scIdx) => {
+          // Structures that include this scope.
+          const participants = (structures || []).filter((s) => (s.scopes || []).includes(sc.id));
+          return (
+            <div key={sc.id} style={{
+              padding: '10px 12px',
+              borderRadius: 10,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 18, height: 18, borderRadius: 999,
+                  background: 'var(--brand-soft)', color: 'var(--brand)',
+                  fontSize: 10, fontWeight: 800
+                }}>{scIdx + 1}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--brand)', letterSpacing: 0.06, textTransform: 'uppercase' }}>{sc.label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>
+                  {participants.length} of {structures.length} buildings
+                </span>
               </div>
-            </div>
-          </div>
-        )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {participants.map((s) => {
+                  const tier = pickedTierFor((proposals || {})[s.id], sc.id);
+                  const accent = tier ? PR3_TIER_COLOR[tier] : 'var(--text-4)';
+                  const label = tier ? PR3_TIER_LABEL[tier] : 'Pending';
+                  return (
+                    <div key={s.id} style={{
+                      padding: '6px 10px', borderRadius: 8,
+                      background: 'var(--surface)', border: '1px solid var(--border)',
+                      display: 'flex', alignItems: 'center', gap: 10
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: 999, background: accent, flexShrink: 0 }} />
+                      <span style={{ fontSize: 10, fontWeight: 800, color: accent, letterSpacing: 0.06, textTransform: 'uppercase', minWidth: 48 }}>{label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                    </div>);
+                })}
+              </div>
+            </div>);
+        })}
       </div>
     </div>);
 }

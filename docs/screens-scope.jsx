@@ -21,14 +21,14 @@ const { useState: useScopeState } = window;
 // roughly half of the known scopes today; more get added as they roll
 // out company-wide.)
 const SCOPE_OPTIONS = [
+{ id: 'repairs', label: 'Repairs' },
 { id: 'roofing', label: 'Roofing' },
 { id: 'siding', label: 'Siding' },
-{ id: 'gutters', label: 'Gutters' },
+{ id: 'solar', label: 'Solar' },
 { id: 'windoors', label: 'Windows & Doors' },
-{ id: 'attic', label: 'Attic Insulation' },
-{ id: 'soffit', label: 'Soffit & Fascia' },
-{ id: 'paint', label: 'Exterior Paint' },
-{ id: 'deck', label: 'Decks & Railings' }];
+{ id: 'other', label: 'Other' },
+{ id: 'trim', label: 'Trim Work' },
+{ id: 'insulation', label: 'Insulation' }];
 
 
 function ScopeScreen({

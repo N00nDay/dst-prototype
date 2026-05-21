@@ -188,7 +188,6 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   const activeStructure = (structures || []).find((s) => s.id === activeStructureId) || (structures || [])[0];
   const activeProposal = proposals[activeStructureId] || DEFAULT_PROPOSAL;
   const includedScopes = activeProposal.includedScopes;
-  const scopeProducts = activeProposal.scopeProducts;
   const scopeDiscount = activeProposal.scopeDiscount;
   const scopeWarranty = activeProposal.scopeWarranty;
 
@@ -207,8 +206,8 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
     });
   };
 
-  // Drawer state — single-instance, parameterized.
-  const [productDrawer, setProductDrawer] = useState(null); // { scopeId, tierId }
+  // Warranty drawer — product picking moved to Build, but warranty per
+  // tier is still selectable from the Proposal page.
   const [warrantyDrawer, setWarrantyDrawer] = useState(null); // { scopeId, tierId }
 
   // Writer that targets the active structure's proposal.
@@ -223,10 +222,22 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
     updateActiveProposal({ includedScopes: next });
   };
 
-  // Rollup for a single (scope, tier) pillar from a specific proposal.
-  // Returns { productId: null } when no product is picked yet.
-  const pillarRollupFor = (proposal, scope, tierId) => {
-    const productId = proposal.scopeProducts[scope.id]?.[tierId];
+  // Read the package product / dismissal picked on the Build page for a
+  // structure. The Proposal page is a carry-forward — what the rep selected
+  // in Build's PackageSelector is what shows here.
+  const getStructurePackageProduct = (structure, scopeId, tierId) =>
+    structure?.envelope?.[scopeId]?.packageProducts?.[tierId] || null;
+  const getStructurePackageDismissal = (structure, scopeId, tierId) =>
+    structure?.envelope?.[scopeId]?.packageDismissals?.[tierId] || null;
+
+  // Rollup for a single (scope, tier) pillar. Product comes from the
+  // structure's Build envelope; discount/warranty stay on the proposal.
+  // Returns { productId: null, dismissal } when the tier was dismissed on
+  // Build, or { productId: null } when nothing's picked yet there.
+  const pillarRollupFor = (proposal, structure, scope, tierId) => {
+    const dismissalId = getStructurePackageDismissal(structure, scope.id, tierId);
+    if (dismissalId) return { productId: null, dismissal: dismissalId };
+    const productId = getStructurePackageProduct(structure, scope.id, tierId);
     const product = findProduct(scope, tierId, productId);
     if (!product) return { productId: null };
     const subtotal = product.subtotal;
@@ -239,20 +250,7 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   };
 
   // Rollup for the active structure — used by the scope card pillars.
-  const pillarRollup = (scope, tierId) => pillarRollupFor(activeProposal, scope, tierId);
-
-  const setProduct = (scopeId, tierId, productId) => {
-    setProposals((p) => {
-      const prev = p[activeStructureId] || DEFAULT_PROPOSAL;
-      const nextProducts = { ...prev.scopeProducts, [scopeId]: { ...prev.scopeProducts[scopeId], [tierId]: productId } };
-      // Reset warranty & discount for that pillar so they re-derive from the new product.
-      const nextWarranty = { ...prev.scopeWarranty, [scopeId]: { ...prev.scopeWarranty[scopeId] } };
-      delete nextWarranty[scopeId][tierId];
-      const nextDiscount = { ...prev.scopeDiscount, [scopeId]: { ...prev.scopeDiscount[scopeId] } };
-      delete nextDiscount[scopeId][tierId];
-      return { ...p, [activeStructureId]: { ...prev, scopeProducts: nextProducts, scopeWarranty: nextWarranty, scopeDiscount: nextDiscount } };
-    });
-  };
+  const pillarRollup = (scope, tierId) => pillarRollupFor(activeProposal, activeStructure, scope, tierId);
 
   const setDiscount = (scopeId, tierId, v) => {
     setProposals((p) => {
@@ -282,7 +280,7 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
         const pillarTotals = [];
         const pillarGPs = [];
         TIER_IDS.forEach((t) => {
-          const r = pillarRollupFor(proposal, sc, t);
+          const r = pillarRollupFor(proposal, s, sc, t);
           if (r.productId) {
             pillarTotals.push(r.total);
             pillarGPs.push(r.gp);
@@ -331,12 +329,14 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
 
   const enabledScopeCount = Object.values(includedScopes).filter(Boolean).length;
   // Ready to present when every included scope on EVERY structure has at
-  // least one tier with a product associated.
+  // least one tier with a product carried forward from Build. (Tiers
+  // dismissed on Build don't count toward readiness — the rep needs at
+  // least one actual product to present a price.)
   const allReady = (structures || []).every((s) => {
     const p = proposals[s.id] || DEFAULT_PROPOSAL;
     return SCOPE_CATALOG.every((sc) => {
       if (!p.includedScopes[sc.id]) return true;
-      return TIER_IDS.some((t) => p.scopeProducts[sc.id]?.[t]);
+      return TIER_IDS.some((t) => getStructurePackageProduct(s, sc.id, t));
     });
   });
   const totalEnabledScopes = (structures || []).reduce((n, s) => {
@@ -345,10 +345,10 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   }, 0);
   const canPresent = totalEnabledScopes > 0 && allReady;
 
-  // Drawer scope helpers
-  const drawerScope = productDrawer ? SCOPE_CATALOG.find((s) => s.id === productDrawer.scopeId) : null;
+  // Warranty drawer scope/product lookup — product is the one carried
+  // forward from Build, looked up by id on the active structure's envelope.
   const warrantyScope = warrantyDrawer ? SCOPE_CATALOG.find((s) => s.id === warrantyDrawer.scopeId) : null;
-  const warrantyProduct = warrantyScope && findProduct(warrantyScope, warrantyDrawer.tierId, scopeProducts[warrantyDrawer.scopeId]?.[warrantyDrawer.tierId]);
+  const warrantyProduct = warrantyScope && findProduct(warrantyScope, warrantyDrawer.tierId, getStructurePackageProduct(activeStructure, warrantyDrawer.scopeId, warrantyDrawer.tierId));
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -382,19 +382,9 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
             perStructure={perStructure} />
         )}
 
-        {/* Project overview — all structures stacked. Phase 2.4 P-4.
-            Renders only when 2+ structures exist; complements (doesn't
-            replace) the per-structure scope cards below by showing the
-            bundle at a glance. */}
-        {(structures || []).length > 1 && (
-          <ProjectOverviewCard
-            tablet={tablet}
-            structures={structures}
-            perStructure={perStructure}
-            activeStructureId={activeStructureId}
-            onSelectStructure={setActiveStructureId}
-            grand={grand} />
-        )}
+        {/* Project overview removed — the structure switcher chip in the
+            header already exposes per-structure navigation; a second list
+            on this screen was redundant. */}
 
         {/* SCOPES */}
         <div style={{ padding: tablet ? '14px 28px 0' : '12px 16px 0' }}>
@@ -414,7 +404,6 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
                   anyPicked={anyPicked}
                   onToggle={() => setIncludedScopes((s) => ({ ...s, [scope.id]: !included }))}
                   pillars={pillars}
-                  onOpenProductDrawer={(tierId) => setProductDrawer({ scopeId: scope.id, tierId })}
                   onOpenWarrantyDrawer={(tierId) => setWarrantyDrawer({ scopeId: scope.id, tierId })}
                   setDiscount={(tierId, v) => setDiscount(scope.id, tierId, v)}
                   tablet={tablet} />);
@@ -475,17 +464,8 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
         canPresent={canPresent}
         onPresent={onPresent} />
 
-      {/* Drawers */}
-      {productDrawer && drawerScope &&
-      <ProductPickerDrawer
-        scope={drawerScope}
-        tierId={productDrawer.tierId}
-        selectedProductId={scopeProducts[productDrawer.scopeId]?.[productDrawer.tierId] || null}
-        onPick={(pid) => {setProduct(productDrawer.scopeId, productDrawer.tierId, pid);setProductDrawer(null);}}
-        onClear={() => {setProduct(productDrawer.scopeId, productDrawer.tierId, null);setProductDrawer(null);}}
-        onClose={() => setProductDrawer(null)} />}
-
-
+      {/* Drawers — product picking lives on Build; only warranty is
+          selectable from here. */}
       {warrantyDrawer && warrantyScope &&
       <WarrantyPickerDrawer
         scope={warrantyScope}
@@ -677,7 +657,7 @@ function SectionLabel({ label, sub }) {
 
 // ─── Scope card ──────────────────────────────────────────────
 // Header toggle + three tier pillars (Good · Better · Best) side by side.
-function ScopeCard({ scope, included, anyPicked, onToggle, pillars, onOpenProductDrawer, onOpenWarrantyDrawer, setDiscount, tablet }) {
+function ScopeCard({ scope, included, anyPicked, onToggle, pillars, onOpenWarrantyDrawer, setDiscount, tablet }) {
   // Sum of configured pillars' totals — shown on the header as a range.
   const configured = pillars.filter((p) => p.rollup.productId);
   const totals = configured.map((p) => p.rollup.total);
@@ -744,7 +724,6 @@ function ScopeCard({ scope, included, anyPicked, onToggle, pillars, onOpenProduc
           scope={scope}
           tierId={tierId}
           rollup={rollup}
-          onOpenProductDrawer={() => onOpenProductDrawer(tierId)}
           onOpenWarrantyDrawer={() => onOpenWarrantyDrawer(tierId)}
           setDiscount={(v) => setDiscount(tierId, v)}
           tablet={tablet}
@@ -755,84 +734,86 @@ function ScopeCard({ scope, included, anyPicked, onToggle, pillars, onOpenProduc
 }
 
 // ─── Tier Pillar — one of three side-by-side per scope ───────
-// Header (tier badge) → product slot → either "associate" CTA or full breakdown
-function TierPillar({ scope, tierId, rollup, onOpenProductDrawer, onOpenWarrantyDrawer, setDiscount, tablet, isFirstPillar }) {
+// Header (colored band with white label) → product slot or dismissed
+// notice or "set on Build" placeholder → breakdown if product is picked.
+// Products are carried forward from Build (env.packageProducts); this page
+// no longer picks products, only displays the carry-forward.
+function TierPillar({ scope, tierId, rollup, onOpenWarrantyDrawer, setDiscount, tablet, isFirstPillar }) {
   const accent = TIER_ACCENT[tierId];
   const hasProduct = !!rollup.productId;
-  // First pillar of roofing carries the path-based comment anchor Craig pinned.
+  const dismissalId = rollup.dismissal || null;
+  const reasonsList = window.PACKAGE_DISMISS_REASONS || [];
+  const reason = dismissalId ? reasonsList.find((r) => r.id === dismissalId) : null;
   const wrapAnchor = isFirstPillar ? '240212482e-pillar-good-roof' : undefined;
 
   return (
     <div
       style={{
-        border: `1px solid ${hasProduct ? accent : 'var(--border)'}`,
-        boxShadow: hasProduct ? `inset 0 0 0 1px ${accent}` : 'none',
+        border: `1px solid ${(hasProduct || dismissalId) ? accent : 'var(--border)'}`,
         borderRadius: 12,
-        background: hasProduct ? 'var(--surface)' : 'var(--surface-2)',
-        padding: tablet ? 12 : 12,
-        display: 'flex', flexDirection: 'column', gap: 10,
-        transition: 'border-color 160ms ease, box-shadow 160ms ease'
+        background: 'var(--surface)',
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        opacity: dismissalId ? 0.6 : 1,
+        transition: 'opacity 160ms ease, border-color 160ms ease'
       }} data-comment-anchor={wrapAnchor}>
-      {/* Tier badge */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: accent, textTransform: 'uppercase' }}>
+      {/* Colored header band — matches the Build PackagePillar pattern. */}
+      <div style={{
+        background: accent, color: '#fff',
+        padding: '6px 10px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.12, textTransform: 'uppercase' }}>
           {TIER_LABEL[tierId]}
         </span>
       </div>
-
-      {/* Product slot — the card itself is the affordance (Craig: drop the
-          separate "Change" text, make the product look clickable). */}
-      {hasProduct ?
-      <button
-        onClick={onOpenProductDrawer}
-        className="product-slot"
-        style={{
-          textAlign: 'left',
+      <div style={{ padding: tablet ? 12 : 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {dismissalId &&
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 2,
+          padding: '8px 10px', borderRadius: 8,
+          background: 'var(--surface-2)', border: '1px solid var(--border)'
+        }}>
+            <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase' }}>Dismissed on Build</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+              {reason ? reason.label : 'Skipped'}
+            </span>
+          </div>}
+        {!dismissalId && hasProduct &&
+        <div style={{
           background: 'var(--surface)',
           border: '1px solid var(--border-strong)',
           borderRadius: 8,
           padding: '8px 10px',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-          transition: 'border-color 120ms ease, background 120ms ease'
+          display: 'flex', flexDirection: 'column', gap: 2
         }}>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase' }}>{rollup.product.mfr}</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
               {rollup.product.line} · {rollup.product.name}
             </span>
-          </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-3)', flexShrink: 0 }}>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button> :
-
-      <button
-        onClick={onOpenProductDrawer}
-        style={{
-          background: 'var(--surface)',
-          border: `1.5px dashed ${accent}`,
-          color: accent,
+          </div>}
+        {!dismissalId && !hasProduct &&
+        <div style={{
+          background: 'var(--surface-2)',
+          border: '1px dashed var(--border-strong)',
+          color: 'var(--text-3)',
           borderRadius: 8,
           padding: '14px 10px',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em'
+          textAlign: 'center',
+          fontSize: 11, fontWeight: 600, letterSpacing: '-0.005em', lineHeight: 1.45
         }}>
-          <Icon.plus style={{ width: 14, height: 14 }} />
-          Associate Product
-        </button>}
-
-
-      {/* Breakdown — only if product picked. No numbers until then. */}
-      {hasProduct &&
-      <PillarBreakdown
-        rollup={rollup}
-        product={rollup.product}
-        warranty={rollup.warranty}
-        onOpenWarrantyDrawer={onOpenWarrantyDrawer}
-        setDiscount={setDiscount}
-        accent={accent} />}
+            No product yet — pick or dismiss this tier on Build.
+          </div>}
+        {/* Breakdown only when a product is carried forward. */}
+        {hasProduct &&
+        <PillarBreakdown
+          rollup={rollup}
+          product={rollup.product}
+          warranty={rollup.warranty}
+          onOpenWarrantyDrawer={onOpenWarrantyDrawer}
+          setDiscount={setDiscount}
+          accent={accent} />}
+      </div>
     </div>);
 }
 
@@ -1219,7 +1200,7 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect, perStr
                 <span style={{
                   fontSize: 11, color: 'var(--text-3)', fontWeight: 600
                 }}>
-                  {scopeCount} envelope{scopeCount === 1 ? '' : 's'} · no picks yet
+                  {scopeCount} scope{scopeCount === 1 ? '' : 's'} · no picks yet
                 </span>}
             </button>);
 

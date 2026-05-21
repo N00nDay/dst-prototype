@@ -3159,4 +3159,4 @@ function DockSep() {
   return <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 0' }} />;
 }
 
-Object.assign(window, { InspectionScreen });
+Object.assign(window, { InspectionScreen, PACKAGE_DISMISS_REASONS });

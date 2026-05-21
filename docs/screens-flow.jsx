@@ -241,7 +241,7 @@ function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, on
             <PhaseCard
             phase="SOLVE"
             summary="Inspect · Build · Proposal"
-            sub="Photograph and dictate findings, build measurements and line items per envelope, then assemble the proposal with live pricing."
+            sub="Photograph and dictate findings, build measurements and line items per scope of work, then assemble the proposal with live pricing."
             onOpen={onOpenInspection} />
             <PhaseCard
             phase="COMMIT"

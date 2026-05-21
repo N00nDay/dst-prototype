@@ -762,7 +762,10 @@ function SourceBanner({ facet, env, measurements, aerial, onChange, onApplyAll }
         </div>
 
         {/* Aerial actions — live inside the card so the action buttons aren't
-                    floating in dead space below it (Craig, May '26 v4). */}
+                    floating in dead space below it (Craig, May '26 v4).
+                    Phase 2.3 B-3: split the message into applied / remaining
+                    counts so the rep sees at a glance how much of the aerial
+                    is still untouched. */}
         {showApplyAll &&
         <div style={{
           padding: '8px 12px',
@@ -771,9 +774,17 @@ function SourceBanner({ facet, env, measurements, aerial, onChange, onApplyAll }
           display: 'flex', alignItems: 'center', gap: 10
         }}>
             <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: 'var(--text-3)' }}>
-              {allAerialApplied ?
-            <>All {aerialFields.length} measurement{aerialFields.length === 1 ? '' : 's'} pulled from this aerial.</> :
-            <>{aerialFields.length} measurement{aerialFields.length === 1 ? '' : 's'} available from this aerial.</>}
+              {(() => {
+                const appliedCount = aerialFields.filter((f) => {
+                  const v = measurements?.[f.key];
+                  return v != null && String(v) === String(aerial[f.key]);
+                }).length;
+                const remaining = aerialFields.length - appliedCount;
+                if (allAerialApplied) {
+                  return <><strong style={{ color: 'var(--success)', fontWeight: 700 }}>All {aerialFields.length}</strong> measurement{aerialFields.length === 1 ? '' : 's'} pulled from this aerial.</>;
+                }
+                return <><strong style={{ color: 'var(--brand)', fontWeight: 700 }}>{remaining} of {aerialFields.length}</strong> remaining{appliedCount > 0 ? ` · ${appliedCount} applied` : ''}.</>;
+              })()}
             </div>
             <button
             className="btn btn-sm btn-primary"

@@ -104,6 +104,18 @@ const TIER_KEYS = ['good', 'better', 'best'];
 const TIER_LABELS = { good: 'Good', better: 'Better', best: 'Best' };
 const TIER_ACCENTS = { good: 'var(--text-2)', better: 'var(--brand)', best: 'var(--success)' };
 
+// Reasons a rep dismisses a package tier instead of associating a product.
+// Surfaces in the dismiss-reason sheet on the package pillar; the picked
+// reason is stored on env.packageDismissals[tier] so downstream (Proposal
+// / Present) can show why the tier was skipped.
+const PACKAGE_DISMISS_REASONS = [
+  { id: 'spec_customer',     label: "Spec'd by customer",   blurb: "Homeowner already picked a specific product." },
+  { id: 'insurance_match',   label: 'Insurance match',      blurb: 'Matching existing material per the claim.' },
+  { id: 'out_of_budget',     label: 'Out of budget',        blurb: "Tier price doesn't fit this customer." },
+  { id: 'customer_declined', label: 'Customer declined',    blurb: 'Offered, but homeowner said no.' },
+  { id: 'not_offered',       label: 'Not offered',          blurb: "We don't carry this tier for this scope." }
+];
+
 // Manufacturers offered as Good/Better/Best packages for a facet — derived
 // from PACKAGE_TIERS. Used by the Materials pane to hide manufacturer-specific
 // sections (e.g. CertainTeed, GAF, Atlas, Royal Vinyl) until the rep selects
@@ -323,7 +335,9 @@ function InspectionScreen({
           <PackageSelector
             facetId={activeFacet}
             packageProducts={env.packageProducts || {}}
-            onChange={(tier, productId) => updateEnvelope({ packageProducts: { ...(env.packageProducts || {}), [tier]: productId } })} />}
+            packageDismissals={env.packageDismissals || {}}
+            onChange={(tier, productId) => updateEnvelope({ packageProducts: { ...(env.packageProducts || {}), [tier]: productId } })}
+            onChangeDismissal={(tier, reasonId) => updateEnvelope({ packageDismissals: { ...(env.packageDismissals || {}), [tier]: reasonId } })} />}
             {activeSection === 'measurements' && sections.includes('measurements') &&
           <div>
               <SourceBanner
@@ -349,6 +363,27 @@ function InspectionScreen({
             {['materials', 'labor'].map((sec) => {
             if (sec !== activeSection) return null;
             if (!sections.includes(sec) || !facet?.hasPricing) return null;
+            // Materials line items are gated by package completion on
+            // facets that have G/B/B tiers — the rep should commit to
+            // each tier (associate a product, or dismiss with reason)
+            // before they start picking individual materials.
+            if (sec === 'materials' && PACKAGE_FACETS.has(activeFacet)) {
+              const products = env.packageProducts || {};
+              const dismissals = env.packageDismissals || {};
+              const incomplete = TIER_KEYS.filter((k) => !products[k] && !dismissals[k]);
+              if (incomplete.length > 0) {
+                return (
+                  <div key={sec} style={{ padding: '4px 14px 14px' }}>
+                    <div style={{
+                      padding: '14px 16px', borderRadius: 10,
+                      border: '1px dashed var(--border-strong)', background: 'var(--surface-2)',
+                      fontSize: 12, color: 'var(--text-3)', lineHeight: 1.45, textAlign: 'center'
+                    }}>
+                      Complete all three packages above ({incomplete.map((k) => TIER_LABELS[k]).join(', ')} still open) before picking materials. Associate a product or dismiss the tier with a reason.
+                    </div>
+                  </div>);
+              }
+            }
             return (
               <div key={sec}>
                   <LineItemsPane envelopeId={activeFacet} section={sec} env={env} updateEnvelope={updateEnvelope} packageProducts={env.packageProducts || {}} />
@@ -870,13 +905,12 @@ function ContinueReviewSheet({ openRows, onAdjust, onCancel, onLockAll }) {
 // Manufacturer · Product · Name. Matches the Proposal Builder's pattern
 // (screens-build.jsx → TierPillar + ProductPickerDrawer).
 // ─────────────────────────────────────────────────────────
-function PackageSelector({ facetId, packageProducts, onChange }) {
+function PackageSelector({ facetId, packageProducts, packageDismissals, onChange, onChangeDismissal }) {
   const tiers = PACKAGE_TIERS[facetId];
   const [drawerTier, setDrawerTier] = useState(null);
+  const [dismissTier, setDismissTier] = useState(null);
 
   if (!tiers) {
-    // Facet supports packages conceptually but has no priced catalog yet
-    // (e.g. Windows & Doors). Show a passive placeholder.
     return (
       <div style={{ padding: '0 14px 12px' }}>
         <div style={{
@@ -897,21 +931,22 @@ function PackageSelector({ facetId, packageProducts, onChange }) {
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.08, color: 'var(--text-3)', textTransform: 'uppercase' }}>
           Package
         </span>
-        <span style={{ fontSize: 10, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
-
-        </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {TIER_KEYS.map((key) => {
           const selectedId = packageProducts?.[key] || null;
           const product = findPackageProduct(facetId, selectedId);
+          const dismissal = packageDismissals?.[key] || null;
           return (
             <PackagePillar
               key={key}
               tierKey={key}
               tier={tiers[key]}
               product={product}
-              onOpen={() => setDrawerTier(key)} />);
+              dismissal={dismissal}
+              onOpen={() => setDrawerTier(key)}
+              onDismiss={() => setDismissTier(key)}
+              onUndoDismiss={() => onChangeDismissal && onChangeDismissal(key, null)} />);
         })}
       </div>
 
@@ -924,70 +959,171 @@ function PackageSelector({ facetId, packageProducts, onChange }) {
         onPick={(id) => {onChange(drawerTier, id);setDrawerTier(null);}}
         onClear={() => {onChange(drawerTier, null);setDrawerTier(null);}}
         onClose={() => setDrawerTier(null)} />}
+
+      {dismissTier &&
+      <PackageDismissReasonSheet
+        tierKey={dismissTier}
+        onPick={(reasonId) => {
+          onChangeDismissal && onChangeDismissal(dismissTier, reasonId);
+          // Clear any associated product so the tier reads as dismissed.
+          if (packageProducts?.[dismissTier]) onChange(dismissTier, null);
+          setDismissTier(null);
+        }}
+        onClose={() => setDismissTier(null)} />}
     </div>);
 
 }
 
-// One pillar — empty CTA when no product picked, filled card when picked.
-function PackagePillar({ tierKey, tier, product, onOpen }) {
+// Sheet for picking why a package tier is being skipped. Mirrors the
+// other bottom-sheet patterns in the prototype.
+function PackageDismissReasonSheet({ tierKey, onPick, onClose }) {
+  const accent = TIER_ACCENTS[tierKey];
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet" style={{ maxHeight: '70%', display: 'flex', flexDirection: 'column' }}>
+        <div className="grabber" />
+        <div style={{ padding: '0 16px 4px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: '#fff', textTransform: 'uppercase', background: accent, padding: '2px 8px', borderRadius: 4 }}>{TIER_LABELS[tierKey]}</span>
+          </div>
+          <h3 style={{ margin: '6px 0 4px' }}>Why are you skipping this tier?</h3>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.4 }}>
+            Pick a reason so the proposal can show why the tier wasn't offered.
+          </div>
+        </div>
+        <div style={{ overflow: 'auto', padding: '0 16px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {PACKAGE_DISMISS_REASONS.map((r) =>
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => onPick(r.id)}
+            className="card"
+            style={{
+              textAlign: 'left', padding: 12, cursor: 'pointer',
+              border: '1px solid var(--border)', borderRadius: 10,
+              background: 'var(--surface)',
+              display: 'flex', flexDirection: 'column', gap: 2
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>{r.label}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.4 }}>{r.blurb}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </>);
+}
+
+// One pillar — empty CTA when no product picked, filled card when picked,
+// dimmed dismissed state when the rep marks the tier skipped with a reason.
+function PackagePillar({ tierKey, tier, product, dismissal, onOpen, onDismiss, onUndoDismiss }) {
   const accent = TIER_ACCENTS[tierKey];
   const hasProduct = !!product;
+  const isDismissed = !!dismissal;
+  const reason = isDismissed ? PACKAGE_DISMISS_REASONS.find((r) => r.id === dismissal) : null;
   return (
     <div style={{
-      border: `1px solid ${hasProduct ? accent : 'var(--border)'}`,
-      boxShadow: hasProduct ? `inset 0 0 0 1px ${accent}` : 'none',
+      border: `1px solid ${(hasProduct || isDismissed) ? accent : 'var(--border)'}`,
       borderRadius: 12,
-      background: hasProduct ? 'var(--surface)' : 'var(--surface-2)',
-      padding: 10,
-      display: 'flex', flexDirection: 'column', gap: 8,
-      transition: 'border-color 160ms ease, box-shadow 160ms ease'
+      background: 'var(--surface)',
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+      opacity: isDismissed ? 0.6 : 1,
+      transition: 'opacity 160ms ease, border-color 160ms ease'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.12, color: accent, textTransform: 'uppercase' }}>
+      {/* Colored header band — solid accent background with white label. */}
+      <div style={{
+        background: accent, color: '#fff',
+        padding: '6px 10px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 6
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.12, textTransform: 'uppercase' }}>
           {TIER_LABELS[tierKey]}
         </span>
-      </div>
-      {hasProduct ?
-      <button
-        type="button"
-        onClick={onOpen}
-        style={{
-          textAlign: 'left',
-          background: 'var(--surface)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: 8,
-          padding: '8px 10px',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-          color: 'inherit'
-        }}>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.mfr}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
-              {product.line} · {product.name}
-            </span>
-          </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-3)', flexShrink: 0 }}>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button> :
-
-      <button
-        type="button"
-        onClick={onOpen}
-        style={{
-          background: 'var(--surface)',
-          border: `1.5px dashed ${accent}`,
-          color: accent,
-          borderRadius: 8,
-          padding: '14px 10px',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em'
-        }}>
-          <Icon.plus style={{ width: 14, height: 14 }} />
-          Associate Product
+        {!isDismissed &&
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={`Dismiss ${TIER_LABELS[tierKey]} package`}
+          title={`Dismiss ${TIER_LABELS[tierKey]} — pick a reason`}
+          style={{
+            width: 20, height: 20, borderRadius: 4, padding: 0,
+            background: 'rgba(255,255,255,0.15)', color: '#fff', border: 0,
+            cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+          <Icon.x style={{ width: 12, height: 12 }} />
         </button>}
+      </div>
+      <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {isDismissed ?
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderRadius: 8,
+          background: 'var(--surface-2)', border: '1px solid var(--border)'
+        }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase' }}>Dismissed</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                {reason ? reason.label : 'Skipped'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onUndoDismiss}
+              aria-label="Undo dismiss"
+              title="Restore this package"
+              style={{
+                width: 28, height: 28, borderRadius: 6, padding: 0,
+                background: 'transparent', color: 'var(--brand)',
+                border: '1px solid var(--brand)',
+                cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+              }}>↺</button>
+          </div> :
+        hasProduct ?
+        <button
+          type="button"
+          onClick={onOpen}
+          style={{
+            textAlign: 'left',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8,
+            color: 'inherit'
+          }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, letterSpacing: 0.04, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.mfr}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                {product.line} · {product.name}
+              </span>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-3)', flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button> :
+
+        <button
+          type="button"
+          onClick={onOpen}
+          style={{
+            background: 'var(--surface)',
+            border: `1.5px dashed ${accent}`,
+            color: accent,
+            borderRadius: 8,
+            padding: '14px 10px',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em'
+          }}>
+            <Icon.plus style={{ width: 14, height: 14 }} />
+            Associate Product
+          </button>}
+      </div>
     </div>);
 
 }

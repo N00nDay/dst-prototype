@@ -6,7 +6,7 @@
 
 const { useState, useMemo } = window;
 
-function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, onBack, onContinue }) {
+function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, onBack, onContinue }) {
   if (mode === 'pick') {
     return <SlidePicker
       brand={brand} rep={rep} tablet={tablet}
@@ -254,7 +254,9 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
           tablet={tablet}
           selectedTier={selectedTier}
           setSelectedTier={setSelectedTier}
-          rollupForTier={rollupForTier} /> :
+          rollupForTier={rollupForTier}
+          rep={rep}
+          structures={structures} /> :
 
         <SlideStage slide={current} tablet={tablet} brandObj={brandObj} skipped={!!skips[current.id]} onOpenPhoto={(i) => setOpenPhoto({ slide: current, photoIndex: i })} />
         }
@@ -695,7 +697,7 @@ function materialsFor(scopeId, tierId) {
   return MATERIALS_BY_TIER[`${scopeId}.${tierId || 'flat'}`] || [];
 }
 
-function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier }) {
+function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures }) {
   // 7.99% APR / 120 mo financing — matches FinancingScreen assumption.
   const monthly = (total) => {
     const r = 0.0799 / 12,n = 120;
@@ -766,8 +768,10 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier 
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
           <HeroPill icon={<Icon.pin />} label={CUSTOMER.address.split(',')[0]} />
-          <HeroPill icon={<Icon.user />} label="Cole Jankowicz" />
+          <HeroPill icon={<Icon.user />} label={rep?.name || 'Your IHS rep'} />
           <HeroPill icon={<Icon.cal />} label="Quote valid 30 days" />
+          {(structures || []).length > 1 &&
+            <HeroPill icon={<Icon.building />} label={`${structures.length} structures bundled`} />}
         </div>
       </div>
 

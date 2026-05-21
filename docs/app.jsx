@@ -650,6 +650,7 @@ function App() {
             selectedTier={selectedTier}
             setSelectedTier={setSelectedTier}
             rollupForTier={(id) => null}
+            structures={structures}
             onBack={() => setView('apt')}
             onContinue={() => setView('sign')} />
           }

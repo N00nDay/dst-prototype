@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>IHS Selling Way — Build screen redesign</title>
+<meta name="viewport" content="width=1400" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  html, body { height: 100%; }
+  body { background: #f0eee9; }
+  /* Each artboard is a fixed-size canvas; we apply brand tokens scoped to it
+     so the tablet mock reads the warm Skywalker palette. */
+  .ab { width: 100%; height: 100%; }
+  .ab[data-brand="skywalker"] {
+    --brand: oklch(0.62 0.17 250);
+    --brand-fg: oklch(0.99 0 0);
+    --brand-soft: oklch(0.95 0.03 250);
+    --brand-soft-fg: oklch(0.32 0.13 250);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="build-redesign.jsx"></script>
+<script type="text/babel" src="build-redesign-proposed.jsx"></script>
+<script type="text/babel" src="build-redesign-variants.jsx"></script>
+<script type="text/babel" src="build-redesign-inspect.jsx"></script>
+<script type="text/babel" src="build-redesign-proposal.jsx"></script>
+<script type="text/babel" src="build-redesign-present.jsx"></script>
+
+<script type="text/babel">
+const { useEffect } = React;
+
+// Tablet artboard dimensions. Real iPad Pro 11" portrait is 834×1194, but
+// we render the in-app width (no device chrome) at the same 1024 width used
+// by the actual app. Heights vary by what each artboard needs to show.
+const TABLET_W = 1024;
+
+function Ab({ children, brand = 'skywalker' }) {
+  return <div className="ab" data-brand={brand}>{children}</div>;
+}
+
+function App() {
+  return (
+    <DesignCanvas initialZoom={0.6}>
+      <DCSection
+        id="present"
+        title="Presentation — All-in (multi-structure)"
+        subtitle="Match the existing customer-pricing slide. Scopes roll up across all structures; only addition is a quiet bundle disclosure.">
+        <DCArtboard id="pres-allin" label="All-in · 3 structures bundled" width={TABLET_W} height={2400}>
+          <Ab><PresentAllIn /></Ab>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="proposal"
+        title="Proposal — redesigned"
+        subtitle="All-in vs By-structure toggle. G/B/B + envelope selections inherited from Build.">
+        <DCArtboard id="proposal-allin" label="All-in · single project total" width={TABLET_W} height={1700}>
+          <Ab><ProposalAllIn /></Ab>
+        </DCArtboard>
+        <DCArtboard id="proposal-detail" label="By-structure · Main open" width={TABLET_W} height={1700}>
+          <Ab><ProposalByStructure /></Ab>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="structures"
+        title="Scope — new step before Inspect"
+        subtitle="Rep names buildings + picks envelopes once. Inspect, Build, Proposal all run one structure at a time from here.">
+        <DCArtboard id="structures-step" label="Scope setup page" width={TABLET_W} height={1500}>
+          <Ab><StructuresStep /></Ab>
+        </DCArtboard>
+        <DCArtboard id="structures-delete" label="Delete-confirm modal" width={TABLET_W} height={1300}>
+          <Ab><StructuresDeleteModal /></Ab>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="inspect"
+        title="Inspect — per structure"
+        subtitle="Header chip shows which structure you're on. Continue cascades to next structure, then to Build.">
+        <DCArtboard id="inspect-main" label="Main · 1 of 2 (mid-flow)" width={TABLET_W} height={2100}>
+          <Ab><InspectMain /></Ab>
+        </DCArtboard>
+        <DCArtboard id="inspect-garage" label="Detached Garage · 2 of 2 (fresh)" width={TABLET_W} height={1700}>
+          <Ab><InspectGarage /></Ab>
+        </DCArtboard>
+        <DCArtboard id="inspect-dismiss" label="Dismiss-reason sheet" width={TABLET_W} height={1700}>
+          <Ab><InspectDismissReasonSheet /></Ab>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="build"
+        title="Build — Measure sub-step"
+        subtitle="Whittaker / Main / Roofing, mid-flow. Locked rows in soft green, open rows below.">
+        <DCArtboard id="proposed-measure" label="Build · Measure" width={TABLET_W} height={1620}>
+          <Ab><ProposedBuildMeasure /></Ab>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="states"
+        title="Build — key states"
+        subtitle="How the lock model, Continue gate, and multi-structure header read on the same screen.">
+        <DCArtboard id="continue-modal" label="Continue review modal" width={TABLET_W} height={1620}>
+          <Ab><ContinueReviewVariant /></Ab>
+        </DCArtboard>
+        <DCArtboard id="multi-structure" label="Multi-structure · Pool House" width={TABLET_W} height={1620}>
+          <Ab><MultiStructureVariant /></Ab>
+        </DCArtboard>
+        <DCArtboard id="materials" label="Materials sub-step (G/B/B)" width={TABLET_W} height={1700}>
+          <Ab><ProposedBuildMaterials /></Ab>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

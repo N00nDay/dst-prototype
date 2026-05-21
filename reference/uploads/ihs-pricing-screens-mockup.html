@@ -1,0 +1,3413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IHS Selling Way — Package Pricing Mockups</title>
+<style>
+  :root {
+    --ihs-navy: #0f2a44;
+    --ihs-navy-2: #173a5e;
+    --ihs-blue: #1f6feb;
+    --ihs-orange: #ff7a1a;
+    --ihs-orange-soft: #ffe9d6;
+    --ihs-green: #16a34a;
+    --ihs-green-soft: #dcfce7;
+    --ihs-gold: #b8860b;
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --line: #e5e9f0;
+    --text: #1a2233;
+    --muted: #6b7280;
+    --shadow-sm: 0 1px 2px rgba(15,42,68,.06);
+    --shadow-md: 0 4px 16px rgba(15,42,68,.08);
+    --shadow-lg: 0 12px 32px rgba(15,42,68,.12);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Top bar ===== */
+  .topbar {
+    background: linear-gradient(180deg, var(--ihs-navy) 0%, var(--ihs-navy-2) 100%);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--ihs-orange);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: 0.3px; }
+  .brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .topbar-right { display: flex; align-items: center; gap: 18px; font-size: 13px; }
+  .customer-chip {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+
+  /* ===== Tabs ===== */
+  .tabs {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    padding: 0 28px;
+    display: flex;
+    gap: 4px;
+  }
+  .tab {
+    padding: 16px 18px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    transition: all .15s ease;
+    user-select: none;
+  }
+  .tab:hover { color: var(--ihs-navy); }
+  .tab.active {
+    color: var(--ihs-navy);
+    border-bottom-color: var(--ihs-orange);
+  }
+  .tab-num {
+    display: inline-grid;
+    place-items: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 11px;
+    margin-right: 8px;
+    border: 1px solid var(--line);
+  }
+  .tab.active .tab-num {
+    background: var(--ihs-orange);
+    color: #fff;
+    border-color: var(--ihs-orange);
+  }
+
+  /* ===== Screen container ===== */
+  .screen { display: none; padding: 28px; }
+  .screen.active { display: block; }
+
+  .screen-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .screen-title { font-size: 22px; font-weight: 700; margin: 0 0 4px 0; }
+  .screen-sub { color: var(--muted); font-size: 14px; margin: 0; }
+
+  .step-pills { display: flex; gap: 8px; }
+  .pill {
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .pill.done { background: var(--ihs-green-soft); color: var(--ihs-green); border-color: transparent; }
+  .pill.active { background: var(--ihs-navy); color: #fff; border-color: var(--ihs-navy); }
+
+  /* ===== Compare grid (Screen 1) ===== */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 220px repeat(3, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .compare-rail {
+    background: transparent;
+    padding-top: 200px; /* aligns with card body */
+    display: flex;
+    flex-direction: column;
+  }
+  .rail-label {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ihs-navy);
+    padding-right: 8px;
+  }
+  /* First rail label aligns with the taller price row (96px) */
+  .rail-label.tall {
+    height: 96px;
+    border-bottom: 1px solid var(--line);
+    background: #fafbfd;
+    padding-left: 4px;
+    border-radius: 8px 0 0 8px;
+  }
+  .rail-label svg { margin-right: 8px; flex-shrink: 0; }
+  .rail-label small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* ===== Package card ===== */
+  .pkg {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    transition: all .2s ease;
+    position: relative;
+  }
+  .pkg:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .pkg.recommended {
+    border: 2px solid var(--ihs-orange);
+    box-shadow: var(--shadow-md);
+  }
+  .pkg.recommended::before {
+    content: "MOST POPULAR";
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--ihs-orange);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 2;
+  }
+  .pkg.best {
+    border: 2px solid var(--ihs-gold);
+  }
+  .pkg.best::before {
+    content: "PREMIUM";
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--ihs-gold);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 2;
+  }
+
+  .pkg-head {
+    height: 200px;
+    background: linear-gradient(135deg, #2a4969 0%, #1a3050 100%);
+    color: #fff;
+    padding: 22px 22px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .pkg-head.repair {
+    background: linear-gradient(135deg, #4a5b73 0%, #2c3a4e 100%);
+  }
+  .pkg-head.mid {
+    background: linear-gradient(135deg, #1f6feb 0%, #0f3a8a 100%);
+  }
+  .pkg-head.premium {
+    background: linear-gradient(135deg, #b8860b 0%, #6b4900 100%);
+  }
+  .pkg-head.good {
+    background: linear-gradient(135deg, #4a5b73 0%, #2c3a4e 100%);
+  }
+  .pkg-head.better {
+    background: linear-gradient(135deg, #1f6feb 0%, #0f3a8a 100%);
+  }
+  .pkg-head.best-bg {
+    background: linear-gradient(135deg, #b8860b 0%, #6b4900 100%);
+  }
+  .pkg-head::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'><polygon points='0,60 50,15 100,60' fill='rgba(255,255,255,0.06)'/></svg>") no-repeat bottom center / 100% auto;
+  }
+  .pkg-tier {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  .pkg-name { font-size: 22px; font-weight: 700; margin: 0 0 6px; line-height: 1.15; }
+  .pkg-tagline { font-size: 13px; opacity: 0.85; margin: 0; max-width: 240px; }
+
+  .pkg-body { padding: 0; flex: 1; display: flex; flex-direction: column; }
+  .row {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .row .check { color: var(--ihs-green); margin-right: 8px; }
+  .row .x { color: #c4c8d4; margin-right: 8px; }
+  .row.price-row {
+    background: #fafbfd;
+    height: 96px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .price-big { font-size: 26px; font-weight: 800; color: var(--ihs-navy); line-height: 1; }
+  .price-mo { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .price-mo b { color: var(--ihs-orange); font-weight: 700; }
+
+  .pkg-actions {
+    padding: 16px 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn {
+    border: none;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all .15s ease;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--ihs-navy);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--ihs-navy-2); }
+  .btn-secondary {
+    background: #fff;
+    color: var(--ihs-navy);
+    border: 1px solid var(--line);
+  }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-orange {
+    background: var(--ihs-orange);
+    color: #fff;
+  }
+  .btn-orange:hover { background: #e66a0d; }
+
+  /* ===== Component swapper (Screen 2) ===== */
+  .swapper {
+    margin-top: 28px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .swapper-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .swapper-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .swapper-title small {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 12.5px;
+    display: block;
+    margin-top: 2px;
+  }
+  .components {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .comp {
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    background: #fff;
+    position: relative;
+  }
+  .comp:hover { border-color: var(--ihs-blue); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .comp.selected {
+    border-color: var(--ihs-orange);
+    background: var(--ihs-orange-soft);
+  }
+  .comp.selected::after {
+    content: "✓";
+    position: absolute;
+    top: 6px; right: 8px;
+    color: var(--ihs-orange);
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .comp-icon {
+    width: 36px; height: 36px;
+    margin: 0 auto 8px;
+    background: var(--bg);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--ihs-navy);
+  }
+  .comp.selected .comp-icon { background: #fff; color: var(--ihs-orange); }
+  .comp-label { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; }
+  .comp-price { font-size: 11px; color: var(--muted); }
+
+  /* ===== Add-on shelf ===== */
+  .addons {
+    margin-top: 24px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .addons-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+  }
+  .addons-head h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .addons-head small { color: var(--muted); font-size: 12.5px; font-weight: 400; display: block; margin-top: 2px; }
+  .addons-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+  }
+  .addons-grid.g7 {
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .addon {
+    padding: 18px;
+    border-right: 1px solid var(--line);
+    cursor: pointer;
+    transition: background .15s ease;
+    position: relative;
+  }
+  .addon:last-child { border-right: none; }
+  .addon:hover { background: #fafbfd; }
+  .addon-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .addon-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: grid; place-items: center;
+    color: var(--ihs-navy);
+    flex-shrink: 0;
+  }
+  .addon-name { font-size: 13.5px; font-weight: 700; }
+  .addon-price { font-size: 12px; color: var(--ihs-navy); font-weight: 700; }
+  .addon-desc { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+  .addon-toggle {
+    margin-top: 12px;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ihs-navy);
+    padding: 7px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s ease;
+  }
+  .addon.selected .addon-toggle {
+    background: var(--ihs-green);
+    color: #fff;
+    border-color: var(--ihs-green);
+  }
+  .addon.selected { background: var(--ihs-green-soft); }
+  .addon.selected:hover { background: #c7f1d2; }
+
+  /* Maintenance highlight banner */
+  .maint-banner {
+    margin-top: 24px;
+    background: linear-gradient(135deg, var(--ihs-orange-soft) 0%, #fff3e8 100%);
+    border: 1px solid #ffd0a8;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .maint-left { display: flex; align-items: center; gap: 16px; }
+  .maint-icon {
+    width: 48px; height: 48px;
+    background: var(--ihs-orange);
+    color: #fff;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .maint-title { font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+  .maint-sub { font-size: 13px; color: #6b4900; margin: 0; }
+  .maint-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .maint-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ihs-navy);
+    cursor: pointer;
+  }
+  .toggle {
+    position: relative;
+    width: 42px; height: 24px;
+    background: #cdd2dc;
+    border-radius: 999px;
+    transition: background .2s;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .toggle.on { background: var(--ihs-green); }
+  .toggle.on::after { left: 20px; }
+
+  /* Summary footer */
+  .summary-bar {
+    position: sticky;
+    bottom: 0;
+    margin-top: 28px;
+    background: #fff;
+    border-top: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    box-shadow: 0 -4px 16px rgba(15,42,68,.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .summary-left { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .summary-block { display: flex; flex-direction: column; }
+  .summary-label { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; font-weight: 600; }
+  .summary-value { font-size: 18px; font-weight: 800; color: var(--ihs-navy); }
+  .summary-value.accent { color: var(--ihs-orange); }
+  .summary-right { display: flex; gap: 10px; }
+
+  .legend {
+    margin-top: 18px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend b { color: var(--ihs-navy); }
+
+  /* Tooltips, misc */
+  .badge-inline {
+    background: var(--ihs-green-soft);
+    color: var(--ihs-green);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+
+  /* Note banner at top of screen */
+  .note {
+    background: #eef4ff;
+    border: 1px solid #cfdfff;
+    color: #2a4b8a;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ===== Present-to-Customer (Screen 3) ===== */
+  .present-hero {
+    background: linear-gradient(135deg, var(--ihs-navy) 0%, var(--ihs-navy-2) 60%, #1f3a5a 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .present-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'><polygon points='0,100 100,30 200,100' fill='rgba(255,255,255,0.04)'/><polygon points='30,100 130,55 200,100' fill='rgba(255,255,255,0.03)'/></svg>") no-repeat bottom right / 60% auto;
+    pointer-events: none;
+  }
+  .present-hero h1 { font-size: 28px; margin: 0 0 6px; font-weight: 800; }
+  .present-hero p { font-size: 15px; opacity: 0.85; margin: 0; max-width: 600px; }
+  .present-hero .hero-meta {
+    display: flex; gap: 18px; margin-top: 18px;
+    font-size: 12.5px;
+  }
+  .present-hero .hero-meta span {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 6px 12px; border-radius: 999px;
+  }
+
+  /* Choice pills — customer-friendly Good/Better/Best selector */
+  .choice-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .choice {
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 22px 20px;
+    cursor: pointer;
+    transition: all .18s ease;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  .choice:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .choice.chosen {
+    border-color: var(--ihs-orange);
+    box-shadow: 0 8px 24px rgba(255,122,26,0.25);
+  }
+  .choice.chosen::after {
+    content: "✓ SELECTED";
+    position: absolute;
+    top: -10px; right: 16px;
+    background: var(--ihs-orange);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .choice-tier {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .choice.chosen .choice-tier {
+    background: var(--ihs-orange-soft);
+    color: var(--ihs-orange);
+  }
+  .choice-name { font-size: 19px; font-weight: 700; margin: 0 0 4px; color: var(--ihs-navy); }
+  .choice-tag { font-size: 13px; color: var(--muted); margin: 0 0 14px; line-height: 1.45; }
+  .choice-price {
+    display: flex; align-items: baseline; gap: 8px; margin-top: auto;
+  }
+  .choice-price .big {
+    font-size: 26px; font-weight: 800; color: var(--ihs-navy);
+  }
+  .choice-price .small { font-size: 12.5px; color: var(--muted); }
+  .choice-mo {
+    margin-top: 8px;
+    background: var(--ihs-orange-soft);
+    color: var(--ihs-orange);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Deeper comparison toggle (Present screen) */
+  .compare-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: -8px auto 24px;
+    padding: 12px 22px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ihs-navy);
+    cursor: pointer;
+    transition: all .15s ease;
+    width: fit-content;
+  }
+  .compare-toggle:hover {
+    border-color: var(--ihs-orange);
+    color: var(--ihs-orange);
+    box-shadow: var(--shadow-sm);
+  }
+  .compare-toggle .chev {
+    transition: transform .25s ease;
+    display: inline-block;
+  }
+  .compare-toggle.open .chev { transform: rotate(180deg); }
+
+  .compare-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease, margin .35s ease, opacity .25s ease;
+    opacity: 0;
+    margin-bottom: 0;
+  }
+  .compare-panel.open {
+    max-height: 1600px;
+    opacity: 1;
+    margin-bottom: 24px;
+  }
+
+  .compare-table {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .compare-table-head {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr 1fr;
+    background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  .compare-table-head .cell {
+    padding: 18px 20px;
+    border-right: 1px solid var(--line);
+    text-align: center;
+  }
+  .compare-table-head .cell:first-child { text-align: left; }
+  .compare-table-head .cell:last-child { border-right: none; }
+  .compare-table-head h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ihs-navy);
+  }
+  .compare-table-head .tier-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .compare-table-head .col-good .tier-tag    { background: #eaeef5; color: #4a5b73; }
+  .compare-table-head .col-better .tier-tag  { background: #d8e6ff; color: #1f6feb; }
+  .compare-table-head .col-best .tier-tag    { background: #fcebc8; color: #b8860b; }
+  .compare-table-head .head-title { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--line);
+  }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row:nth-child(odd) { background: #fafbfd; }
+  .compare-row .cell {
+    padding: 14px 20px;
+    border-right: 1px solid var(--line);
+    font-size: 13.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .compare-row .cell:last-child { border-right: none; }
+  .compare-row .label {
+    font-weight: 700;
+    color: var(--ihs-navy);
+    font-size: 13px;
+  }
+  .compare-row .label svg {
+    color: var(--ihs-navy);
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .compare-row .star {
+    color: var(--ihs-gold);
+    letter-spacing: 1px;
+  }
+  .compare-row .yes { color: var(--ihs-green); font-weight: 700; }
+  .compare-row .nope { color: #c4c8d4; font-weight: 700; }
+
+  .compare-footer {
+    padding: 18px 22px;
+    background: linear-gradient(135deg, var(--ihs-orange-soft) 0%, #fff4e8 100%);
+    border-top: 1px solid #ffd0a8;
+    font-size: 13px;
+    color: #6b4900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .compare-footer b { color: var(--ihs-navy); }
+
+  @media (max-width: 1100px) {
+    .compare-table-head, .compare-row { grid-template-columns: 1fr; }
+    .compare-row .cell, .compare-table-head .cell { border-right: none; border-bottom: 1px dashed var(--line); }
+  }
+
+  /* Customer-facing add-on tiles — larger, with toggle look */
+  .cust-addons {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+  }
+  .cust-addons-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .cust-addons-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .cust-addons-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .cust-addons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .cust-addon {
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 16px 18px;
+    cursor: pointer;
+    transition: all .15s ease;
+    background: #fff;
+    position: relative;
+  }
+  .cust-addon:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .cust-addon.selected {
+    border-color: var(--ihs-green);
+    background: var(--ihs-green-soft);
+  }
+  .cust-addon .top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .cust-addon .icon-box {
+    width: 40px; height: 40px;
+    background: var(--bg);
+    color: var(--ihs-navy);
+    border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .cust-addon.selected .icon-box { background: #fff; color: var(--ihs-green); }
+  .cust-toggle {
+    width: 44px; height: 26px;
+    background: #d6dae3;
+    border-radius: 999px;
+    position: relative;
+    transition: background .2s;
+  }
+  .cust-toggle::after {
+    content: "";
+    position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left .2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .cust-addon.selected .cust-toggle { background: var(--ihs-green); }
+  .cust-addon.selected .cust-toggle::after { left: 21px; }
+  .cust-addon h4 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ihs-navy); }
+  .cust-addon .desc { font-size: 12.5px; color: var(--muted); line-height: 1.45; margin: 6px 0 10px; }
+  .cust-addon .price { font-size: 13px; font-weight: 700; color: var(--ihs-navy); }
+
+  /* Customer summary — big & bold */
+  .cust-summary {
+    background: linear-gradient(135deg, #fff 0%, #fafbfd 100%);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 28px;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+  }
+  .cust-summary-left { border-right: 1px solid var(--line); padding-right: 28px; }
+  .cust-summary-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); font-weight: 700; margin-bottom: 6px;
+  }
+  .cust-summary-monthly {
+    font-size: 56px; font-weight: 800; color: var(--ihs-orange); line-height: 1;
+    letter-spacing: -1px;
+  }
+  .cust-summary-monthly small {
+    font-size: 18px; color: var(--muted); font-weight: 600; margin-left: 4px;
+  }
+  .cust-summary-sub {
+    font-size: 13.5px; color: var(--muted); margin-top: 8px;
+  }
+  .cust-summary-sub b { color: var(--ihs-navy); }
+  .cust-summary-total {
+    font-size: 22px; font-weight: 800; color: var(--ihs-navy); margin-top: 14px;
+  }
+  .cust-summary-right { display: flex; flex-direction: column; gap: 10px; }
+  .cust-summary-right .btn { padding: 16px; font-size: 14.5px; }
+
+  @media (max-width: 1100px) {
+    .choice-row { grid-template-columns: 1fr; }
+    .cust-addons-grid { grid-template-columns: repeat(2, 1fr); }
+    .cust-summary { grid-template-columns: 1fr; }
+    .cust-summary-left { border-right: none; border-bottom: 1px solid var(--line); padding-right: 0; padding-bottom: 20px; }
+  }
+
+  /* ===== Finalize page (Screen 4) ===== */
+  .fin-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .fin-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .fin-card-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .fin-card-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ihs-navy); }
+  .fin-card-head small { color: var(--muted); font-size: 12.5px; font-weight: 400; display: block; margin-top: 2px; }
+  .fin-step-num {
+    width: 26px; height: 26px;
+    background: var(--ihs-navy);
+    color: #fff;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 800;
+    margin-right: 10px;
+  }
+  .fin-step-num.done { background: var(--ihs-green); }
+  .fin-card-head .head-title { display: flex; align-items: center; }
+  .fin-card-body { padding: 20px 22px; }
+
+  /* Line items table */
+  .line-items { width: 100%; border-collapse: collapse; }
+  .line-items td {
+    padding: 12px 0;
+    font-size: 13.5px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .line-items tr:last-child td { border-bottom: none; }
+  .line-items .li-name { color: var(--text); }
+  .line-items .li-detail { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+  .line-items .li-price { text-align: right; font-weight: 700; color: var(--ihs-navy); }
+  .line-items .li-included {
+    display: inline-block;
+    background: var(--ihs-green-soft);
+    color: var(--ihs-green);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+  .line-items .li-promo {
+    display: inline-block;
+    background: var(--ihs-orange-soft);
+    color: var(--ihs-orange);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+  .line-items tr.total td {
+    padding-top: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ihs-navy);
+    border-top: 2px solid var(--ihs-navy);
+    border-bottom: none;
+  }
+  .line-items tr.total .li-price { font-size: 22px; }
+
+  /* Schedule + dates */
+  .date-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .date-card {
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .date-card:hover { border-color: var(--ihs-blue); transform: translateY(-1px); }
+  .date-card.selected {
+    border-color: var(--ihs-orange);
+    background: var(--ihs-orange-soft);
+  }
+  .date-month { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; }
+  .date-day { font-size: 26px; font-weight: 800; color: var(--ihs-navy); line-height: 1; margin: 4px 0; }
+  .date-card.selected .date-day { color: var(--ihs-orange); }
+  .date-name { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .date-card.selected .date-name { color: var(--ihs-navy); font-weight: 700; }
+
+  /* Financing option cards */
+  .finance-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .finance-opt {
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .finance-opt:hover { border-color: var(--ihs-blue); }
+  .finance-opt.selected {
+    border-color: var(--ihs-orange);
+    background: var(--ihs-orange-soft);
+  }
+  .finance-term { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; }
+  .finance-mo { font-size: 20px; font-weight: 800; color: var(--ihs-navy); margin: 4px 0; }
+  .finance-opt.selected .finance-mo { color: var(--ihs-orange); }
+  .finance-apr { font-size: 11.5px; color: var(--muted); }
+
+  /* Signature pad */
+  .sig-pad {
+    background: #fafbfd;
+    border: 2px dashed #cdd2dc;
+    border-radius: 12px;
+    height: 110px;
+    display: grid; place-items: center;
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+    cursor: pointer;
+    transition: all .15s ease;
+    position: relative;
+  }
+  .sig-pad:hover { border-color: var(--ihs-orange); color: var(--ihs-orange); }
+  .sig-pad.signed {
+    background: #fff;
+    border-style: solid;
+    border-color: var(--ihs-green);
+    color: var(--ihs-navy);
+    font-style: normal;
+    font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+    font-size: 30px;
+  }
+  .sig-meta { font-size: 11px; color: var(--muted); margin-top: 8px; display: flex; justify-content: space-between; }
+
+  /* Right rail summary */
+  .fin-summary {
+    background: linear-gradient(135deg, var(--ihs-navy) 0%, var(--ihs-navy-2) 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 20px;
+  }
+  .fin-summary h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+  .fin-summary .sub { font-size: 12.5px; opacity: 0.7; margin-bottom: 20px; }
+  .fin-summary .big-mo {
+    font-size: 44px; font-weight: 800; color: var(--ihs-orange);
+    line-height: 1; letter-spacing: -1px;
+  }
+  .fin-summary .big-mo small { font-size: 16px; opacity: 0.7; color: #fff; margin-left: 2px; font-weight: 600; }
+  .fin-summary .total-line { font-size: 13px; opacity: 0.85; margin-top: 8px; }
+  .fin-summary .total-line b { color: #fff; font-size: 18px; font-weight: 800; }
+  .fin-summary .divider { height: 1px; background: rgba(255,255,255,0.12); margin: 18px 0; }
+  .fin-summary .meta-row { display: flex; justify-content: space-between; font-size: 12.5px; margin: 6px 0; }
+  .fin-summary .meta-row span:last-child { font-weight: 700; }
+  .fin-summary .checklist { margin-top: 8px; }
+  .fin-summary .checklist-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px;
+    padding: 6px 0;
+  }
+  .fin-summary .checklist-item.done .dot { background: var(--ihs-green); border-color: var(--ihs-green); }
+  .fin-summary .checklist-item.done .dot::after { content: "✓"; color: #fff; font-size: 11px; font-weight: 800; }
+  .fin-summary .checklist-item .dot {
+    width: 16px; height: 16px;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .fin-summary .checklist-item.pending { opacity: 0.65; }
+
+  .fin-cta { margin-top: 18px; }
+  .fin-cta .btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 14.5px;
+    margin-bottom: 8px;
+  }
+  .fin-cta .btn-orange { background: var(--ihs-orange); }
+  .fin-cta .btn-ghost {
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .fin-cta .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+  /* Crew preview */
+  .crew {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: #fafbfd;
+    border-radius: 10px;
+    margin-top: 8px;
+  }
+  .crew-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ihs-navy), var(--ihs-blue));
+    color: #fff;
+    font-weight: 800;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .crew-name { font-size: 13.5px; font-weight: 700; color: var(--ihs-navy); }
+  .crew-sub { font-size: 12px; color: var(--muted); }
+  .crew-badge {
+    margin-left: auto;
+    background: var(--ihs-green-soft);
+    color: var(--ihs-green);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  /* Info pill row */
+  .info-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .info-pill {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-pill b { color: var(--ihs-navy); }
+  .info-pill svg { color: var(--ihs-navy); opacity: 0.6; }
+
+  @media (max-width: 1100px) {
+    .fin-grid { grid-template-columns: 1fr; }
+    .date-row { grid-template-columns: 1fr; }
+    .finance-options { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Wizard step indicator ===== */
+  .wiz-steps {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 8px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .wiz-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-align: center;
+    cursor: pointer;
+    padding: 6px 4px;
+    position: relative;
+    transition: all .15s ease;
+  }
+  .wiz-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 22px; right: -50%; width: 100%;
+    height: 2px;
+    background: var(--line);
+    z-index: 0;
+  }
+  .wiz-step.done:not(:last-child)::after { background: var(--ihs-green); }
+  .wiz-step-dot {
+    width: 32px; height: 32px;
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 800;
+    color: var(--muted);
+    z-index: 1;
+    transition: all .15s ease;
+  }
+  .wiz-step.active .wiz-step-dot {
+    background: var(--ihs-orange);
+    border-color: var(--ihs-orange);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(255,122,26,0.18);
+  }
+  .wiz-step.done .wiz-step-dot {
+    background: var(--ihs-green);
+    border-color: var(--ihs-green);
+    color: #fff;
+  }
+  .wiz-step-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.3;
+    max-width: 90px;
+  }
+  .wiz-step.active .wiz-step-label { color: var(--ihs-navy); font-weight: 700; }
+  .wiz-step.done .wiz-step-label { color: var(--ihs-navy); }
+
+  /* ===== Wizard panels ===== */
+  .wiz-panel { display: none; }
+  .wiz-panel.active { display: block; }
+  .wiz-panel-head { margin-bottom: 22px; }
+  .wiz-panel-head h2 { margin: 0 0 6px; font-size: 24px; font-weight: 800; color: var(--ihs-navy); }
+  .wiz-panel-head p { margin: 0; font-size: 14.5px; color: var(--muted); max-width: 720px; }
+
+  .wiz-nav {
+    margin-top: 28px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    bottom: 0;
+  }
+  .wiz-nav .left { color: var(--muted); font-size: 13px; }
+  .wiz-nav .left b { color: var(--ihs-navy); }
+  .wiz-nav .right { display: flex; gap: 10px; }
+
+  /* ===== Initial signature inline ===== */
+  .initial-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px;
+    background: #fafbfd;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .initial-row .ir-text { font-size: 13.5px; color: var(--text); flex: 1; line-height: 1.45; }
+  .initial-row .ir-text b { color: var(--ihs-navy); }
+  .initial-box {
+    width: 90px; height: 50px;
+    border: 2px dashed #cdd2dc;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s ease;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .initial-box:hover { border-color: var(--ihs-orange); color: var(--ihs-orange); }
+  .initial-box.signed {
+    background: #fff;
+    border: 2px solid var(--ihs-green);
+    color: var(--ihs-navy);
+    font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+    font-size: 24px;
+  }
+
+  /* ===== Color picker step ===== */
+  .color-stage {
+    background: linear-gradient(180deg, #cde4ff 0%, #87bdf5 60%, #6aa5e0 100%);
+    border-radius: 16px;
+    padding: 28px;
+    min-height: 380px;
+    display: grid; place-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .color-stage::before {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 38%;
+    background: linear-gradient(180deg, transparent 0%, #8cca7c 60%, #5fa54d 100%);
+  }
+  .color-stage svg.house { width: 80%; max-width: 520px; position: relative; z-index: 1; transition: filter .2s ease; }
+  .color-stage .sun {
+    position: absolute; top: 32px; right: 40px;
+    width: 64px; height: 64px;
+    background: radial-gradient(circle, #ffe98a 0%, #ffd34d 60%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+  .swatch {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    border: 3px solid #fff;
+    box-shadow: var(--shadow-sm);
+    transition: all .18s ease;
+  }
+  .swatch:hover { transform: translateY(-3px); }
+  .swatch.selected {
+    border-color: var(--ihs-orange);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(255,122,26,0.35);
+  }
+  .swatch.selected::after {
+    content: "✓";
+    position: absolute; bottom: -10px; right: -10px;
+    width: 22px; height: 22px;
+    background: var(--ihs-orange);
+    color: #fff;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 12px;
+    font-weight: 800;
+    border: 2px solid #fff;
+  }
+  .swatch-label {
+    font-size: 10.5px;
+    text-align: center;
+    color: var(--muted);
+    margin-top: 6px;
+    font-weight: 600;
+    max-width: 56px;
+    line-height: 1.2;
+  }
+  .swatch-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  .color-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .color-card h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--ihs-navy); }
+  .color-card .sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  .sparkle {
+    position: absolute;
+    width: 8px; height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
+    opacity: 0;
+    animation: sparkle-fade 0.9s ease-out forwards;
+  }
+  @keyframes sparkle-fade {
+    0% { transform: scale(0); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  /* ===== Deposit step ===== */
+  .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .pay-method {
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    background: #fff;
+  }
+  .pay-method:hover { border-color: var(--ihs-blue); transform: translateY(-2px); }
+  .pay-method.selected {
+    border-color: var(--ihs-orange);
+    background: var(--ihs-orange-soft);
+  }
+  .pay-method-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 12px;
+    background: var(--bg);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    color: var(--ihs-navy);
+  }
+  .pay-method.selected .pay-method-icon { background: #fff; color: var(--ihs-orange); }
+  .pay-method h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--ihs-navy); }
+  .pay-method p { margin: 0; font-size: 11.5px; color: var(--muted); }
+
+  .deposit-callout {
+    background: linear-gradient(135deg, var(--ihs-navy) 0%, var(--ihs-navy-2) 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px;
+  }
+  .deposit-callout h3 { margin: 0 0 6px; font-size: 16px; opacity: 0.85; font-weight: 600; }
+  .deposit-callout .deposit-num {
+    font-size: 48px; font-weight: 800; color: var(--ihs-orange); line-height: 1;
+  }
+  .deposit-callout .sub { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+  .deposit-callout .right { text-align: right; }
+  .deposit-callout .right span {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px;
+    display: inline-block;
+  }
+
+  /* ===== Payment milestone explainer ===== */
+  .pay-milestones {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+  }
+  .milestone-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 140px;
+    gap: 20px;
+    align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .milestone-row:last-child { border-bottom: none; }
+  .milestone-icon {
+    width: 52px; height: 52px;
+    background: var(--bg);
+    border-radius: 14px;
+    display: grid; place-items: center;
+    color: var(--ihs-navy);
+  }
+  .milestone-row.featured .milestone-icon { background: var(--ihs-orange-soft); color: var(--ihs-orange); }
+  .milestone-step {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 700;
+  }
+  .milestone-title { font-size: 15px; font-weight: 700; color: var(--ihs-navy); margin: 2px 0 4px; }
+  .milestone-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .milestone-amount {
+    text-align: right;
+    font-size: 18px; font-weight: 800; color: var(--ihs-navy);
+  }
+  .milestone-amount small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .milestone-row.featured .milestone-amount { color: var(--ihs-orange); }
+
+  /* ===== Production timeline ===== */
+  .timeline {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 30px 24px 24px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+  }
+  .timeline-track {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    position: relative;
+    padding-top: 50px;
+  }
+  .timeline-track::before {
+    content: "";
+    position: absolute;
+    top: 30px; left: 5%; right: 5%; height: 4px;
+    background: linear-gradient(90deg, var(--ihs-green) 0%, var(--ihs-orange) 50%, var(--ihs-navy) 100%);
+    border-radius: 2px;
+  }
+  .tl-node {
+    text-align: center;
+    position: relative;
+  }
+  .tl-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid var(--ihs-orange);
+    margin: -34px auto 12px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.8);
+  }
+  .tl-node:first-child .tl-dot { border-color: var(--ihs-green); }
+  .tl-node:last-child .tl-dot { border-color: var(--ihs-navy); }
+  .tl-day {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 4px;
+  }
+  .tl-title { font-size: 13.5px; font-weight: 700; color: var(--ihs-navy); margin-bottom: 4px; }
+  .tl-desc { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+  .tl-icon {
+    width: 40px; height: 40px;
+    margin: 8px auto 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    color: var(--ihs-navy);
+  }
+
+  /* Scope-aware timeline toggle */
+  .scope-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .scope-tab {
+    padding: 8px 16px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .scope-tab:hover { border-color: var(--ihs-blue); color: var(--ihs-blue); }
+  .scope-tab.active {
+    background: var(--ihs-navy);
+    color: #fff;
+    border-color: var(--ihs-navy);
+  }
+
+  /* ===== Confetti + final sign success ===== */
+  .final-sign-stage {
+    background: linear-gradient(135deg, #fff 0%, #fafbfd 100%);
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .final-sign-stage.celebrate {
+    border-color: var(--ihs-orange);
+    background: linear-gradient(135deg, #fff 0%, var(--ihs-orange-soft) 100%);
+  }
+  .final-sign-stage h2 { font-size: 26px; font-weight: 800; color: var(--ihs-navy); margin: 0 0 6px; }
+  .final-sign-stage p { color: var(--muted); margin: 0 0 24px; max-width: 540px; margin-left: auto; margin-right: auto; }
+  .big-sig-pad {
+    background: #fafbfd;
+    border: 2px dashed #cdd2dc;
+    border-radius: 12px;
+    height: 140px;
+    display: grid; place-items: center;
+    color: var(--muted);
+    font-size: 15px;
+    font-style: italic;
+    cursor: pointer;
+    transition: all .15s ease;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  .big-sig-pad:hover { border-color: var(--ihs-orange); color: var(--ihs-orange); }
+  .big-sig-pad.signed {
+    background: #fff;
+    border-style: solid;
+    border-color: var(--ihs-green);
+    color: var(--ihs-navy);
+    font-style: normal;
+    font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+    font-size: 42px;
+  }
+
+  .celebrate-msg {
+    display: none;
+    margin-top: 24px;
+    animation: pop 0.5s ease-out;
+  }
+  .final-sign-stage.celebrate .celebrate-msg { display: block; }
+  .celebrate-emoji { font-size: 56px; margin-bottom: 12px; display: block; }
+  .celebrate-msg h3 {
+    font-size: 28px; margin: 0 0 8px;
+    background: linear-gradient(135deg, var(--ihs-orange) 0%, var(--ihs-navy) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 800;
+  }
+  .celebrate-msg p { font-size: 15px; color: var(--text); margin-bottom: 18px; }
+  @keyframes pop {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #confettiCanvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== Welcome Package selector ===== */
+  .welcome-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .welcome-item {
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 16px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    position: relative;
+  }
+  .welcome-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .welcome-item.selected {
+    border-color: var(--ihs-orange);
+    background: var(--ihs-orange-soft);
+  }
+  .welcome-item.selected::after {
+    content: "✓";
+    position: absolute; top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    background: var(--ihs-orange);
+    color: #fff;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 800;
+  }
+  .welcome-emoji {
+    font-size: 38px; line-height: 1; margin: 8px 0 10px;
+  }
+  .welcome-item h4 {
+    margin: 0 0 4px; font-size: 13px; font-weight: 700; color: var(--ihs-navy);
+  }
+  .welcome-item .cost {
+    font-size: 11px; color: var(--muted);
+  }
+  .welcome-tray {
+    background: linear-gradient(135deg, var(--ihs-orange-soft) 0%, #fff3e8 100%);
+    border: 1px solid #ffd0a8;
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-top: 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px;
+  }
+  .welcome-tray .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: #6b4900; font-weight: 700; }
+  .welcome-tray .count { font-size: 22px; font-weight: 800; color: var(--ihs-navy); margin-top: 2px; }
+  .welcome-tray .ship { font-size: 13px; color: var(--ihs-navy); }
+  .welcome-tray .ship b { color: var(--ihs-navy); }
+
+  @media (max-width: 1100px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .compare-rail { display: none; }
+    .components { grid-template-columns: repeat(3, 1fr); }
+    .addons-grid { grid-template-columns: repeat(2, 1fr); }
+    .addon { border-right: none; border-bottom: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">IHS</div>
+    <div>
+      <div class="brand-name">IHS Selling Way</div>
+      <div class="brand-sub">Guided Selling Tool · Roofing Module</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="customer-chip">📍 Wendorf Residence · 1248 Oak Hill Dr.</span>
+    <span class="customer-chip">Rep: Bre W.</span>
+  </div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <div class="tab active" data-tab="s1"><span class="tab-num">1</span>Example A — Repair vs. Replacement</div>
+  <div class="tab" data-tab="s2"><span class="tab-num">2</span>Example B — Good / Better / Best</div>
+  <div class="tab" data-tab="s3"><span class="tab-num">3</span>Present to Customer</div>
+  <div class="tab" data-tab="s4"><span class="tab-num">4</span>Finalize</div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- SCREEN 1: REPAIR vs MID-TIER vs PREMIUM REPLACEMENT                    -->
+<!-- ===================================================================== -->
+<section class="screen active" id="s1">
+
+  <div class="screen-header">
+    <div>
+      <h1 class="screen-title">Recommended Solutions for Your Roof</h1>
+      <p class="screen-sub">Compare side-by-side. Tap any package to dig into the details with your customer.</p>
+    </div>
+    <div class="step-pills">
+      <span class="pill done">✓ Inspection</span>
+      <span class="pill done">✓ Scope</span>
+      <span class="pill active">3 · Present Options</span>
+      <span class="pill">4 · Finalize</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <span>💡</span>
+    <div>Your customer's roof has <b>localized damage from the April storm</b>. We're showing one repair path and two full-replacement options so they can choose with confidence.</div>
+  </div>
+
+  <div class="compare-grid">
+    <!-- LEFT COMPARISON RAIL -->
+    <div class="compare-rail">
+      <div class="rail-label tall">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+        <div>Investment<small>Total + financing</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/></svg>
+        <div>Warranty<small>Manufacturer + IHS</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+        <div>IHS Guarantee<small>Workmanship promise</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg>
+        <div>Shingle Product<small>GAF system</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M5 9l7-7 7 7"/></svg>
+        <div>Coverage Scope<small>What's included</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v6H4zM4 14h16v6H4z"/></svg>
+        <div>Underlayment<small>System layer</small></div>
+      </div>
+    </div>
+
+    <!-- PACKAGE 1: REPAIR -->
+    <div class="pkg">
+      <div class="pkg-head repair">
+        <div class="pkg-tier">OPTION 1</div>
+        <h3 class="pkg-name">Targeted Repair</h3>
+        <p class="pkg-tagline">Fix the damaged section and restore protection.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$1,485</div>
+          <div class="price-mo">or <b>$48/mo</b> · 36 mo financing</div>
+        </div>
+        <div class="row">2-Year Workmanship</div>
+        <div class="row"><span class="check">✓</span>30-Day Leak-Free</div>
+        <div class="row">Match existing GAF shingles</div>
+        <div class="row">Repair affected slope only (~120 sq ft)</div>
+        <div class="row"><span class="x">—</span>No underlayment upgrade</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-primary">Select Repair</button>
+      </div>
+    </div>
+
+    <!-- PACKAGE 2: MID-TIER REPLACEMENT -->
+    <div class="pkg recommended">
+      <div class="pkg-head mid">
+        <div class="pkg-tier">OPTION 2</div>
+        <h3 class="pkg-name">Full Replacement<br/>· Timberline HDZ®</h3>
+        <p class="pkg-tagline">America's #1-selling shingle — proven protection at a smart price.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$14,850</div>
+          <div class="price-mo">or <b>$197/mo</b> · 120 mo · WellsFargo</div>
+        </div>
+        <div class="row"><span class="check">✓</span>Lifetime Ltd. (GAF Silver Pledge)</div>
+        <div class="row"><span class="check">✓</span>10-Year IHS Workmanship</div>
+        <div class="row">GAF Timberline HDZ® (Architectural)</div>
+        <div class="row">Tear-off + full re-roof, all slopes</div>
+        <div class="row"><span class="check">✓</span>FeltBuster® Synthetic Underlayment</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-orange">Select HDZ Package</button>
+      </div>
+    </div>
+
+    <!-- PACKAGE 3: PREMIUM -->
+    <div class="pkg best">
+      <div class="pkg-head premium">
+        <div class="pkg-tier">OPTION 3</div>
+        <h3 class="pkg-name">Full Replacement<br/>· Grandsequoia®</h3>
+        <p class="pkg-tagline">Designer shingle with the look of true wood shake. Bold curb appeal.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$19,750</div>
+          <div class="price-mo">or <b>$262/mo</b> · 120 mo · WellsFargo</div>
+        </div>
+        <div class="row"><span class="check">✓</span>Lifetime Ltd. (GAF <b>Golden Pledge</b>)</div>
+        <div class="row"><span class="check">✓</span>25-Year IHS Workmanship</div>
+        <div class="row">GAF Grandsequoia® (Designer)</div>
+        <div class="row">Tear-off + full re-roof, ridge vent upgrade</div>
+        <div class="row"><span class="check">✓</span>Deck-Armor™ Premium Underlayment</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-primary">Select Grandsequoia</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span>💬</span><span><b>Rep tip:</b> Hover the IHS Guarantee row with your customer — that's our differentiator vs. competitors who only offer 1–2 years.</span>
+  </div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- SCREEN 2: GOOD / BETTER / BEST + ADD-ONS                              -->
+<!-- ===================================================================== -->
+<section class="screen" id="s2">
+
+  <div class="screen-header">
+    <div>
+      <h1 class="screen-title">Build Your Home Protection Package</h1>
+      <p class="screen-sub">Same premium GAF shingle in every package — choose how much of the home to protect.</p>
+    </div>
+    <div class="step-pills">
+      <span class="pill done">✓ Inspection</span>
+      <span class="pill done">✓ Scope</span>
+      <span class="pill active">3 · Present Options</span>
+      <span class="pill">4 · Finalize</span>
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <!-- LEFT RAIL -->
+    <div class="compare-rail">
+      <div class="rail-label tall">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+        <div>Investment<small>Total + monthly</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg>
+        <div>GAF Shingle<small>Product line</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg>
+        <div>Profile<small>Look & dimension</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c4 4 8 8 8 13a8 8 0 1 1-16 0c0-5 4-9 8-13z"/></svg>
+        <div>Algae & Stain<small>StainGuard tier</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4-7 6 14 4-7"/></svg>
+        <div>Wind Rating<small>MPH limited</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/></svg>
+        <div>Warranty<small>GAF protection</small></div>
+      </div>
+      <div class="rail-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+        <div>IHS Guarantee<small>Workmanship</small></div>
+      </div>
+    </div>
+
+    <!-- GOOD -->
+    <div class="pkg">
+      <div class="pkg-head good">
+        <div class="pkg-tier">GOOD</div>
+        <h3 class="pkg-name">Timberline HDZ®</h3>
+        <p class="pkg-tagline">America's #1-selling shingle. Smart protection at the right price.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$14,850</div>
+          <div class="price-mo">or <b>$197/mo</b> · 120 mo</div>
+        </div>
+        <div class="row">GAF Timberline HDZ®</div>
+        <div class="row">Architectural · Standard dimension</div>
+        <div class="row">StainGuard® · 10-yr algae</div>
+        <div class="row">130 MPH (LayerLock™)</div>
+        <div class="row">GAF Silver Pledge — Lifetime</div>
+        <div class="row">10-Year IHS Workmanship</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-primary">Select Good</button>
+      </div>
+    </div>
+
+    <!-- BETTER -->
+    <div class="pkg recommended">
+      <div class="pkg-head better">
+        <div class="pkg-tier">BETTER</div>
+        <h3 class="pkg-name">Timberline AS II™</h3>
+        <p class="pkg-tagline">Premium architectural with strongest algae defense. Best long-term value.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$17,250</div>
+          <div class="price-mo">or <b>$229/mo</b> · 120 mo</div>
+        </div>
+        <div class="row">GAF Timberline AS II™</div>
+        <div class="row">Architectural · Heavier dimension</div>
+        <div class="row"><span class="check">✓</span>StainGuard Plus™ · 25-yr algae</div>
+        <div class="row">130 MPH (LayerLock™)</div>
+        <div class="row">GAF Silver Pledge — Lifetime</div>
+        <div class="row">15-Year IHS Workmanship</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-orange">Select Better</button>
+      </div>
+    </div>
+
+    <!-- BEST -->
+    <div class="pkg best">
+      <div class="pkg-head best-bg">
+        <div class="pkg-tier">BEST</div>
+        <h3 class="pkg-name">Grandsequoia®</h3>
+        <p class="pkg-tagline">Designer shingle. The bold look of true wood shake — premium curb appeal.</p>
+      </div>
+      <div class="pkg-body">
+        <div class="row price-row">
+          <div class="price-big">$20,500</div>
+          <div class="price-mo">or <b>$272/mo</b> · 120 mo</div>
+        </div>
+        <div class="row">GAF Grandsequoia® (Designer)</div>
+        <div class="row"><span class="check">✓</span>Designer · Wood-shake silhouette</div>
+        <div class="row"><span class="check">✓</span>StainGuard Plus™ · 25-yr algae</div>
+        <div class="row">130 MPH (LayerLock™)</div>
+        <div class="row">GAF <b>Golden Pledge</b> — Lifetime</div>
+        <div class="row">25-Year IHS Workmanship</div>
+      </div>
+      <div class="pkg-actions">
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-primary">Select Best</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD-ONS -->
+  <div class="addons">
+    <div class="addons-head">
+      <div>
+        <h3>Build the Package — Add-Ons</h3>
+        <small>Tap any item to include it. Total updates live in the summary bar below.</small>
+      </div>
+      <span style="font-size:12px;color:var(--muted);">Bundle now to save on shared labor & permit costs</span>
+    </div>
+    <div class="addons-grid g7">
+      <div class="addon" data-price="2570" data-name="Gutters">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Seamless Gutters</div>
+            <div class="addon-price">+$2,570</div>
+          </div>
+        </div>
+        <div class="addon-desc">New 6" seamless aluminum, color-matched. Protects foundation & landscaping.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="1450" data-name="Gutter Guards">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16M4 12h16M4 16h16"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Gutter Guards</div>
+            <div class="addon-price">+$1,450</div>
+          </div>
+        </div>
+        <div class="addon-desc">Micro-mesh leaf protection. Eliminates the ladder twice a year.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="1875" data-name="Skylight">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Skylight</div>
+            <div class="addon-price">+$1,875</div>
+          </div>
+        </div>
+        <div class="addon-desc">VELUX fixed deck-mount skylight, installed with new flashing kit.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="985" data-name="Chimney">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8V8H8z M10 8V3h4v5"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Chimney Reflash</div>
+            <div class="addon-price">+$985</div>
+          </div>
+        </div>
+        <div class="addon-desc">New step + counter flashing kit. Stops the #1 source of roof leaks.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="2150" data-name="Lightning">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Lightning Protection</div>
+            <div class="addon-price">+$2,150</div>
+          </div>
+        </div>
+        <div class="addon-desc">UL-listed lightning rod system. Insurance discount eligible.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="2890" data-name="Insulation">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z M9 9h6v6H9z"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">Attic Insulation</div>
+            <div class="addon-price">+$2,890</div>
+          </div>
+        </div>
+        <div class="addon-desc">Blown-in cellulose to R-49. Lowers monthly utility bill.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+
+      <div class="addon" data-price="936" data-name="Care Plan">
+        <div class="addon-top">
+          <div class="addon-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <div>
+            <div class="addon-name">IHS Care Plan</div>
+            <div class="addon-price">+$39/mo</div>
+          </div>
+        </div>
+        <div class="addon-desc">Annual roof tune-up, gutter clean, priority service. Cancel anytime.</div>
+        <button class="addon-toggle" onclick="toggleAddon(this)">+ Add to Package</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAINTENANCE BANNER -->
+  <div class="maint-banner">
+    <div class="maint-left">
+      <div class="maint-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div>
+        <h4 class="maint-title">Worried about price? Include 2 years of IHS Care Plan free.</h4>
+        <p class="maint-sub">When customer is on the fence, sweeten the deal: $936 value, no upfront cost — folds into financing.</p>
+      </div>
+    </div>
+    <div class="maint-cta">
+      <label class="maint-toggle-label" onclick="toggleMaint(event)">
+        Include 2-yr Care Plan
+        <span class="toggle" id="maintToggle"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-bar">
+    <div class="summary-left">
+      <div class="summary-block">
+        <span class="summary-label">Package</span>
+        <span class="summary-value" data-bind="pkg-label">Better — Timberline AS II</span>
+      </div>
+      <div class="summary-block">
+        <span class="summary-label">Total Investment</span>
+        <span class="summary-value" data-bind="total">$17,250</span>
+      </div>
+      <div class="summary-block">
+        <span class="summary-label">Monthly · 120 mo</span>
+        <span class="summary-value accent" data-bind="monthly">$229/mo</span>
+      </div>
+    </div>
+    <div class="summary-right">
+      <button class="btn btn-secondary">Save & Email Quote</button>
+      <button class="btn btn-orange" onclick="document.querySelector('.tab[data-tab=s3]').click()">Present to Customer →</button>
+    </div>
+  </div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- SCREEN 3: PRESENT TO CUSTOMER                                          -->
+<!-- ===================================================================== -->
+<section class="screen" id="s3">
+
+  <!-- Hero banner — sets the tone for the customer -->
+  <div class="present-hero">
+    <h1>Here's What We Recommend For Your Home</h1>
+    <p>We've put together three options so you can choose the level of protection and curb appeal that's right for your family. Tap any package or add-on below — your monthly investment updates instantly.</p>
+    <div class="hero-meta">
+      <span>📍 1248 Oak Hill Dr.</span>
+      <span>👷 Prepared by Bre W.</span>
+      <span>📅 Quote valid 30 days</span>
+    </div>
+  </div>
+
+  <!-- Choice row: Good / Better / Best -->
+  <div class="choice-row">
+    <div class="choice" data-key="good" onclick="selectPackage('s3','good',event)">
+      <span class="choice-tier">GOOD</span>
+      <h3 class="choice-name">GAF Timberline HDZ®</h3>
+      <p class="choice-tag">America's #1-selling shingle. Trusted protection backed by a Lifetime Limited Warranty.</p>
+      <div class="choice-price">
+        <span class="big">$14,850</span>
+        <span class="small">total investment</span>
+      </div>
+      <div class="choice-mo">From $197 / month</div>
+    </div>
+
+    <div class="choice chosen" data-key="better" onclick="selectPackage('s3','better',event)">
+      <span class="choice-tier">BETTER · Most Popular</span>
+      <h3 class="choice-name">GAF Timberline AS II™</h3>
+      <p class="choice-tag">Premium algae-resistant shingle with 25-year StainGuard Plus™. Best long-term value.</p>
+      <div class="choice-price">
+        <span class="big">$17,250</span>
+        <span class="small">total investment</span>
+      </div>
+      <div class="choice-mo">From $229 / month</div>
+    </div>
+
+    <div class="choice" data-key="best" onclick="selectPackage('s3','best',event)">
+      <span class="choice-tier">BEST · Designer</span>
+      <h3 class="choice-name">GAF Grandsequoia®</h3>
+      <p class="choice-tag">Designer wood-shake silhouette with the Golden Pledge — our highest level of protection.</p>
+      <div class="choice-price">
+        <span class="big">$20,500</span>
+        <span class="small">total investment</span>
+      </div>
+      <div class="choice-mo">From $272 / month</div>
+    </div>
+  </div>
+
+  <!-- Deeper comparison toggle + panel -->
+  <div class="compare-toggle" onclick="toggleCompare(this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <span>Want to see a side-by-side comparison? Tap to expand</span>
+    <span class="chev">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </span>
+  </div>
+
+  <div class="compare-panel" id="comparePanel">
+    <div class="compare-table">
+
+      <div class="compare-table-head">
+        <div class="cell"><span class="head-title">Compare Shingles</span></div>
+        <div class="cell col-good">
+          <span class="tier-tag">GOOD</span>
+          <h3>Timberline HDZ®</h3>
+        </div>
+        <div class="cell col-better">
+          <span class="tier-tag">BETTER · POPULAR</span>
+          <h3>Timberline AS II™</h3>
+        </div>
+        <div class="cell col-best">
+          <span class="tier-tag">BEST · DESIGNER</span>
+          <h3>Grandsequoia®</h3>
+        </div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+          Total Investment
+        </div>
+        <div class="cell">$14,850</div>
+        <div class="cell">$17,250</div>
+        <div class="cell">$20,500</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">Monthly · 120 mo</div>
+        <div class="cell"><b style="color:var(--ihs-orange);">$197/mo</b></div>
+        <div class="cell"><b style="color:var(--ihs-orange);">$229/mo</b></div>
+        <div class="cell"><b style="color:var(--ihs-orange);">$272/mo</b></div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg>
+          Profile
+        </div>
+        <div class="cell">Architectural · Standard dimension</div>
+        <div class="cell">Architectural · Heavier dimension</div>
+        <div class="cell">Designer · Wood-shake look</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c4 4 8 8 8 13a8 8 0 1 1-16 0c0-5 4-9 8-13z"/></svg>
+          Algae & Stain Resistance
+        </div>
+        <div class="cell">StainGuard® · 10-yr</div>
+        <div class="cell"><span class="yes">✓</span>StainGuard Plus™ · 25-yr</div>
+        <div class="cell"><span class="yes">✓</span>StainGuard Plus™ · 25-yr</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4-7 6 14 4-7"/></svg>
+          Wind Rating
+        </div>
+        <div class="cell">130 MPH (LayerLock™)</div>
+        <div class="cell">130 MPH (LayerLock™)</div>
+        <div class="cell">130 MPH (LayerLock™)</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/></svg>
+          GAF Warranty Tier
+        </div>
+        <div class="cell">Silver Pledge<br/><small style="color:var(--muted);">Lifetime Limited</small></div>
+        <div class="cell">Silver Pledge<br/><small style="color:var(--muted);">Lifetime Limited</small></div>
+        <div class="cell"><b style="color:var(--ihs-gold);">Golden Pledge</b><br/><small style="color:var(--muted);">Highest GAF tier</small></div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+          IHS Workmanship
+        </div>
+        <div class="cell">10 years</div>
+        <div class="cell">15 years</div>
+        <div class="cell">25 years</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+          Curb Appeal
+        </div>
+        <div class="cell"><span class="star">★★★</span></div>
+        <div class="cell"><span class="star">★★★★</span></div>
+        <div class="cell"><span class="star">★★★★★</span></div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          Color Options
+        </div>
+        <div class="cell">17 standard colors</div>
+        <div class="cell">14 premium colors</div>
+        <div class="cell">8 designer colors</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="cell label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+          Best Fit For
+        </div>
+        <div class="cell">Budget-minded homeowners staying 5–10 years</div>
+        <div class="cell">Most families — best long-term value</div>
+        <div class="cell">Premium homes & forever homes</div>
+      </div>
+
+      <div class="compare-footer">
+        <span>💡</span>
+        <span><b>Heads up:</b> All three options are installed by the same GAF-certified IHS crew. Only the shingle product and warranty tier change — workmanship quality stays the same.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Customer-facing add-on tiles -->
+  <div class="cust-addons">
+    <div class="cust-addons-head">
+      <div>
+        <h2>Add Protection to Your Home</h2>
+        <p>Tap any add-on to include it. Bundling saves on labor & permit costs.</p>
+      </div>
+      <span style="font-size:12.5px;color:var(--muted);">All add-ons covered under IHS Workmanship Guarantee</span>
+    </div>
+
+    <div class="cust-addons-grid">
+      <div class="cust-addon" data-price="2570" data-name="Gutters" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Seamless Gutters</h4>
+        <div class="desc">New 6" seamless aluminum, color-matched to your home.</div>
+        <div class="price">+$2,570 · ~$34/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="1450" data-name="Gutter Guards" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16M4 12h16M4 16h16"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Gutter Guards</h4>
+        <div class="desc">Micro-mesh leaf protection. No more ladder twice a year.</div>
+        <div class="price">+$1,450 · ~$19/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="1875" data-name="Skylight" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Skylight</h4>
+        <div class="desc">VELUX fixed deck-mount skylight with full flashing kit.</div>
+        <div class="price">+$1,875 · ~$25/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="985" data-name="Chimney" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8V8H8z M10 8V3h4v5"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Chimney Reflash</h4>
+        <div class="desc">New step + counter flashing. Stops the #1 source of roof leaks.</div>
+        <div class="price">+$985 · ~$13/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="2150" data-name="Lightning" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Lightning Protection</h4>
+        <div class="desc">UL-listed lightning rod system. May qualify for insurance discount.</div>
+        <div class="price">+$2,150 · ~$28/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="2890" data-name="Insulation" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z M9 9h6v6H9z"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>Attic Insulation</h4>
+        <div class="desc">Blown-in cellulose to R-49. Lowers monthly utility bills.</div>
+        <div class="price">+$2,890 · ~$38/mo</div>
+      </div>
+
+      <div class="cust-addon" data-price="936" data-name="Care Plan" onclick="toggleCustAddon(this)">
+        <div class="top">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <div class="cust-toggle"></div>
+        </div>
+        <h4>IHS Care Plan</h4>
+        <div class="desc">Annual tune-up, gutter clean, priority service for 2 years.</div>
+        <div class="price">+$39/mo · or $936 financed</div>
+      </div>
+
+      <div class="cust-addon" data-price="0" data-name="Placeholder" style="visibility:hidden;"></div>
+    </div>
+  </div>
+
+  <!-- Care Plan offer banner -->
+  <div class="maint-banner">
+    <div class="maint-left">
+      <div class="maint-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div>
+        <h4 class="maint-title">Special offer — 2 years of IHS Care Plan, on us.</h4>
+        <p class="maint-sub">$936 value included free when you sign today. Keeps your warranty in good standing.</p>
+      </div>
+    </div>
+    <div class="maint-cta">
+      <label class="maint-toggle-label" onclick="toggleMaint(event)">
+        Include 2-yr Care Plan
+        <span class="toggle"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- BIG customer summary -->
+  <div class="cust-summary" style="margin-top: 24px;">
+    <div class="cust-summary-left">
+      <div class="cust-summary-label">Your Monthly Investment · 120 mo financing</div>
+      <div class="cust-summary-monthly" data-bind="monthly">$229<small>/mo</small></div>
+      <div class="cust-summary-sub">For your <b data-bind="pkg-label">Better — Timberline AS II</b> package.</div>
+      <div class="cust-summary-total">Total: <span data-bind="total">$17,250</span></div>
+    </div>
+    <div class="cust-summary-right">
+      <button class="btn btn-orange" style="font-size:15px;padding:18px;" onclick="document.querySelector('.tab[data-tab=s4]').click()">✓ Approve & Sign Today</button>
+      <button class="btn btn-secondary">Email Me This Quote</button>
+      <button class="btn btn-secondary" onclick="document.querySelector('.tab[data-tab=s2]').click()">← Back to Rep View</button>
+    </div>
+  </div>
+
+</section>
+
+<!-- ===================================================================== -->
+<!-- SCREEN 4: FINALIZE — Multi-Step Wizard                                 -->
+<!-- ===================================================================== -->
+<section class="screen" id="s4">
+
+  <div class="screen-header">
+    <div>
+      <h1 class="screen-title">Finalize Your Project</h1>
+      <p class="screen-sub">A few quick steps to lock in your install. We'll guide you through each one.</p>
+    </div>
+    <div class="step-pills">
+      <span class="pill done">✓ Inspection</span>
+      <span class="pill done">✓ Scope</span>
+      <span class="pill done">✓ Present Options</span>
+      <span class="pill active">4 · Finalize</span>
+    </div>
+  </div>
+
+  <!-- Wizard step indicator -->
+  <div class="wiz-steps">
+    <div class="wiz-step active" data-step="1" onclick="goToStep(1)"><div class="wiz-step-dot">1</div><div class="wiz-step-label">Scope of Work</div></div>
+    <div class="wiz-step" data-step="2" onclick="goToStep(2)"><div class="wiz-step-dot">2</div><div class="wiz-step-label">Acknowledgments</div></div>
+    <div class="wiz-step" data-step="3" onclick="goToStep(3)"><div class="wiz-step-dot">3</div><div class="wiz-step-label">Pick Your Colors</div></div>
+    <div class="wiz-step" data-step="4" onclick="goToStep(4)"><div class="wiz-step-dot">4</div><div class="wiz-step-label">Deposit</div></div>
+    <div class="wiz-step" data-step="5" onclick="goToStep(5)"><div class="wiz-step-dot">5</div><div class="wiz-step-label">How Payment Works</div></div>
+    <div class="wiz-step" data-step="6" onclick="goToStep(6)"><div class="wiz-step-dot">6</div><div class="wiz-step-label">What to Expect</div></div>
+    <div class="wiz-step" data-step="7" onclick="goToStep(7)"><div class="wiz-step-dot">7</div><div class="wiz-step-label">Final Sign</div></div>
+    <div class="wiz-step" data-step="8" onclick="goToStep(8)"><div class="wiz-step-dot">8</div><div class="wiz-step-label">Welcome Package</div></div>
+  </div>
+
+  <!-- ============== STEP 1: Scope of Work ============== -->
+  <div class="wiz-panel active" data-panel="1">
+    <div class="wiz-panel-head">
+      <h2>Review Your Scope of Work</h2>
+      <p>Here's exactly what we'll be doing on your home. Please initial each section to confirm.</p>
+    </div>
+
+    <div class="fin-card" style="margin-bottom:18px;">
+      <div class="fin-card-head">
+        <div class="head-title">
+          <div>
+            <h3>Project Line Items</h3>
+            <small>Materials, labor, and warranties included in your Better package.</small>
+          </div>
+        </div>
+        <span class="info-pill" style="background:var(--ihs-orange-soft);border:none;color:var(--ihs-orange);"><b>Promo applied</b></span>
+      </div>
+      <div class="fin-card-body">
+        <table class="line-items">
+          <tr>
+            <td class="li-name">
+              <b>Full Roof Replacement — GAF Timberline AS II™</b>
+              <span class="li-detail">Tear-off + re-roof · 26 squares · FeltBuster® synthetic underlayment · Pro-Start® starter · Cobra® ridge vent</span>
+            </td>
+            <td class="li-price">$17,250</td>
+          </tr>
+          <tr>
+            <td class="li-name">
+              Seamless Gutters & Downspouts
+              <span class="li-detail">142 linear feet · 6" seamless aluminum · 4 downspouts · color-matched</span>
+            </td>
+            <td class="li-price">$2,570</td>
+          </tr>
+          <tr>
+            <td class="li-name">
+              Skylight Installation
+              <span class="li-detail">VELUX FS C06 fixed deck-mount · master bath · ENERGY STAR rated</span>
+            </td>
+            <td class="li-price">$1,875</td>
+          </tr>
+          <tr>
+            <td class="li-name">
+              2-Year IHS Care Plan
+              <span class="li-detail">Annual roof tune-up · gutter clean · priority service</span>
+              <span class="li-promo">PROMO · INCLUDED</span>
+            </td>
+            <td class="li-price" style="text-decoration:line-through;color:var(--muted);">$936</td>
+          </tr>
+          <tr>
+            <td class="li-name">
+              15-Year IHS Workmanship Guarantee
+              <span class="li-detail">Covers labor & install defects above the GAF manufacturer warranty</span>
+              <span class="li-included">INCLUDED</span>
+            </td>
+            <td class="li-price">—</td>
+          </tr>
+          <tr class="total">
+            <td>Project Total</td>
+            <td class="li-price">$21,695</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="fin-card">
+      <div class="fin-card-head">
+        <div class="head-title">
+          <div>
+            <h3>Initial Each Section to Confirm</h3>
+            <small>Your initials acknowledge that you understand and approve each portion of the scope.</small>
+          </div>
+        </div>
+      </div>
+      <div class="fin-card-body">
+        <div class="initial-row">
+          <div class="ir-text"><b>Roof Replacement:</b> Full tear-off down to the deck, replace any rotted sheathing at cost ($85/sheet), then install the complete GAF system as specified above.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Gutters & Downspouts:</b> Remove existing gutter system, install new 6" seamless aluminum gutters and downspouts in color-matched finish.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Skylight:</b> One new VELUX fixed deck-mount skylight installed in master bath with full flashing kit.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Care Plan & Workmanship:</b> 2-year IHS Care Plan included as a promotional offer plus 15-year workmanship guarantee on all labor.</div>
+          <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 2: Acknowledgments ============== -->
+  <div class="wiz-panel" data-panel="2">
+    <div class="wiz-panel-head">
+      <h2>Project Acknowledgments</h2>
+      <p>A few important things you should know before we get started. Please initial each one.</p>
+    </div>
+
+    <div class="fin-card">
+      <div class="fin-card-body">
+        <div class="initial-row">
+          <div class="ir-text"><b>Weather Delays:</b> Install dates are weather-dependent. If your scheduled day has rain, snow, or sustained high winds, we'll reschedule to the next safe day — usually within 48 hours.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Property Access:</b> Crew needs access to the driveway by 7 AM on install day. Please move vehicles, lawn equipment, and outdoor furniture at least 10 ft from the house.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Debris & Cleanup:</b> A dumpster is placed in the driveway during install. We sweep with magnets for nails after each day, but recommend keeping pets indoors during the project.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Hidden Damage:</b> If we find rotted decking or other hidden damage during tear-off, we'll stop, photograph it, and call you with a per-sheet quote ($85/sheet) before proceeding.</div>
+          <div class="initial-box signed" onclick="initialBox(this)">BW</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Color Variation:</b> Shingle colors may vary slightly between manufacturing batches. We use the same lot across your project, but minor variation under different lighting is normal and not a defect.</div>
+          <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>Warranty Registration:</b> IHS will register your GAF Silver Pledge warranty within 30 days of project completion. You'll receive the certificate by email.</div>
+          <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+        </div>
+        <div class="initial-row">
+          <div class="ir-text"><b>3-Day Right to Cancel:</b> You may cancel this agreement within 3 business days for any reason at no cost. After 3 days, deposit becomes non-refundable.</div>
+          <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 3: Color Picker ============== -->
+  <div class="wiz-panel" data-panel="3">
+    <div class="wiz-panel-head">
+      <h2>🎨 Pick Your Colors</h2>
+      <p>Watch your home come to life. Tap any swatch and see it on your house in real time.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; align-items:start;">
+
+      <!-- House preview -->
+      <div class="color-stage">
+        <div class="sun"></div>
+        <svg class="house" id="houseSvg" viewBox="0 0 500 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Roof shingles -->
+          <polygon id="roofL" points="50,180 250,40 250,180" fill="#3a3a3a"/>
+          <polygon id="roofR" points="250,40 450,180 250,180" fill="#2a2a2a"/>
+          <!-- Roof texture lines -->
+          <g opacity="0.18">
+            <line x1="70" y1="170" x2="240" y2="50" stroke="#000" stroke-width="1"/>
+            <line x1="90" y1="170" x2="240" y2="65" stroke="#000" stroke-width="1"/>
+            <line x1="110" y1="170" x2="240" y2="80" stroke="#000" stroke-width="1"/>
+            <line x1="130" y1="170" x2="240" y2="95" stroke="#000" stroke-width="1"/>
+            <line x1="260" y1="50" x2="430" y2="170" stroke="#000" stroke-width="1"/>
+            <line x1="260" y1="65" x2="410" y2="170" stroke="#000" stroke-width="1"/>
+            <line x1="260" y1="80" x2="390" y2="170" stroke="#000" stroke-width="1"/>
+            <line x1="260" y1="95" x2="370" y2="170" stroke="#000" stroke-width="1"/>
+          </g>
+          <!-- Gutter -->
+          <rect id="gutter" x="50" y="178" width="400" height="9" fill="#f5f5f5" rx="2"/>
+          <!-- House body -->
+          <rect x="90" y="187" width="320" height="120" fill="#f0e6d2"/>
+          <!-- Trim -->
+          <rect id="trim" x="80" y="187" width="340" height="6" fill="#ffffff"/>
+          <rect id="trimBottom" x="80" y="302" width="340" height="8" fill="#ffffff"/>
+          <!-- Door -->
+          <rect x="220" y="220" width="60" height="90" fill="#8b4a2a" rx="2"/>
+          <circle cx="270" cy="265" r="2" fill="#d4a017"/>
+          <!-- Windows -->
+          <rect x="120" y="220" width="50" height="50" fill="#ffffff" stroke="#cdd2dc" stroke-width="2"/>
+          <rect x="125" y="225" width="40" height="40" fill="#b8d4ec"/>
+          <line x1="145" y1="225" x2="145" y2="265" stroke="#fff" stroke-width="2"/>
+          <line x1="125" y1="245" x2="165" y2="245" stroke="#fff" stroke-width="2"/>
+          <rect x="330" y="220" width="50" height="50" fill="#ffffff" stroke="#cdd2dc" stroke-width="2"/>
+          <rect x="335" y="225" width="40" height="40" fill="#b8d4ec"/>
+          <line x1="355" y1="225" x2="355" y2="265" stroke="#fff" stroke-width="2"/>
+          <line x1="335" y1="245" x2="375" y2="245" stroke="#fff" stroke-width="2"/>
+          <!-- Chimney -->
+          <rect x="170" y="80" width="22" height="50" fill="#a3776a"/>
+          <rect x="168" y="78" width="26" height="6" fill="#8a5d52"/>
+          <!-- Skylight (visible since they selected it) -->
+          <rect id="skylight" x="305" y="120" width="28" height="22" fill="#a8d8ff" stroke="#5a7a9a" stroke-width="1.5" rx="1" transform="skewX(-30) translate(78 0)"/>
+        </svg>
+      </div>
+
+      <!-- Color choices -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <div class="color-card">
+          <h4>Shingle Color</h4>
+          <div class="sub">GAF Timberline AS II™ · 14 premium options</div>
+          <div class="swatch-row">
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="shingle" data-color="#2a2a2a" style="background:linear-gradient(135deg,#3a3a3a,#1a1a1a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Charcoal</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch selected" data-target="shingle" data-color="#3a3a3a" style="background:linear-gradient(135deg,#4a4a4a,#2a2a2a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Pewter Gray</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="shingle" data-color="#6b4a2a" style="background:linear-gradient(135deg,#8b6a4a,#4b2a0a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Weathered Wood</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="shingle" data-color="#7a5a3a" style="background:linear-gradient(135deg,#9a7a5a,#5a3a1a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Hickory</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="shingle" data-color="#3a4a3a" style="background:linear-gradient(135deg,#4a5a4a,#1a2a1a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Hunter Green</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="shingle" data-color="#6a2a2a" style="background:linear-gradient(135deg,#8a3a3a,#4a1a1a);" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Patriot Red</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="color-card">
+          <h4>Gutter & Downspout Color</h4>
+          <div class="sub">Color-matched aluminum</div>
+          <div class="swatch-row">
+            <div class="swatch-wrap">
+              <div class="swatch selected" data-target="gutter" data-color="#f5f5f5" style="background:#f5f5f5;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">White</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="gutter" data-color="#d6c9a8" style="background:#d6c9a8;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Almond</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="gutter" data-color="#5a4a3a" style="background:#5a4a3a;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Bronze</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="gutter" data-color="#2a2a2a" style="background:#2a2a2a;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Black</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="color-card">
+          <h4>Trim Color</h4>
+          <div class="sub">Fascia & soffit</div>
+          <div class="swatch-row">
+            <div class="swatch-wrap">
+              <div class="swatch selected" data-target="trim" data-color="#ffffff" style="background:#ffffff; border-color:#e0e0e0;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">White</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="trim" data-color="#e8dec7" style="background:#e8dec7;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Cream</div>
+            </div>
+            <div class="swatch-wrap">
+              <div class="swatch" data-target="trim" data-color="#3a3a3a" style="background:#3a3a3a;" onclick="pickColor(this)"></div>
+              <div class="swatch-label">Charcoal</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="initial-row" style="margin-top:4px;">
+          <div class="ir-text"><b>Confirm color selections:</b> <span id="colorSummary">Pewter Gray shingle · White gutters · White trim</span></div>
+          <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 4: Deposit ============== -->
+  <div class="wiz-panel" data-panel="4">
+    <div class="wiz-panel-head">
+      <h2>Collect Today's Deposit</h2>
+      <p>A small deposit locks in your install date and lets us order materials. The rest is financed.</p>
+    </div>
+
+    <div class="deposit-callout">
+      <div>
+        <h3>Due Today</h3>
+        <div class="deposit-num">$500</div>
+        <div class="sub">~2.3% of project total · Holds your install date and orders materials</div>
+      </div>
+      <div class="right">
+        <span>💰 Remaining $21,195 financed at 9.99%</span>
+        <div style="margin-top:8px;"><span>🔒 PCI-compliant payment processing</span></div>
+      </div>
+    </div>
+
+    <div class="fin-card">
+      <div class="fin-card-head">
+        <div class="head-title">
+          <div>
+            <h3>How would you like to pay?</h3>
+            <small>Choose your preferred payment method. We'll send a receipt by email.</small>
+          </div>
+        </div>
+      </div>
+      <div class="fin-card-body">
+        <div class="pay-methods">
+          <div class="pay-method selected" onclick="pickPayMethod(this)">
+            <div class="pay-method-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <h4>Credit / Debit Card</h4>
+            <p>Visa, MC, Amex, Discover</p>
+          </div>
+          <div class="pay-method" onclick="pickPayMethod(this)">
+            <div class="pay-method-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+            </div>
+            <h4>ACH / Bank Transfer</h4>
+            <p>Direct from checking</p>
+          </div>
+          <div class="pay-method" onclick="pickPayMethod(this)">
+            <div class="pay-method-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v10H3z"/><path d="M7 12h4M7 16h2"/></svg>
+            </div>
+            <h4>Check</h4>
+            <p>Made out to IHS</p>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; padding:16px; background:#fafbfd; border-radius:10px; font-size:12.5px; color:var(--muted); line-height:1.55;">
+          <b style="color:var(--ihs-navy);">Why we collect a deposit:</b> Your $500 reserves the crew, locks in today's pricing, and lets us order your specific shingle batch and skylight. It's deducted from your final balance — you're not paying extra. If you cancel within 3 business days, your deposit is fully refunded.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 5: Payment Plan Explainer ============== -->
+  <div class="wiz-panel" data-panel="5">
+    <div class="wiz-panel-head">
+      <h2>How Your Payment Plan Works</h2>
+      <p>The most important promise we make: <b style="color:var(--ihs-navy);">you don't pay the final balance until you walk the project and tell us you're satisfied.</b></p>
+    </div>
+
+    <div class="pay-milestones">
+      <div class="milestone-row">
+        <div class="milestone-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div>
+          <div class="milestone-step">TODAY · STEP 1</div>
+          <div class="milestone-title">Deposit Collected</div>
+          <div class="milestone-desc">$500 locks in your install date, secures your crew, and orders your shingles & skylight. Deducted from your total.</div>
+        </div>
+        <div class="milestone-amount">$500<small>collected today</small></div>
+      </div>
+
+      <div class="milestone-row">
+        <div class="milestone-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        </div>
+        <div>
+          <div class="milestone-step">DAY OF INSTALL · STEP 2</div>
+          <div class="milestone-title">Materials Delivered & Work Begins</div>
+          <div class="milestone-desc">Crew arrives with your materials. You owe nothing today. We do the work.</div>
+        </div>
+        <div class="milestone-amount">$0<small>nothing due</small></div>
+      </div>
+
+      <div class="milestone-row featured">
+        <div class="milestone-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+        <div>
+          <div class="milestone-step">PROJECT COMPLETE · STEP 3</div>
+          <div class="milestone-title">YOUR Final Walkthrough & Sign-Off ⭐</div>
+          <div class="milestone-desc">Project Manager walks every inch of the work with you. <b>You only release final payment after you sign off that everything is done right.</b> If anything's off, we fix it before you pay.</div>
+        </div>
+        <div class="milestone-amount">You decide<small>when to release</small></div>
+      </div>
+
+      <div class="milestone-row">
+        <div class="milestone-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div>
+          <div class="milestone-step">30 DAYS AFTER COMPLETION · STEP 4</div>
+          <div class="milestone-title">First Financed Payment</div>
+          <div class="milestone-desc">Your first $287 monthly payment to Wells Fargo. 119 more to go — but no balloon, no surprises.</div>
+        </div>
+        <div class="milestone-amount">$287<small>first of 120</small></div>
+      </div>
+    </div>
+
+    <div class="initial-row" style="margin-top:14px;">
+      <div class="ir-text"><b>I understand the payment plan</b> and confirm the deposit is non-refundable after 3 business days.</div>
+      <div class="initial-box" onclick="initialBox(this)">Tap to initial</div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 6: Production Timeline ============== -->
+  <div class="wiz-panel" data-panel="6">
+    <div class="wiz-panel-head">
+      <h2>What to Expect — Your Production Timeline</h2>
+      <p>Here's how your project unfolds, day by day. Your Project Manager texts you updates at each milestone.</p>
+    </div>
+
+    <div class="scope-tabs">
+      <div class="scope-tab active" onclick="setScopeTab(this,'standard')">Standard 2-Day Install</div>
+      <div class="scope-tab" onclick="setScopeTab(this,'complex')">Complex Multi-Day Install</div>
+      <div class="scope-tab" onclick="setScopeTab(this,'repair')">Repair Job</div>
+    </div>
+
+    <div class="timeline" id="timelineStandard">
+      <div class="timeline-track">
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">TODAY</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div>
+          <div class="tl-title">Contract Signed</div>
+          <div class="tl-desc">You're locked in. We order materials.</div>
+        </div>
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">~10 DAYS</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>
+          <div class="tl-title">Pre-Install Visit</div>
+          <div class="tl-desc">PM confirms scope, takes photos, places dumpster.</div>
+        </div>
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">INSTALL DAY 1</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg></div>
+          <div class="tl-title">Tear-Off & Decking Check</div>
+          <div class="tl-desc">Old roof removed. We inspect decking & flag any rot before proceeding.</div>
+        </div>
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">INSTALL DAY 2</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 12l10 10 10-10z"/></svg></div>
+          <div class="tl-title">Shingles + Gutters + Skylight</div>
+          <div class="tl-desc">Full install. Magnetic nail sweep at end of day.</div>
+        </div>
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">DAY 3</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg></div>
+          <div class="tl-title">Cleanup & Inspection</div>
+          <div class="tl-desc">Final cleanup, dumpster removed, QC inspection by Project Manager.</div>
+        </div>
+        <div class="tl-node">
+          <div class="tl-dot"></div>
+          <div class="tl-day">DAY 4</div>
+          <div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div>
+          <div class="tl-title">Your Walkthrough ⭐</div>
+          <div class="tl-desc">You inspect & sign off. Only THEN is the final balance released.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding:16px; background:var(--ihs-green-soft); border-radius:10px; font-size:13px; color:#0a5a2a; display:flex; align-items:center; gap:10px;">
+      <span style="font-size:20px;">📱</span>
+      <span><b>You'll get text updates at every step:</b> "Materials delivered" → "Tear-off complete" → "Final cleanup done" → "Ready for your walkthrough"</span>
+    </div>
+  </div>
+
+  <!-- ============== STEP 7: Final Sign ============== -->
+  <div class="wiz-panel" data-panel="7">
+    <div class="wiz-panel-head">
+      <h2>One Last Signature</h2>
+      <p>This is the big one — sign below to officially become part of the IHS family.</p>
+    </div>
+
+    <div class="final-sign-stage" id="finalSignStage">
+      <h2>Sign Here to Complete Your Project</h2>
+      <p>Your electronic signature has the same legal weight as ink. You'll receive a copy by email instantly.</p>
+
+      <div class="big-sig-pad" id="finalSigPad" onclick="signFinal()">Tap to sign</div>
+
+      <div style="margin-top:14px; font-size:12px; color:var(--muted);">
+        Signed · May 11, 2026 · 2:34 PM EDT · Witness: Bre W. (IHS)
+      </div>
+
+      <div class="celebrate-msg">
+        <span class="celebrate-emoji">🏠✨</span>
+        <h3>Thank you for being part of the IHS Family!</h3>
+        <p>You're officially in. Your Project Manager will text you within 24 hours to confirm everything.</p>
+        <button class="btn btn-orange" onclick="goToStep(8)" style="padding:14px 28px; font-size:14.5px;">
+          Continue to Welcome Package →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STEP 8: Welcome Package ============== -->
+  <div class="wiz-panel" data-panel="8">
+    <div class="wiz-panel-head">
+      <h2>🎁 Send a Welcome Package</h2>
+      <p>Pick the items you'd like us to ship to your new IHS family member. Arrives within 5 business days.</p>
+    </div>
+
+    <div class="welcome-grid">
+      <div class="welcome-item selected" data-cost="12" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🍪</div>
+        <h4>Welcome Cookies</h4>
+        <div class="cost">Local bakery · $12</div>
+      </div>
+      <div class="welcome-item selected" data-cost="8" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🪧</div>
+        <h4>IHS Yard Sign</h4>
+        <div class="cost">Referral magnet · $8</div>
+      </div>
+      <div class="welcome-item" data-cost="15" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">👕</div>
+        <h4>Branded T-Shirt</h4>
+        <div class="cost">Customer favorite · $15</div>
+      </div>
+      <div class="welcome-item selected" data-cost="6" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🧲</div>
+        <h4>Magnetic Calendar</h4>
+        <div class="cost">Fridge keepsake · $6</div>
+      </div>
+      <div class="welcome-item" data-cost="18" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🍷</div>
+        <h4>Housewarming Wine</h4>
+        <div class="cost">Local vineyard · $18</div>
+      </div>
+      <div class="welcome-item" data-cost="14" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🕯️</div>
+        <h4>Soy Candle</h4>
+        <div class="cost">"New Roof" scent · $14</div>
+      </div>
+      <div class="welcome-item" data-cost="10" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">💧</div>
+        <h4>Water Bottle</h4>
+        <div class="cost">Insulated · $10</div>
+      </div>
+      <div class="welcome-item" data-cost="9" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🐕</div>
+        <h4>Pet Treats</h4>
+        <div class="cost">For the family pup · $9</div>
+      </div>
+      <div class="welcome-item" data-cost="7" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">📓</div>
+        <h4>Home Care Booklet</h4>
+        <div class="cost">Roof maintenance tips · $7</div>
+      </div>
+      <div class="welcome-item" data-cost="11" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">☕</div>
+        <h4>IHS Coffee Mug</h4>
+        <div class="cost">15oz ceramic · $11</div>
+      </div>
+      <div class="welcome-item" data-cost="13" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🌱</div>
+        <h4>Welcome Plant</h4>
+        <div class="cost">Local nursery · $13</div>
+      </div>
+      <div class="welcome-item" data-cost="22" onclick="toggleWelcome(this)">
+        <div class="welcome-emoji">🎁</div>
+        <h4>Premium Gift Basket</h4>
+        <div class="cost">Mixed local goods · $22</div>
+      </div>
+    </div>
+
+    <div class="welcome-tray">
+      <div>
+        <div class="label">Welcome Package · <span id="welcomeCount">3</span> items</div>
+        <div class="count">$<span id="welcomeTotal">26</span></div>
+      </div>
+      <div class="ship">
+        <div><b>📦 Ships to:</b> 1248 Oak Hill Dr.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Estimated delivery: May 18, 2026</div>
+      </div>
+      <button class="btn btn-orange" style="padding:14px 22px;">Send Welcome Package →</button>
+    </div>
+  </div>
+
+  <!-- Wizard nav -->
+  <div class="wiz-nav">
+    <div class="left">Step <b id="wizStepNum">1</b> of 8 · <b id="wizStepName">Scope of Work</b></div>
+    <div class="right">
+      <button class="btn btn-secondary" onclick="prevStep()" id="wizPrev">← Back</button>
+      <button class="btn btn-orange" onclick="nextStep()" id="wizNext">Continue →</button>
+    </div>
+  </div>
+
+</section>
+
+<canvas id="confettiCanvas"></canvas>
+
+
+<script>
+  // ===== Tab switching =====
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ===== Pricing engine (shared by Screen 2 + Screen 3) =====
+  const PKG_PRICES = { good: 14850, better: 17250, best: 20500 };
+  const PKG_LABELS = {
+    good:   'Good — Timberline HDZ',
+    better: 'Better — Timberline AS II',
+    best:   'Best — Grandsequoia'
+  };
+  // Which package is currently selected on each screen
+  const state = {
+    s2: { pkg: 'better', addons: new Set(), maint: false },
+    s3: { pkg: 'better', addons: new Set(), maint: false }
+  };
+
+  function recalc(screenId) {
+    const st = state[screenId];
+    let total = PKG_PRICES[st.pkg];
+    st.addons.forEach(price => total += price);
+    if (st.maint) total += 936; // 2-yr Care Plan rolled into financing
+
+    // approx 9.99% APR over 120 mo
+    const r = 0.0999 / 12, n = 120;
+    const monthly = Math.round((total * r) / (1 - Math.pow(1 + r, -n)));
+
+    document.querySelectorAll(`#${screenId} [data-bind="total"]`).forEach(el => {
+      el.textContent = '$' + total.toLocaleString();
+    });
+    document.querySelectorAll(`#${screenId} [data-bind="monthly"]`).forEach(el => {
+      // Preserve styled <small> on the big customer-facing monthly figure
+      if (el.classList.contains('cust-summary-monthly')) {
+        el.innerHTML = '$' + monthly + '<small>/mo</small>';
+      } else {
+        el.textContent = '$' + monthly + '/mo';
+      }
+    });
+    document.querySelectorAll(`#${screenId} [data-bind="pkg-label"]`).forEach(el => {
+      el.textContent = PKG_LABELS[st.pkg];
+    });
+  }
+
+  function toggleAddon(btn) {
+    const card = btn.parentElement;
+    const screenId = card.closest('.screen').id;
+    const price = parseInt(card.dataset.price);
+    card.classList.toggle('selected');
+    if (card.classList.contains('selected')) {
+      state[screenId].addons.add(price);
+      btn.textContent = '✓ Added';
+    } else {
+      state[screenId].addons.delete(price);
+      btn.textContent = '+ Add to Package';
+    }
+    recalc(screenId);
+  }
+
+  function toggleMaint(e) {
+    e.preventDefault();
+    const toggle = e.currentTarget.querySelector('.toggle');
+    const screenId = e.currentTarget.closest('.screen').id;
+    toggle.classList.toggle('on');
+    state[screenId].maint = toggle.classList.contains('on');
+    recalc(screenId);
+  }
+
+  // Package selector clicks (header chips on screen 3, or "Select X" buttons on screen 2)
+  function selectPackage(screenId, key, e) {
+    if (e) e.preventDefault();
+    state[screenId].pkg = key;
+    // highlight chosen card
+    document.querySelectorAll(`#${screenId} .pkg`).forEach(p => p.classList.remove('chosen'));
+    const chosen = document.querySelector(`#${screenId} .pkg[data-key="${key}"]`);
+    if (chosen) chosen.classList.add('chosen');
+    recalc(screenId);
+  }
+
+  // Wire up the "Select Good/Better/Best" buttons on screen 2
+  document.querySelectorAll('#s2 .pkg').forEach((card, idx) => {
+    const keys = ['good','better','best'];
+    card.dataset.key = keys[idx];
+    const selectBtn = card.querySelectorAll('.btn')[1];
+    if (selectBtn) selectBtn.addEventListener('click', e => selectPackage('s2', keys[idx], e));
+  });
+
+  // ===== Deeper comparison toggle (Screen 3) =====
+  function toggleCompare(btn) {
+    const panel = document.getElementById('comparePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.querySelector('span:nth-child(2)').textContent = isOpen
+      ? 'Hide detailed comparison'
+      : 'Want to see a side-by-side comparison? Tap to expand';
+    if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ===== Screen 3 customer-facing add-on toggle =====
+  function toggleCustAddon(card) {
+    const price = parseInt(card.dataset.price);
+    card.classList.toggle('selected');
+    if (card.classList.contains('selected')) state.s3.addons.add(price);
+    else state.s3.addons.delete(price);
+    recalc('s3');
+  }
+
+  // Wire up Screen 2 initial chosen state
+  const initialPkg = document.querySelector('#s2 .pkg[data-key="better"]');
+  if (initialPkg) initialPkg.classList.add('chosen');
+
+  // Initialize totals
+  recalc('s2');
+  recalc('s3');
+
+  // ============================================================
+  // ============== WIZARD STEP NAVIGATION (Screen 4) ===========
+  // ============================================================
+  const STEP_NAMES = ['Scope of Work','Acknowledgments','Pick Your Colors','Deposit','How Payment Works','What to Expect','Final Sign','Welcome Package'];
+  let currentStep = 1;
+  function goToStep(n) {
+    if (n < 1 || n > 8) return;
+    currentStep = n;
+    // Activate panel
+    document.querySelectorAll('.wiz-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.wiz-panel[data-panel="${n}"]`).classList.add('active');
+    // Update indicator
+    document.querySelectorAll('.wiz-step').forEach((el, idx) => {
+      el.classList.remove('active','done');
+      if (idx + 1 < n) el.classList.add('done');
+      if (idx + 1 === n) el.classList.add('active');
+    });
+    // Update footer
+    document.getElementById('wizStepNum').textContent = n;
+    document.getElementById('wizStepName').textContent = STEP_NAMES[n-1];
+    document.getElementById('wizPrev').style.visibility = n === 1 ? 'hidden' : 'visible';
+    const nextBtn = document.getElementById('wizNext');
+    if (n === 8) {
+      nextBtn.textContent = '✓ Finish & Hand Off to Production';
+      nextBtn.onclick = () => alert('Project handed off to production! 🎉');
+    } else if (n === 7) {
+      nextBtn.textContent = 'Continue to Welcome Package →';
+      nextBtn.onclick = nextStep;
+    } else {
+      nextBtn.textContent = 'Continue →';
+      nextBtn.onclick = nextStep;
+    }
+    // Scroll into view
+    document.querySelector('.wiz-steps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function nextStep() { goToStep(Math.min(8, currentStep + 1)); }
+  function prevStep() { goToStep(Math.max(1, currentStep - 1)); }
+
+  // ============== Initial box signing ==============
+  function initialBox(el) {
+    if (el.classList.contains('signed')) {
+      el.classList.remove('signed');
+      el.textContent = 'Tap to initial';
+    } else {
+      el.classList.add('signed');
+      el.textContent = 'BW';
+    }
+  }
+
+  // ============== Color picker ==============
+  const COLOR_NAMES = {
+    "#2a2a2a": "Charcoal", "#3a3a3a": "Pewter Gray", "#6b4a2a": "Weathered Wood",
+    "#7a5a3a": "Hickory", "#3a4a3a": "Hunter Green", "#6a2a2a": "Patriot Red",
+    "#f5f5f5": "White", "#d6c9a8": "Almond", "#5a4a3a": "Bronze",
+    "#ffffff": "White", "#e8dec7": "Cream"
+  };
+  const selectedColors = { shingle: "Pewter Gray", gutter: "White", trim: "White" };
+
+  function pickColor(swatch) {
+    const target = swatch.dataset.target;
+    const color = swatch.dataset.color;
+    // Deselect siblings
+    swatch.parentElement.parentElement.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    swatch.classList.add('selected');
+    // Apply to SVG
+    const svg = document.getElementById('houseSvg');
+    if (target === 'shingle') {
+      // Slightly darker for right slope (shading)
+      const darker = shadeColor(color, -18);
+      svg.querySelector('#roofL').setAttribute('fill', color);
+      svg.querySelector('#roofR').setAttribute('fill', darker);
+      selectedColors.shingle = COLOR_NAMES[color] || color;
+    } else if (target === 'gutter') {
+      svg.querySelector('#gutter').setAttribute('fill', color);
+      selectedColors.gutter = COLOR_NAMES[color] || color;
+    } else if (target === 'trim') {
+      svg.querySelector('#trim').setAttribute('fill', color);
+      svg.querySelector('#trimBottom').setAttribute('fill', color);
+      selectedColors.trim = COLOR_NAMES[color] || color;
+    }
+    // Update summary
+    document.getElementById('colorSummary').textContent =
+      `${selectedColors.shingle} shingle · ${selectedColors.gutter} gutters · ${selectedColors.trim} trim`;
+    // Sparkle effect
+    sparkle(swatch);
+  }
+  function shadeColor(hex, percent) {
+    hex = hex.replace('#','');
+    const num = parseInt(hex, 16);
+    let r = (num >> 16) + Math.round(255 * percent / 100);
+    let g = ((num >> 8) & 0xff) + Math.round(255 * percent / 100);
+    let b = (num & 0xff) + Math.round(255 * percent / 100);
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+  }
+  function sparkle(el) {
+    const rect = el.getBoundingClientRect();
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.style.left = (rect.left + rect.width/2 + (Math.random()-0.5)*40) + 'px';
+      s.style.top  = (rect.top  + rect.height/2 + (Math.random()-0.5)*40) + 'px';
+      s.style.position = 'fixed';
+      s.style.zIndex = 9998;
+      s.style.animationDelay = (i*0.08) + 's';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 1200);
+    }
+  }
+
+  // ============== Payment method picker ==============
+  function pickPayMethod(el) {
+    document.querySelectorAll('#s4 .pay-method').forEach(m => m.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ============== Timeline scope tabs ==============
+  function setScopeTab(el, scope) {
+    document.querySelectorAll('.scope-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    // Update timeline content based on scope
+    const track = document.querySelector('#timelineStandard .timeline-track');
+    if (scope === 'complex') {
+      track.style.gridTemplateColumns = 'repeat(8, 1fr)';
+      track.innerHTML = scopeComplexHTML();
+    } else if (scope === 'repair') {
+      track.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      track.innerHTML = scopeRepairHTML();
+    } else {
+      track.style.gridTemplateColumns = 'repeat(6, 1fr)';
+      track.innerHTML = scopeStandardHTML();
+    }
+  }
+  function scopeStandardHTML() {
+    return `
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">TODAY</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div><div class="tl-title">Contract Signed</div><div class="tl-desc">You're locked in. We order materials.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">~10 DAYS</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div><div class="tl-title">Pre-Install Visit</div><div class="tl-desc">PM confirms scope, takes photos, places dumpster.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">INSTALL DAY 1</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg></div><div class="tl-title">Tear-Off & Decking Check</div><div class="tl-desc">Old roof removed. We inspect decking & flag any rot.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">INSTALL DAY 2</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 12l10 10 10-10z"/></svg></div><div class="tl-title">Shingles + Gutters + Skylight</div><div class="tl-desc">Full install. Magnetic nail sweep at end of day.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAY 3</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg></div><div class="tl-title">Cleanup & Inspection</div><div class="tl-desc">Final cleanup, dumpster removed, QC inspection by PM.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAY 4</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div><div class="tl-title">Your Walkthrough ⭐</div><div class="tl-desc">You inspect & sign off. Only THEN final payment releases.</div></div>
+    `;
+  }
+  function scopeComplexHTML() {
+    return `
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">TODAY</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div><div class="tl-title">Contract Signed</div><div class="tl-desc">Material orders + permits begin.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAYS 1-7</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="tl-title">Permit & HOA Approval</div><div class="tl-desc">We pull permits. Typically 5-10 days.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAYS 8-14</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div><div class="tl-title">Pre-Install Visit</div><div class="tl-desc">PM walks site, finalizes logistics with you.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">INSTALL DAY 1</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg></div><div class="tl-title">Tear-Off Begins</div><div class="tl-desc">Larger crew. Multi-slope strategy.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAYS 2-3</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 12l10 10 10-10z"/></svg></div><div class="tl-title">Decking & Underlayment</div><div class="tl-desc">Replace any rot. Lay synthetic underlayment.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAYS 4-5</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg></div><div class="tl-title">Shingles + Accents</div><div class="tl-desc">Full shingle install + ridge vents + skylight.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAY 6</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg></div><div class="tl-title">Gutters & Cleanup</div><div class="tl-desc">Install gutters, full cleanup, dumpster removed.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">DAY 7</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div><div class="tl-title">Your Walkthrough ⭐</div><div class="tl-desc">You inspect & sign off before final payment.</div></div>
+    `;
+  }
+  function scopeRepairHTML() {
+    return `
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">TODAY</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div><div class="tl-title">Contract Signed</div><div class="tl-desc">Match shingles & order any specialty parts.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">~5 DAYS</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div><div class="tl-title">Quick Pre-Visit</div><div class="tl-desc">Tech confirms repair area with you.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">REPAIR DAY</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 12l10 10 10-10z"/></svg></div><div class="tl-title">Repair Complete</div><div class="tl-desc">Half-day job. Same-day cleanup.</div></div>
+      <div class="tl-node"><div class="tl-dot"></div><div class="tl-day">SAME DAY</div><div class="tl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div><div class="tl-title">Your Sign-Off ⭐</div><div class="tl-desc">Quick walkthrough — you approve before we leave.</div></div>
+    `;
+  }
+
+  // ============== Final signature + confetti ==============
+  function signFinal() {
+    const pad = document.getElementById('finalSigPad');
+    if (pad.classList.contains('signed')) return;
+    pad.classList.add('signed');
+    pad.textContent = 'Bre Wendorf';
+    setTimeout(() => {
+      document.getElementById('finalSignStage').classList.add('celebrate');
+      fireConfetti();
+    }, 400);
+  }
+
+  function fireConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const colors = ['#ff7a1a','#1f6feb','#16a34a','#b8860b','#ec4899','#8b5cf6','#0f2a44','#ffffff'];
+    const pieces = [];
+    for (let i = 0; i < 220; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * -canvas.height,
+        w: 6 + Math.random() * 8,
+        h: 10 + Math.random() * 14,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 4,
+        vy: 2 + Math.random() * 4,
+        rotation: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.3,
+      });
+    }
+    let frame = 0;
+    const maxFrames = 280;
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.spin;
+        p.vy += 0.08;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+      frame++;
+      if (frame < maxFrames) requestAnimationFrame(loop);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    loop();
+  }
+
+  // ============== Welcome package selector ==============
+  function toggleWelcome(el) {
+    el.classList.toggle('selected');
+    let count = 0, total = 0;
+    document.querySelectorAll('#s4 .welcome-item.selected').forEach(item => {
+      count++;
+      total += parseInt(item.dataset.cost);
+    });
+    document.getElementById('welcomeCount').textContent = count;
+    document.getElementById('welcomeTotal').textContent = total;
+  }
+
+  // Initialize welcome tally
+  (() => {
+    let count = 0, total = 0;
+    document.querySelectorAll('#s4 .welcome-item.selected').forEach(item => {
+      count++;
+      total += parseInt(item.dataset.cost);
+    });
+    document.getElementById('welcomeCount').textContent = count;
+    document.getElementById('welcomeTotal').textContent = total;
+  })();
+
+  // Init wizard footer state
+  goToStep(1);
+</script>
+
+</body>
+</html>

@@ -3053,80 +3053,64 @@ function SectionTabs({ sections, activeSection, onSelect, facet, env, items, far
 }
 
 // ─────────────────────────────────────────────────────────
-// SubStepStrip — numbered circles connected by a horizontal line, labels
-// underneath. Visually signals "you're step N of M". Gating mirrors the
-// top stepper: backward is always allowed; forward only to already-visited
-// sections (i <= farthestIdx). The top stepper uses the chevron tracker
-// so these two are easy to tell apart at a glance.
+// SubStepStrip — numbered circle + label inline (label to the right),
+// full-width row with a connecting line flex-growing between each step.
+// This is the layout the top stepper used to carry before we swapped it
+// to the chevron tracker. Gating mirrors the top stepper: backward is
+// always allowed; forward only to already-visited sections.
 // ─────────────────────────────────────────────────────────
 function SubStepStrip({ items, active, onSelect, farthestIdx = 0 }) {
   if (!items || items.length === 0) return null;
   const activeIdx = Math.max(0, items.findIndex((it) => it.id === active));
-  const reachedIdx = Math.max(activeIdx, farthestIdx);
-  // Each step button gets an equal slice of width (flex: 1). With the
-  // circle horizontally centered inside its button, the first circle's
-  // center sits at half-a-slice from the container's left, the last at
-  // half-a-slice from the right. Express the baseline and progress fill
-  // as percentages of the container so they line up regardless of width.
-  const halfSlicePct = 100 / (items.length * 2);
-  const progressPct = items.length > 1 ? reachedIdx / (items.length - 1) * (100 - halfSlicePct * 2) : 0;
   return (
-    <div style={{ padding: '4px 0 2px' }}>
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        {/* Connecting baseline — from first-circle center to last-circle center. */}
-        <div style={{
-          position: 'absolute', top: 13, left: `${halfSlicePct}%`, right: `${halfSlicePct}%`, height: 2,
-          background: 'var(--border)', zIndex: 0
-        }} />
-        {/* Brand progress fill — same start, ending at the active circle center. */}
-        {items.length > 1 && reachedIdx > 0 &&
-        <div style={{
-          position: 'absolute', top: 13, left: `${halfSlicePct}%`, height: 2,
-          background: 'var(--brand)', zIndex: 0,
-          width: `${progressPct}%`
-        }} />}
-        {items.map((it, i) => {
-          const isActive = it.id === active;
-          const isPast = i < activeIdx;
-          const isReachedAhead = i > activeIdx && i <= farthestIdx;
-          const canTap = isPast || isReachedAhead;
-          return (
+    <div style={{
+      padding: '6px 0 4px',
+      display: 'flex', alignItems: 'center', gap: 0, width: '100%'
+    }}>
+      {items.map((it, i) => {
+        const isActive = it.id === active;
+        const isPast = i < activeIdx;
+        const isReachedAhead = i > activeIdx && i <= farthestIdx;
+        const isUnreached = i > farthestIdx;
+        const canTap = isPast || isReachedAhead;
+        return (
+          <React.Fragment key={it.id}>
             <button
-              key={it.id}
               type="button"
               role="tab"
               aria-selected={isActive}
               onClick={canTap ? () => onSelect(it.id) : undefined}
               disabled={!canTap && !isActive}
               style={{
-                position: 'relative', zIndex: 1,
-                background: 'transparent', border: 0, padding: '2px 4px',
+                flex: '0 1 auto',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '4px 6px',
+                background: 'transparent', border: 0,
+                color: isActive ? 'var(--text)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
+                fontSize: 12, fontWeight: isActive ? 700 : 600, letterSpacing: '-0.01em',
                 cursor: canTap ? 'pointer' : 'default',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                flex: '1 1 0', minWidth: 0
+                whiteSpace: 'nowrap'
               }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 999,
-                background: isActive ? 'var(--brand)' : (isPast || isReachedAhead) ? 'var(--brand)' : 'var(--surface)',
-                color: (isActive || isPast || isReachedAhead) ? 'var(--brand-fg)' : 'var(--text-3)',
-                border: isActive ? '2px solid var(--brand)' : isPast || isReachedAhead ? 'none' : '2px solid var(--border-strong)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, lineHeight: 1,
-                boxShadow: isActive ? '0 0 0 4px var(--brand-soft)' : 'none',
-                boxSizing: 'border-box', flexShrink: 0
-              }}>
-                {isPast ? '✓' : i + 1}
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: isActive ? 700 : 600,
-                color: isActive ? 'var(--text)' : canTap ? 'var(--text-2)' : 'var(--text-4)',
-                textAlign: 'center', lineHeight: 1.2, letterSpacing: '-0.005em',
-                maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-              }}>{it.label}</div>
-            </button>);
+              <span style={{
+                width: 22, height: 22, borderRadius: 999,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: isActive || isPast || isReachedAhead ? 'var(--brand)' : 'transparent',
+                color: isActive || isPast || isReachedAhead ? 'var(--brand-fg)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
+                border: isActive || isPast || isReachedAhead ? 'none' : `1px solid ${isUnreached ? 'var(--border)' : 'var(--border-strong)'}`,
+                fontSize: 11, fontWeight: 700, lineHeight: 1, flexShrink: 0
+              }}>{isPast ? '✓' : i + 1}</span>
+              {it.label}
+            </button>
+            {i < items.length - 1 &&
+            <span style={{
+              flex: '1 1 auto',
+              height: 1,
+              background: i < farthestIdx || i < activeIdx ? 'var(--brand)' : 'var(--border)',
+              minWidth: 8
+            }} />}
+          </React.Fragment>);
 
-        })}
-      </div>
+      })}
     </div>);
 
 }

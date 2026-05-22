@@ -162,11 +162,29 @@ function InspectionScreen({
   // the active section's body is rendered.
   const [activeSection, setActiveSection] = useState('measurements');
   const [showContinueReview, setShowContinueReview] = useState(false);
+  // Track the farthest section reached per (structure, facet). Used by the
+  // section stepper to gate forward taps — reps can jump back freely but
+  // can only tap forward to a section they've already visited.
+  const [farthestSection, setFarthestSection] = useState({});
   // Scroll the section content back to top on every section / facet
   // switch so the rep doesn't land mid-page after navigating.
   const scrollAreaRef = window.React.useRef(null);
   useEffect(() => {
     if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
+  }, [activeSection, activeFacet, activeStructureId]);
+
+  // Bump farthestSection whenever activeSection advances for this (structure, facet).
+  useEffect(() => {
+    const key = `${activeStructureId}:${activeFacet}`;
+    setFarthestSection((prev) => {
+      const prevSec = prev[key];
+      if (prevSec === activeSection) return prev;
+      const order = ['measurements', 'materials', 'labor', 'other'];
+      const prevIdx = prevSec ? order.indexOf(prevSec) : -1;
+      const nextIdx = order.indexOf(activeSection);
+      if (nextIdx <= prevIdx) return prev;
+      return { ...prev, [key]: activeSection };
+    });
   }, [activeSection, activeFacet, activeStructureId]);
 
   // Track which scopes the rep has actually visited on this structure.
@@ -315,7 +333,7 @@ function InspectionScreen({
             envelope={envelope}
             onSetScopes={(next) => onSetStructureScopes && onSetStructureScopes(activeStructure.id, next)} />
           {!noScopes &&
-          <SectionTabs sections={sections} activeSection={activeSection} onSelect={setActiveSection} facet={facet} env={env} items={items} />}
+          <SectionTabs sections={sections} activeSection={activeSection} onSelect={setActiveSection} facet={facet} env={env} items={items} farthestSection={farthestSection[`${activeStructureId}:${activeFacet}`]} />}
           {/* Copy-from-previous banner — phase 2.3 B-8. Shown when the
               active structure is fresh and at least one other structure
               already has substantial work. One tap deep-clones the source
@@ -3009,7 +3027,7 @@ function UnifiedTabStrip({ items, active, onSelect }) {
 // circles connected by a line) instead of pill tabs. Reads as progress
 // through the build sub-steps, even though the rep can hop around freely.
 // ─────────────────────────────────────────────────────────
-function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
+function SectionTabs({ sections, activeSection, onSelect, facet, env, items, farthestSection }) {
   if (!facet) return null;
   // Equipment + Disposal collapse into a single "Other" step that renders
   // both as grouped subsections inside the same panel. The underlying
@@ -3022,48 +3040,89 @@ function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
   if (sections.includes('labor')) visibleIds.push('labor');
   if (hasEquipment || hasDisposal) visibleIds.push('other');
   const labels = { measurements: 'Measure', materials: 'Materials', labor: 'Labor', other: 'Other' };
+  const farthestIdx = farthestSection ? visibleIds.indexOf(farthestSection) : 0;
   return (
     <div style={{ padding: '0 14px 6px' }}>
       <SubStepStrip
         items={visibleIds.map((sec) => ({ id: sec, label: labels[sec] }))}
         active={activeSection}
-        onSelect={onSelect} />
+        onSelect={onSelect}
+        farthestIdx={farthestIdx} />
     </div>);
 
 }
 
 // ─────────────────────────────────────────────────────────
-// SubStepStrip — chevron tracker (CSS .chev-tracker). Each section is a
-// right-pointing arrow tile that interlocks with the next. Done tiles
-// fill brand, active uses brand-soft, upcoming is muted. Outer corners
-// of the bar are rounded; visually distinct from the top pill-step row
-// so the two stepper vocabularies don't blend.
+// SubStepStrip — numbered circles connected by a horizontal line, labels
+// underneath. Visually signals "you're step N of M". Gating mirrors the
+// top stepper: backward is always allowed; forward only to already-visited
+// sections (i <= farthestIdx). The top stepper uses the chevron tracker
+// so these two are easy to tell apart at a glance.
 // ─────────────────────────────────────────────────────────
-function SubStepStrip({ items, active, onSelect }) {
+function SubStepStrip({ items, active, onSelect, farthestIdx = 0 }) {
   if (!items || items.length === 0) return null;
   const activeIdx = Math.max(0, items.findIndex((it) => it.id === active));
+  const reachedIdx = Math.max(activeIdx, farthestIdx);
+  // Each step button gets an equal slice of width (flex: 1). With the
+  // circle horizontally centered inside its button, the first circle's
+  // center sits at half-a-slice from the container's left, the last at
+  // half-a-slice from the right. Express the baseline and progress fill
+  // as percentages of the container so they line up regardless of width.
+  const halfSlicePct = 100 / (items.length * 2);
+  const progressPct = items.length > 1 ? reachedIdx / (items.length - 1) * (100 - halfSlicePct * 2) : 0;
   return (
     <div style={{ padding: '4px 0 2px' }}>
-      <div className="chev-tracker" role="tablist">
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        {/* Connecting baseline — from first-circle center to last-circle center. */}
+        <div style={{
+          position: 'absolute', top: 13, left: `${halfSlicePct}%`, right: `${halfSlicePct}%`, height: 2,
+          background: 'var(--border)', zIndex: 0
+        }} />
+        {/* Brand progress fill — same start, ending at the active circle center. */}
+        {items.length > 1 && reachedIdx > 0 &&
+        <div style={{
+          position: 'absolute', top: 13, left: `${halfSlicePct}%`, height: 2,
+          background: 'var(--brand)', zIndex: 0,
+          width: `${progressPct}%`
+        }} />}
         {items.map((it, i) => {
           const isActive = it.id === active;
           const isPast = i < activeIdx;
-          const cls = ['ctile'];
-          if (isActive) cls.push('active');else
-          if (isPast) cls.push('done');else
-          cls.push('upcoming');
+          const isReachedAhead = i > activeIdx && i <= farthestIdx;
+          const canTap = isPast || isReachedAhead;
           return (
             <button
               key={it.id}
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={cls.join(' ')}
-              onClick={() => onSelect(it.id)}>
-              <span className="ctxt">
-                {isPast && <span aria-hidden="true">✓</span>}
-                {it.label}
-              </span>
+              onClick={canTap ? () => onSelect(it.id) : undefined}
+              disabled={!canTap && !isActive}
+              style={{
+                position: 'relative', zIndex: 1,
+                background: 'transparent', border: 0, padding: '2px 4px',
+                cursor: canTap ? 'pointer' : 'default',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                flex: '1 1 0', minWidth: 0
+              }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 999,
+                background: isActive ? 'var(--brand)' : (isPast || isReachedAhead) ? 'var(--brand)' : 'var(--surface)',
+                color: (isActive || isPast || isReachedAhead) ? 'var(--brand-fg)' : 'var(--text-3)',
+                border: isActive ? '2px solid var(--brand)' : isPast || isReachedAhead ? 'none' : '2px solid var(--border-strong)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700, lineHeight: 1,
+                boxShadow: isActive ? '0 0 0 4px var(--brand-soft)' : 'none',
+                boxSizing: 'border-box', flexShrink: 0
+              }}>
+                {isPast ? '✓' : i + 1}
+              </div>
+              <div style={{
+                fontSize: 10, fontWeight: isActive ? 700 : 600,
+                color: isActive ? 'var(--text)' : canTap ? 'var(--text-2)' : 'var(--text-4)',
+                textAlign: 'center', lineHeight: 1.2, letterSpacing: '-0.005em',
+                maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+              }}>{it.label}</div>
             </button>);
 
         })}

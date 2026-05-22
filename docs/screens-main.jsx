@@ -91,34 +91,46 @@ function BatteryGlyph({ c = 'currentColor', pct = 80 }) {
 // Visual is intentionally light — no pill backgrounds, thin connectors,
 // small numbered dots. Matches the in-Build SubStepStrip family.
 function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
-  // Pill-tab redesign (Variant C): done = success-tinted with check, active
-  // = soft brand pill, upcoming = muted. Distinct from the inner chevron
-  // tracker so the two stepper vocabularies don't blend.
+  // Chevron tracker for the SOLVE phase stepper (Scope / Inspect / Build /
+  // Slides / Proposal). Gating: a rep can tap backward freely; tapping
+  // forward is only allowed for steps already visited (i <= farthestIdx).
+  // Unreached steps render as `upcoming` and are disabled.
   const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeId));
   return (
-    <div className="pill-steps">
-      {tabs.map((t, i) => {
-        const isActive = i === activeIdx;
-        const isPast = i < activeIdx;
-        const isCompletedAhead = i > activeIdx && i <= farthestIdx;
-        const isUnreached = i > farthestIdx;
-        const canTap = isPast || isCompletedAhead;
-        const cls = ['pstep'];
-        if (isActive) cls.push('active');else
-        if (isPast || isCompletedAhead) cls.push('done');else
-        cls.push('upcoming');
-        return (
-          <button
-            key={t.id}
-            type="button"
-            className={cls.join(' ')}
-            onClick={canTap ? () => onSelect(t.id) : undefined}
-            disabled={!canTap}
-            aria-current={isActive ? 'step' : undefined}>
-            {t.label}
-          </button>);
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 4,
+      background: 'var(--surface)',
+      borderBottom: '1px solid var(--border)',
+      padding: '8px 12px 10px'
+    }}>
+      <div className="chev-tracker" role="tablist">
+        {tabs.map((t, i) => {
+          const isActive = i === activeIdx;
+          const isPast = i < activeIdx;
+          const isCompletedAhead = i > activeIdx && i <= farthestIdx;
+          const canTap = isPast || isCompletedAhead;
+          const cls = ['ctile'];
+          if (isActive) cls.push('active');else
+          if (isPast || isCompletedAhead) cls.push('done');else
+          cls.push('upcoming');
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-current={isActive ? 'step' : undefined}
+              className={cls.join(' ')}
+              onClick={canTap ? () => onSelect(t.id) : undefined}
+              disabled={!canTap && !isActive}>
+              <span className="ctxt">
+                {(isPast || isCompletedAhead) && <span aria-hidden="true">✓</span>}
+                {t.label}
+              </span>
+            </button>);
 
-      })}
+        })}
+      </div>
     </div>);
 
 }

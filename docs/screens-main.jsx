@@ -91,57 +91,33 @@ function BatteryGlyph({ c = 'currentColor', pct = 80 }) {
 // Visual is intentionally light — no pill backgrounds, thin connectors,
 // small numbered dots. Matches the in-Build SubStepStrip family.
 function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
+  // Pill-tab redesign (Variant C): done = success-tinted with check, active
+  // = soft brand pill, upcoming = muted. Distinct from the inner chevron
+  // tracker so the two stepper vocabularies don't blend.
   const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeId));
   return (
-    <div style={{
-      position: 'sticky', top: 0, zIndex: 4,
-      background: 'var(--surface)',
-      borderBottom: '1px solid var(--border)',
-      padding: '6px 12px 8px',
-      display: 'flex', alignItems: 'center', gap: 0
-    }}>
+    <div className="pill-steps">
       {tabs.map((t, i) => {
         const isActive = i === activeIdx;
         const isPast = i < activeIdx;
         const isCompletedAhead = i > activeIdx && i <= farthestIdx;
         const isUnreached = i > farthestIdx;
         const canTap = isPast || isCompletedAhead;
+        const cls = ['pstep'];
+        if (isActive) cls.push('active');else
+        if (isPast || isCompletedAhead) cls.push('done');else
+        cls.push('upcoming');
         return (
-          <React.Fragment key={t.id}>
-            <button
-              type="button"
-              onClick={canTap ? () => onSelect(t.id) : undefined}
-              disabled={!canTap}
-              aria-current={isActive ? 'step' : undefined}
-              style={{
-                flex: '0 1 auto',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: '4px 6px',
-                background: 'transparent', border: 0,
-                color: isActive ? 'var(--text)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
-                fontSize: 11, fontWeight: isActive ? 700 : 600, letterSpacing: '-0.01em',
-                cursor: canTap ? 'pointer' : 'default',
-                whiteSpace: 'nowrap'
-              }}>
-              <span style={{
-                width: 18, height: 18, borderRadius: 999,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: isActive ? 'var(--brand)' : isPast ? 'var(--brand)' : 'transparent',
-                color: (isActive || isPast) ? 'var(--brand-fg)' : isUnreached ? 'var(--text-4)' : 'var(--text-2)',
-                border: (isActive || isPast) ? 'none' : `1px solid ${isUnreached ? 'var(--border)' : 'var(--border-strong)'}`,
-                fontSize: 10, fontWeight: 700, lineHeight: 1, flexShrink: 0
-              }}>{isPast ? '✓' : i + 1}</span>
-              {t.label}
-            </button>
-            {i < tabs.length - 1 &&
-              <span style={{
-                flex: '1 1 auto',
-                height: 1,
-                background: i < farthestIdx ? 'var(--brand)' : 'var(--border)',
-                minWidth: 8
-              }} />
-            }
-          </React.Fragment>);
+          <button
+            key={t.id}
+            type="button"
+            className={cls.join(' ')}
+            onClick={canTap ? () => onSelect(t.id) : undefined}
+            disabled={!canTap}
+            aria-current={isActive ? 'step' : undefined}>
+            {t.label}
+          </button>);
+
       })}
     </div>);
 
@@ -152,41 +128,39 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
   // Sync pill removed per Craig — redundant signal at top of every screen.
   const syncPill = null;
 
-
+  // Variant C: slim REC — dot + time only, no "REC" label.
   const recPill = recording &&
-  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--danger)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
       <span className="rec-dot" />
-      <span style={{ fontSize: 11 }}>REC · {fmtTime(recordingTime)}</span>
+      <span>{fmtTime(recordingTime)}</span>
     </div>;
 
 
-  // Two-row layout when we're inside the in-appointment flow.
-  // Row 1: back/title + CONNECT·SOLVE·COMMIT + REC/action.
-  // Row 2: structure picker (left-aligned) — always rendered when there's
-  //        an active structure, even for single-structure jobs.
+  // Variant C single-row layout for in-appointment screens:
+  //   [back] Title · [structure chip]    CONNECT—SOLVE—COMMIT  • 3:35
+  // Drops the second row that used to carry the structure switcher.
   if (phaseInfo) {
     return (
-      <div className="app-status" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '6px 14px 6px', minHeight: 64, gap: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-            {leading}
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {title}
-            </div>
+      <div className="app-status" style={{ padding: '6px 14px 6px', minHeight: 44, gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+          {leading}
+          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
           </div>
-          <div style={{ flexShrink: 0 }}>
-            <PhaseProgress phaseInfo={phaseInfo} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            {recPill}
-            {syncPill}
-            {action}
-          </div>
+          {structureSwitcher &&
+          <>
+              <span style={{ color: 'var(--text-4)', flexShrink: 0 }}>·</span>
+              <div style={{ minWidth: 0, flexShrink: 1 }}>{structureSwitcher}</div>
+            </>}
         </div>
-        {structureSwitcher &&
-        <div style={{ display: 'flex', alignItems: 'center', height: 26 }}>
-          {structureSwitcher}
-        </div>}
+        <div style={{ flexShrink: 0 }}>
+          <PhaseProgress phaseInfo={phaseInfo} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {recPill}
+          {syncPill}
+          {action}
+        </div>
       </div>);
 
   }

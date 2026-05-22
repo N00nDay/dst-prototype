@@ -702,6 +702,14 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
 function DictationPanel({ facet, env, onChange, hasDictation }) {
   const [status, setStatus] = useState(hasDictation ? 'ready' : 'idle');
 
+  // Reset to the dictation CTA whenever notes go away — e.g. when the rep
+  // switches to a new structure that has no notes for this envelope yet.
+  // Without this, the panel keeps its prior 'ready' state and renders an
+  // empty textarea instead of the "Dictate findings" call to action.
+  React.useEffect(() => {
+    setStatus(hasDictation ? 'ready' : 'idle');
+  }, [hasDictation, facet.id]);
+
   const beginDictate = () => {
     setStatus('recording');
     setTimeout(() => {

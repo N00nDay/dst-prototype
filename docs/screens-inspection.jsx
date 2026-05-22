@@ -3033,74 +3033,43 @@ function SectionTabs({ sections, activeSection, onSelect, facet, env, items }) {
 }
 
 // ─────────────────────────────────────────────────────────
-// SubStepStrip — numbered circles connected by a horizontal line,
-// labels underneath. Visually signals "you're step N of M" while still
-// allowing free navigation. Replaces UnifiedTabStrip on the Build screen
-// for the section row. (Phase 2.3 B-2 redesign port.)
+// SubStepStrip — chevron tracker (CSS .chev-tracker). Each section is a
+// right-pointing arrow tile that interlocks with the next. Done tiles
+// fill brand, active uses brand-soft, upcoming is muted. Outer corners
+// of the bar are rounded; visually distinct from the top pill-step row
+// so the two stepper vocabularies don't blend.
 // ─────────────────────────────────────────────────────────
 function SubStepStrip({ items, active, onSelect }) {
   if (!items || items.length === 0) return null;
   const activeIdx = Math.max(0, items.findIndex((it) => it.id === active));
-  // Each step button gets an equal slice of width (flex: 1). With the
-  // circle horizontally centered inside its button, the first circle's
-  // center sits at half-a-slice from the container's left, the last at
-  // half-a-slice from the right. Express the baseline and progress fill
-  // as percentages of the container so they line up regardless of width.
-  const halfSlicePct = 100 / (items.length * 2);
-  const progressPct = items.length > 1 ? (activeIdx / items.length) * 100 : 0;
   return (
     <div style={{ padding: '4px 0 2px' }}>
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        {/* Connecting baseline — from first-circle center to last-circle center. */}
-        <div style={{
-          position: 'absolute', top: 13, left: `${halfSlicePct}%`, right: `${halfSlicePct}%`, height: 2,
-          background: 'var(--border)', zIndex: 0
-        }} />
-        {/* Brand progress fill — same start, ending at the active circle center. */}
-        {items.length > 1 && activeIdx > 0 &&
-        <div style={{
-          position: 'absolute', top: 13, left: `${halfSlicePct}%`, height: 2,
-          background: 'var(--brand)', zIndex: 0,
-          width: `${progressPct}%`
-        }} />}
+      <div className="chev-tracker" role="tablist">
         {items.map((it, i) => {
           const isActive = it.id === active;
           const isPast = i < activeIdx;
+          const cls = ['ctile'];
+          if (isActive) cls.push('active');else
+          if (isPast) cls.push('done');else
+          cls.push('upcoming');
           return (
             <button
               key={it.id}
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => onSelect(it.id)}
-              style={{
-                position: 'relative', zIndex: 1,
-                background: 'transparent', border: 0, cursor: 'pointer', padding: '2px 4px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                flex: '1 1 0', minWidth: 0
-              }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 999,
-                background: isActive ? 'var(--brand)' : (isPast ? 'var(--brand)' : 'var(--surface)'),
-                color: (isActive || isPast) ? 'var(--brand-fg)' : 'var(--text-3)',
-                border: isActive ? '2px solid var(--brand)' : (isPast ? 'none' : '2px solid var(--border-strong)'),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, lineHeight: 1,
-                boxShadow: isActive ? '0 0 0 4px var(--brand-soft)' : 'none',
-                boxSizing: 'border-box', flexShrink: 0
-              }}>
-                {isPast ? '✓' : i + 1}
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: isActive ? 700 : 600,
-                color: isActive ? 'var(--text)' : 'var(--text-3)',
-                textAlign: 'center', lineHeight: 1.2, letterSpacing: '-0.005em',
-                maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-              }}>{it.label}</div>
+              className={cls.join(' ')}
+              onClick={() => onSelect(it.id)}>
+              <span className="ctxt">
+                {isPast && <span aria-hidden="true">✓</span>}
+                {it.label}
+              </span>
             </button>);
+
         })}
       </div>
     </div>);
+
 }
 
 // ─────────────────────────────────────────────────────────

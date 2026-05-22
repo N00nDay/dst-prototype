@@ -954,3 +954,101 @@ button { font-family: inherit; cursor: pointer; }
   70%  { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
+
+/* ---------------------------------------------------------------------------
+   Header redesign (Variant C) — pill-tab step indicator + chevron tracker
+   for the inner Build section stepper. Two clearly distinct vocabularies.
+   --------------------------------------------------------------------------- */
+
+/* Pill-tab step indicator — replaces the numbered-circle PhaseTabBar.
+   Each tab is a row-fill button; active uses brand-soft fill, done uses
+   success-tinted text + check, upcoming is muted. */
+.pill-steps {
+  position: sticky; top: 0; z-index: 4;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px 10px;
+  display: flex; gap: 4px;
+  overflow-x: auto;
+}
+.pill-steps .pstep {
+  flex: 1; min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-3); letter-spacing: -0.01em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.pill-steps .pstep.done { color: var(--success); }
+.pill-steps .pstep.done::before { content: '\2713'; font-size: 11px; line-height: 1; }
+.pill-steps .pstep.active {
+  background: var(--brand-soft);
+  color: var(--brand-soft-fg);
+  border-color: var(--brand-soft);
+}
+.pill-steps .pstep.upcoming { color: var(--text-4); cursor: default; }
+.pill-steps .pstep:disabled { cursor: default; }
+
+/* Chevron tracker — inner Build section stepper. Each tile is a right-
+   pointing arrow that interlocks with the next via a matching left notch.
+   The wrapping bar has rounded outer corners + overflow:hidden so the
+   leftmost flat-left and rightmost flat-right inherit the bar's rounding. */
+.chev-tracker {
+  display: flex; align-items: stretch;
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.chev-tracker .ctile {
+  flex: 1; min-width: 0;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
+  margin-left: -14px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 22px 0 28px;
+  background: transparent; border: 0;
+  font-size: 12px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(.2,.8,.2,1), color 200ms ease;
+  white-space: nowrap;
+}
+.chev-tracker .ctile:first-child {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+  margin-left: 0;
+  padding-left: 18px;
+}
+.chev-tracker .ctile:last-child {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%);
+  padding-right: 18px;
+}
+.chev-tracker .ctile:only-child { clip-path: none; }
+.chev-tracker .ctile .ctxt {
+  display: inline-flex; align-items: center; gap: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  line-height: 1;
+  color: inherit;
+}
+.chev-tracker .ctile.done {
+  background: var(--brand);
+  color: var(--brand-fg);
+}
+.chev-tracker .ctile.active {
+  background: var(--brand-soft);
+  color: var(--brand-soft-fg);
+  font-weight: 800;
+}
+.chev-tracker .ctile.upcoming {
+  background: var(--surface);
+  color: var(--text-3);
+}
+.chev-tracker .ctile:disabled { cursor: default; }

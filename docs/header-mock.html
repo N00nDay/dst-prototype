@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Header redesign mock</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css?v=25" />
+  <style>
+    body { background: oklch(0.93 0.005 80); padding: 40px 24px; font-family: var(--font-body); }
+    .stage { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+    .mock-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .mock-label {
+      padding: 12px 18px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    }
+    .mock-label .name { color: var(--text); letter-spacing: -0.01em; text-transform: none; font-size: 14px; font-weight: 700; }
+    .mock-label .desc { color: var(--text-3); font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; flex: 1; text-align: right; }
+    .mock-stage { padding: 24px; background: var(--bg); }
+
+    /* ────── Variant C — Header with step indicator as pill tabs ────── */
+    .vC .row1 { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+    .vC .back { width: 36px; height: 36px; border-radius: 8px; background: transparent; border: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--text-2); flex-shrink: 0; }
+    .vC .crumb { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .vC .crumb .title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+    .vC .crumb .struct {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px 4px 4px;
+      background: var(--brand-soft); color: var(--brand-soft-fg);
+      border-radius: 999px; font-size: 12px; font-weight: 700;
+    }
+    .vC .crumb .struct .n { width: 18px; height: 18px; border-radius: 999px; background: var(--brand); color: var(--brand-fg); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+    .vC .crumb .struct .of { font-size: 10px; opacity: 0.7; font-weight: 600; }
+    .vC .right { margin-left: auto; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .vC .phase-chain { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .vC .phase-chain .pill { padding: 3px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-3); }
+    .vC .phase-chain .pill.done { background: var(--success-bg); color: var(--success); }
+    .vC .phase-chain .pill.active { background: var(--brand-soft); color: var(--brand-soft-fg); }
+    .vC .phase-chain .dash { color: var(--text-4); font-weight: 400; letter-spacing: 0; }
+    .vC .rec { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; }
+    .vC .rec .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--danger); }
+    .vC .pillrow {
+      display: flex; gap: 4px;
+      padding: 8px 16px 14px;
+      border-top: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .vC .ptab {
+      flex: 1; min-width: 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 12px; font-weight: 700;
+      color: var(--text-3); letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      text-align: center;
+      border: 1px solid transparent;
+    }
+    .vC .ptab.done { color: var(--success); }
+    .vC .ptab.done::before { content: '\2713'; font-size: 11px; }
+    .vC .ptab.active { background: var(--brand-soft); color: var(--brand-soft-fg); border-color: var(--brand-soft); }
+    .vC .ptab.upcoming { color: var(--text-4); }
+
+    /* ────── Section stepper — Chevron arrows with rounded outer corners ──────
+       Each tile is shaped like a right-pointing arrow that interlocks with the
+       next via a matching left-side notch. Outer corners of the whole bar are
+       rounded via a container with border-radius + overflow:hidden, so the
+       first tile's flat-left edge and the last tile's flat-right edge inherit
+       the bar's rounded corners cleanly. Color progression: done = dark brand,
+       active = brand-soft, upcoming = white with border. */
+    .tracker-wrap {
+      width: 100%;
+      padding: 0 4px;
+      /* Bar wrapper: rounded corners that mask the outer-tile corners. */
+    }
+    .tracker {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+      height: 48px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tracker .tile {
+      flex: 1;
+      position: relative;
+      /* arrow shape: rectangle + point on right + notch on left */
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
+      margin-left: -14px;
+      transition: background 220ms cubic-bezier(.2,.8,.2,1), color 220ms ease;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 22px 0 28px;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .tracker .tile:first-child {
+      /* flat left edge — rounded by the wrapper's border-radius */
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+      margin-left: 0;
+      padding-left: 18px;
+    }
+    .tracker .tile:last-child {
+      /* flat right edge — rounded by the wrapper's border-radius */
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%);
+      padding-right: 18px;
+    }
+    .tracker .tile:only-child {
+      clip-path: none;
+    }
+    .tracker .label {
+      display: inline-flex; align-items: center; gap: 6px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1;
+      /* Override styles.css's global .label color so tile color inheritance wins. */
+      color: inherit;
+      font-size: inherit; font-weight: inherit; margin: 0; letter-spacing: inherit;
+    }
+    .tracker .check {
+      font-size: 13px; line-height: 1; opacity: 0.9;
+    }
+
+    /* Done — solid brand fill, white label. */
+    .tracker .tile.done {
+      background: var(--brand);
+      color: var(--brand-fg);
+    }
+    /* Active — brand-soft fill, brand-soft-fg label, slight inset ring
+       for "this one is live" emphasis. */
+    .tracker .tile.active {
+      background: var(--brand-soft);
+      color: var(--brand-soft-fg);
+      font-weight: 800;
+    }
+    /* Upcoming — white fill, muted text. The bar's border carries the edge. */
+    .tracker .tile.upcoming {
+      background: var(--surface);
+      color: var(--text-3);
+    }
+
+    .vD-context {
+      padding: 18px 18px 22px;
+      background: var(--bg);
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .vD-context .label-strip { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+
+    .note { font-size: 12px; color: var(--text-3); padding: 0 6px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ─────────── HEADER — Variant C (selected) ─────────── -->
+    <div class="mock-card">
+      <div class="mock-label">
+        <span class="name">Variant C — Header (selected)</span>
+        <span class="desc">Breadcrumb title · phase chain + slim REC right · step indicator as pill tabs</span>
+      </div>
+      <div class="mock-stage">
+        <div class="vC">
+          <div class="row1">
+            <button class="back" aria-label="Back">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+            <div class="crumb">
+              <span class="title">Build</span>
+              <span style="color: var(--text-4);">·</span>
+              <span class="struct"><span class="n">1</span>Main House <span class="of">1 of 2</span> ▾</span>
+            </div>
+            <div class="right">
+              <div class="phase-chain">
+                <span class="pill done">CONNECT</span>
+                <span class="dash">—</span>
+                <span class="pill active">SOLVE</span>
+                <span class="dash">—</span>
+                <span class="pill">COMMIT</span>
+              </div>
+              <div class="rec"><span class="dot"></span>3:35</div>
+            </div>
+          </div>
+          <div class="pillrow">
+            <button class="ptab done">Scope</button>
+            <button class="ptab done">Inspect</button>
+            <button class="ptab active">Build</button>
+            <button class="ptab upcoming">Slides</button>
+            <button class="ptab upcoming">Proposal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────── BUILD INNER STEPPER — Tracker ─────────── -->
+    <div class="mock-card">
+      <div class="mock-label">
+        <span class="name">Build section tracker — Domino's-inspired, DST-tuned</span>
+        <span class="desc">Slanted parallelogram tiles · numbered prominently · active tile elevates · done tiles fill brand · stays in our warm palette, no high-saturation reds</span>
+      </div>
+      <div class="mock-stage">
+        <div class="vD-context">
+
+          <div class="label-strip">Measure done · on Materials</div>
+          <div class="tracker">
+            <div class="tile done"><span class="label"><span class="check">✓</span>Measure</span></div>
+            <div class="tile active"><span class="label">Materials</span></div>
+            <div class="tile upcoming"><span class="label">Labor</span></div>
+            <div class="tile upcoming"><span class="label">Other</span></div>
+          </div>
+
+          <div class="label-strip" style="margin-top: 10px;">Measure + Materials done · on Labor</div>
+          <div class="tracker">
+            <div class="tile done"><span class="label"><span class="check">✓</span>Measure</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Materials</span></div>
+            <div class="tile active"><span class="label">Labor</span></div>
+            <div class="tile upcoming"><span class="label">Other</span></div>
+          </div>
+
+          <div class="label-strip" style="margin-top: 10px;">All but Other done · on Other</div>
+          <div class="tracker">
+            <div class="tile done"><span class="label"><span class="check">✓</span>Measure</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Materials</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Labor</span></div>
+            <div class="tile active"><span class="label">Other</span></div>
+          </div>
+
+          <div class="label-strip" style="margin-top: 10px;">All four complete (ready to advance Build)</div>
+          <div class="tracker">
+            <div class="tile done"><span class="label"><span class="check">✓</span>Measure</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Materials</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Labor</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Other</span></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────── Combined preview ─────────── -->
+    <div class="mock-card">
+      <div class="mock-label">
+        <span class="name">Combined preview — header + section tracker together</span>
+        <span class="desc">Pill tabs up top read "where am I in SOLVE" · the tracker below reads "where am I inside Build" · two clearly different control vocabularies</span>
+      </div>
+      <div class="mock-stage">
+        <div class="vC">
+          <div class="row1">
+            <button class="back" aria-label="Back">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+            <div class="crumb">
+              <span class="title">Build</span>
+              <span style="color: var(--text-4);">·</span>
+              <span class="struct"><span class="n">1</span>Main House <span class="of">1 of 2</span> ▾</span>
+            </div>
+            <div class="right">
+              <div class="phase-chain">
+                <span class="pill done">CONNECT</span>
+                <span class="dash">—</span>
+                <span class="pill active">SOLVE</span>
+                <span class="dash">—</span>
+                <span class="pill">COMMIT</span>
+              </div>
+              <div class="rec"><span class="dot"></span>3:35</div>
+            </div>
+          </div>
+          <div class="pillrow">
+            <button class="ptab done">Scope</button>
+            <button class="ptab done">Inspect</button>
+            <button class="ptab active">Build</button>
+            <button class="ptab upcoming">Slides</button>
+            <button class="ptab upcoming">Proposal</button>
+          </div>
+        </div>
+        <div style="padding: 14px 18px 8px; background: var(--bg);">
+          <div class="tracker">
+            <div class="tile done"><span class="label"><span class="check">✓</span>Measure</span></div>
+            <div class="tile done"><span class="label"><span class="check">✓</span>Materials</span></div>
+            <div class="tile active"><span class="label">Labor</span></div>
+            <div class="tile upcoming"><span class="label">Other</span></div>
+          </div>
+        </div>
+        <div style="padding: 18px; background: var(--bg); color: var(--text-3); font-size: 12px;">— Build content sits here —</div>
+      </div>
+    </div>
+
+    <div class="note">
+      Tuned-down inspirations from the Domino's tracker: kept the slanted parallelogram tiles, the prominent numbering, and the "active tile lifts" cue. Skipped the heavy 3D effect, the saturated red, and the rail border — DST stays in the warm palette and uses elevation via subtle shadow rather than a beveled tilt. Tracker uses CSS clip-path only · no JS, no library.
+    </div>
+
+  </div>
+</body>
+</html>

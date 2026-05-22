@@ -255,7 +255,9 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
     if (!product) return { productId: null };
     const subtotal = product.subtotal;
     const cost = Math.round(subtotal * COST_RATIO);
-    const discount = proposal.scopeDiscount[scope.id]?.[tierId] || 0;
+    // Distinguish "not yet set" (apply DEFAULT_MARKUP) from "explicitly 0".
+    const explicitDiscount = proposal.scopeDiscount[scope.id]?.[tierId];
+    const discount = explicitDiscount != null ? explicitDiscount : defaultDiscountFor(subtotal, cost);
     const total = Math.max(cost, subtotal - discount);
     const gp = total - cost;
     const warranty = proposal.scopeWarranty[scope.id]?.[tierId] ?? product.warranties[0];
@@ -843,6 +845,15 @@ const GP_THRESHOLDS = {
 };
 const DEFAULT_GP_THRESHOLDS = { approval: 40, overcharge: 60 };
 
+// Default starting markup for fresh pillars — keeps the GP slider sitting
+// at the approval floor rather than the natural (1/COST_RATIO − 1) ≈ 53.8%
+// you'd get from zero discount. Once the rep moves the slider, the explicit
+// discount stored on the proposal takes over.
+const DEFAULT_MARKUP = 0.40;
+function defaultDiscountFor(subtotal, cost) {
+  return Math.max(0, Math.round(subtotal - cost * (1 + DEFAULT_MARKUP)));
+}
+
 function PillarBreakdown({ rollup, product, warranty, scopeId, onOpenWarrantyDrawer, setDiscount, accent }) {
   const { subtotal, cost, total, gp, discount } = rollup;
   // Slider is now driven by markup % (gp / cost) rather than margin %
@@ -1266,8 +1277,9 @@ function aggregateTierTotal(structures, proposals, scopeId, tierId) {
     const product = findProduct(scope, tierId, productId);
     if (!product) return;
     const proposal = proposals?.[s.id] || DEFAULT_PROPOSAL;
-    const discount = proposal.scopeDiscount?.[scopeId]?.[tierId] || 0;
     const cost = Math.round(product.subtotal * COST_RATIO);
+    const explicitDiscount = proposal.scopeDiscount?.[scopeId]?.[tierId];
+    const discount = explicitDiscount != null ? explicitDiscount : defaultDiscountFor(product.subtotal, cost);
     total += Math.max(cost, product.subtotal - discount);
   });
   return total;

@@ -82,7 +82,7 @@ function WelcomePackageScreen({ tablet, brand, rep, signed, deposit, walkthrough
       {/* ── Bottom CTA ─────────────────────────────────── */}
       <div style={{ padding: tablet ? '28px 28px 24px' : '22px 16px 22px' }}>
         <button className="btn btn-primary btn-lg btn-block" onClick={onBackToSchedule}>
-          Done · back to appointment <Icon.arrow />
+          Complete Appointment <Icon.arrow />
         </button>
         <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-4)', marginTop: 10, lineHeight: 1.5 }}>
           A copy of the signed contract, scope, and color choices is in {CUSTOMER.email}.

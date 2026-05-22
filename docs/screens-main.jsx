@@ -1336,7 +1336,7 @@ function DealStatusPill({ status }) {
 }
 
 // ─────── Global Search ───────
-function GlobalSearch({ onClose, onAppointmentClick }) {
+function GlobalSearch({ onClose, onAppointmentClick, onOpenCustomer }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -1458,12 +1458,23 @@ function GlobalSearch({ onClose, onAppointmentClick }) {
             <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {matchedCustomers.map((c) => {
               const lead = c.appointments[0];
+              // Prefer routing to the customer detail when we have a full
+              // CUSTOMERS record by name; fall back to opening the next
+              // appointment if it's a search-only contact.
+              const fullCust = typeof CUSTOMERS !== 'undefined' ?
+                CUSTOMERS.find((x) => x.name === c.name) :
+                null;
+              const handleClick = () => {
+                if (fullCust && onOpenCustomer) onOpenCustomer(fullCust);
+                else onAppointmentClick(lead);
+                onClose();
+              };
               return (
                 <div
                   key={c.name}
                   className="card"
                   style={{ padding: 12, cursor: 'pointer' }}
-                  onClick={() => {onAppointmentClick(lead);onClose();}}>
+                  onClick={handleClick}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div className="avatar" style={{ width: 32, height: 32, fontSize: 11 }}>
                         {c.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}

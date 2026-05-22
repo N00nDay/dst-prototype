@@ -402,9 +402,10 @@ function App() {
     setView('welcome');
     push('Deposit deferred · deal flagged for follow-up');
   };
-  // After Welcome Package, return to the appointment overview (not the schedule)
-  // so the rep can verify or move into the next step.
+  // After Welcome Package, the rep taps "Complete Appointment" to wrap
+  // the visit: stop the recording and return to the appointment overview.
   const handleBackToAppointment = () => {
+    setRecording(false);
     setView('apt');
   };
   const handleBackToSchedule = () => {
@@ -790,7 +791,7 @@ function App() {
 
           {showDictation && <DictationModal onClose={() => setShowDictation(false)} onCommit={commitItem} />}
           {showMissing && <MissingSheet items={missingForSheet} onClose={() => setShowMissing(false)} />}
-          {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} />}
+          {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} onOpenCustomer={(c) => {setSelectedCustomer(c);setView('customer');setShowSearch(false);}} />}
           {/* Toasts disabled per Craig — strewn-about black pills weren't
               reading as cohesive. push() calls remain as no-ops in case
               we want to bring this back behind a unified design. */}

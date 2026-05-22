@@ -452,18 +452,23 @@ const SEED_ENVELOPE = {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.roofing,
     measurements: {},
-    lineItems: deriveInitialLineItems('roofing', SEED_MEASUREMENTS.roofing)
+    lineItems: deriveInitialLineItems('roofing', SEED_MEASUREMENTS.roofing),
+    // Pre-pick a G/B/B set so the Presentation pricing has real numbers on
+    // first load — makes the Build → Proposal → Pitch data flow visible.
+    packageProducts: { good: 'r-oc-td-g', better: 'r-oc-dd-b', best: 'r-oc-bk-x' }
   },
   siding: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.siding,
     measurements: {},
-    lineItems: deriveInitialLineItems('siding', SEED_MEASUREMENTS.siding)
+    lineItems: deriveInitialLineItems('siding', SEED_MEASUREMENTS.siding),
+    packageProducts: { good: 's-jh-sc-g', better: 's-jh-cp-b', best: 's-jh-art-x' }
   },
   gutters: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.gutters,
-    measurements: {}
+    measurements: {},
+    packageProducts: { good: 'g-5k-g', better: 'g-6k-lg-b', best: 'g-hr-cu-x' }
   },
   windoors: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',

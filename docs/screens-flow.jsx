@@ -83,33 +83,38 @@ function CustomerEditDialog({ label, initial, type, tablet, onClose, onSave }) {
   const inputRef = useRef(null);
   useEffect(() => {setTimeout(() => inputRef.current?.focus(), 80);}, []);
 
-  if (tablet) {
-    return (
-      <>
-        <div className="sheet-backdrop" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)' }} />
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          background: 'var(--surface)', borderRadius: 14, padding: 22,
-          minWidth: 360, maxWidth: '85%',
-          boxShadow: 'var(--shadow-lg)', zIndex: 41
-        }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em' }}>Edit {label.toLowerCase()}</h3>
-          <input
-            ref={inputRef}
-            className="input"
-            type={type}
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            style={{ width: '100%', height: 44, fontSize: 15 }} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-            <button className="btn" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" onClick={() => onSave(val)}>Save</button>
-          </div>
-        </div>
-      </>);
+  // Portal to .app-root so backdrop covers the full app surface (including the
+  // header). Without this, the backdrop is trapped inside the customer-details
+  // card because absolute positioning is constrained to nearest positioned
+  // ancestor. Falls back to body if app-root isn't mounted yet.
+  const mount = (typeof document !== 'undefined' && (document.querySelector('.app-root') || document.body)) || null;
 
-  }
-  return (
+  const tabletContent = (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)' }} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        background: 'var(--surface)', borderRadius: 14, padding: 22,
+        minWidth: 360, maxWidth: '85%',
+        boxShadow: 'var(--shadow-lg)', zIndex: 41
+      }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em' }}>Edit {label.toLowerCase()}</h3>
+        <input
+          ref={inputRef}
+          className="input"
+          type={type}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          style={{ width: '100%', height: 44, fontSize: 15 }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => onSave(val)}>Save</button>
+        </div>
+      </div>
+    </>);
+
+
+  const phoneContent = (
     <Sheet
       onClose={onClose}
       title={`Edit ${label.toLowerCase()}`}
@@ -131,6 +136,9 @@ function CustomerEditDialog({ label, initial, type, tablet, onClose, onSave }) {
       </div>
     </Sheet>);
 
+
+  const content = tablet ? tabletContent : phoneContent;
+  return mount ? ReactDOM.createPortal(content, mount) : content;
 }
 
 // Three-card phase chain — CONNECT / SOLVE / COMMIT. Each card is a single

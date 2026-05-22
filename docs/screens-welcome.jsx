@@ -30,16 +30,6 @@ function WelcomePackageScreen({ tablet, brand, rep, signed, deposit, walkthrough
   const total = signed?.total || 0;
   const firstName = CUSTOMER.name.split(/[ &]/)[0];
 
-  // Delivery dots — confirmation packet hitting the homeowner's inbox.
-  const [emailStatus, setEmailStatus] = useState('sent');
-  const [smsStatus, setSmsStatus] = useState('sent');
-  useEffect(() => {
-    const t1 = setTimeout(() => setEmailStatus('delivered'), 1400);
-    const t2 = setTimeout(() => setSmsStatus('delivered'), 1700);
-    const t3 = setTimeout(() => setEmailStatus('opened'), 4200);
-    return () => {clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);};
-  }, []);
-
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
 
@@ -75,12 +65,6 @@ function WelcomePackageScreen({ tablet, brand, rep, signed, deposit, walkthrough
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8, maxWidth: 560, margin: '8px auto 0', lineHeight: 1.5 }}>
           Your <strong>{tier?.name || 'roof'}</strong> project is officially on the schedule. Here's what's locked in and exactly what happens next.
         </div>
-
-        {/* Delivery confirmation chips */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap', fontSize: 11 }}>
-          <DeliveryDot icon={<Icon.mail />} label="Email packet" status={emailStatus} />
-          <DeliveryDot icon={<Icon.phone />} label="SMS confirmation" status={smsStatus} />
-        </div>
       </div>
 
       {/* ── SECTION 1: WHAT'S LOCKED IN ───────────────── */}
@@ -108,19 +92,6 @@ function WelcomePackageScreen({ tablet, brand, rep, signed, deposit, walkthrough
 }
 
 // ─── Helper components ──────────────────────────────────
-
-function DeliveryDot({ icon, label, status }) {
-  const color = status === 'opened' ? 'var(--success)' : status === 'delivered' ? 'var(--brand)' : 'var(--text-3)';
-  const txt = { sent: 'Sent', delivered: 'Delivered', opened: 'Opened' }[status] || status;
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ color: 'var(--text-3)', display: 'inline-flex' }}>{icon}</span>
-      <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>{label}</span>
-      <span style={{ width: 6, height: 6, borderRadius: 999, background: color, marginLeft: 2 }} />
-      <span style={{ color, fontWeight: 700, fontSize: 10, letterSpacing: 0.04, textTransform: 'uppercase' }}>{txt}</span>
-    </span>);
-
-}
 
 function SectionHeader({ n, id, title, sub }) {
   return (

@@ -837,9 +837,9 @@ function TierPillar({ scope, tierId, rollup, onOpenWarrantyDrawer, setDiscount, 
 // as a potential overcharge of the homeowner. Anything between is
 // inside the rep's normal selling range. All ranges top out at 100%.
 const GP_THRESHOLDS = {
-  roofing:  { approval: 30, overcharge: 50 },
-  siding:   { approval: 30, overcharge: 50 },
-  windoors: { approval: 30, overcharge: 55 }
+  roofing:  { approval: 40, overcharge: 50 },
+  siding:   { approval: 40, overcharge: 50 },
+  windoors: { approval: 40, overcharge: 55 }
 };
 const DEFAULT_GP_THRESHOLDS = { approval: 40, overcharge: 60 };
 
@@ -862,8 +862,9 @@ function PillarBreakdown({ rollup, product, warranty, scopeId, onOpenWarrantyDra
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Summary line */}
-      <div style={{ fontSize: 10, color: 'var(--text-3)', lineHeight: 1.45 }}>{product.summary}</div>
+      {/* Product-summary subtext removed per Craig — it threw off card
+          balance on overflow and the manufacturer/product line above is
+          already enough context. */}
 
       {/* Two-column money grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
@@ -1250,4 +1251,26 @@ function StructureTabs({ tablet, structures, activeStructureId, onSelect, perStr
 
 }
 
-Object.assign(window, { ProposalBuilderScreen });
+// Aggregate per-(scope, tier) total across all structures, sourcing the
+// product from each structure's Build envelope and the discount from the
+// matching proposal. Returns 0 when no structure has a product picked for
+// that pillar — caller (Presentation) falls back to the hardcoded display
+// number in that case.
+function aggregateTierTotal(structures, proposals, scopeId, tierId) {
+  const scope = SCOPE_CATALOG.find((s) => s.id === scopeId);
+  if (!scope) return 0;
+  let total = 0;
+  (structures || []).forEach((s) => {
+    const productId = s?.envelope?.[scopeId]?.packageProducts?.[tierId];
+    if (!productId) return;
+    const product = findProduct(scope, tierId, productId);
+    if (!product) return;
+    const proposal = proposals?.[s.id] || DEFAULT_PROPOSAL;
+    const discount = proposal.scopeDiscount?.[scopeId]?.[tierId] || 0;
+    const cost = Math.round(product.subtotal * COST_RATIO);
+    total += Math.max(cost, product.subtotal - discount);
+  });
+  return total;
+}
+
+Object.assign(window, { ProposalBuilderScreen, aggregateTierTotal });

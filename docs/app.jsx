@@ -592,7 +592,7 @@ function App() {
             fields={needsFields}
             setFields={setNeedsFields}
             onBack={() => setView('apt')}
-            onContinue={() => setView('inspect')} />
+            onContinue={() => setView('scope')} />
           }
 
           {view === 'scope' &&

@@ -751,11 +751,22 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
     if (scopeId === 'roofing' && setSelectedTier) setSelectedTier(value);
   };
 
+  // Per-tier totals derived from the Proposal page state (aggregated across
+  // structures). Falls back to the hardcoded scope.tiers[*].total when nothing
+  // is picked on Build yet, so the presentation still renders in demo mode.
+  const proposalTotal = (scopeId, tierId, fallback) => {
+    const live = typeof aggregateTierTotal === 'function'
+      ? aggregateTierTotal(structures, proposals, scopeId, tierId)
+      : 0;
+    return live > 0 ? live : fallback;
+  };
+
   // Resolve each scope's current pick (tier object or flat object) + total.
   const scopePicks = PRESENT_SCOPES.map((scope) => {
     if (scope.tiered) {
       const pick = scope.tiers.find((t) => t.id === selByScope[scope.id]);
-      return { scope, pick, total: pick?.total || 0 };
+      const pickTotal = pick ? proposalTotal(scope.id, pick.id, pick.total) : 0;
+      return { scope, pick, total: pickTotal };
     }
     const included = selByScope[scope.id] === 'included';
     return { scope, pick: included ? scope.flat : null, total: included ? scope.flat.total : 0, untiered: true };
@@ -807,16 +818,26 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
           view in both All-in and By-structure modes. By-structure mode
           gets one of these slides per building (tagged in the hero
           above); All-in mode rolls everything into a single slide. */}
-      {PRESENT_SCOPES.map((scope, idx) =>
-      <ScopeSection
-        key={scope.id}
-        scope={scope}
-        index={idx + 1}
-        selected={selByScope[scope.id]}
-        onSelect={(v) => handleSelectTier(scope.id, v)}
-        monthly={monthly}
-        tablet={tablet} />
-      )}
+      {PRESENT_SCOPES.map((scope, idx) => {
+        // Substitute live proposal totals into the tier cards so the
+        // homeowner-facing pricing tracks what the rep configured on Build.
+        const liveScope = scope.tiered ?
+        {
+          ...scope,
+          tiers: scope.tiers.map((t) => ({ ...t, total: proposalTotal(scope.id, t.id, t.total) }))
+        } :
+        scope;
+        return (
+          <ScopeSection
+            key={scope.id}
+            scope={liveScope}
+            index={idx + 1}
+            selected={selByScope[scope.id]}
+            onSelect={(v) => handleSelectTier(scope.id, v)}
+            monthly={monthly}
+            tablet={tablet} />);
+
+      })}
 
       {/* ── 3. Customer-friendly add-on grid ───────────────────── */}
       <div className="card" style={{ padding: tablet ? 20 : 16 }}>

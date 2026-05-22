@@ -107,7 +107,7 @@ function NeedsAssessmentScreen({ fields, setFields, onBack, onContinue }) {
           {`${filledCount} of ${totalCount} topics noted`}
         </div>}
         <button className="btn btn-primary btn-lg btn-block" onClick={onContinue}>
-          Continue to inspection <Icon.arrow />
+          Continue to scope <Icon.arrow />
         </button>
       </div>
       </div>

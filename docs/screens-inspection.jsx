@@ -2314,10 +2314,8 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onSetLock, o
           style={{ width: 26, height: 28, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 6, cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text-2)', padding: 0, opacity: isLocked ? 0.4 : 1 }}>+</button>
       </div>
       <div style={{ width: 64, textAlign: 'right', fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em', flexShrink: 0, fontVariantNumeric: 'tabular-nums', textDecoration: isDismissed ? 'line-through' : 'none' }}>{fmtMoney(total)}</div>
-      {/* Same affordance pattern as measurement rows:
-          - open      → [X dismiss] + [lock]
-          - locked    → [unlock]
-          - dismissed → [undo] */}
+      {/* Row affordances: dismiss removed per Craig — trash is the only
+          "remove this row" path. Lock/unlock + undo-dismiss still render. */}
       {onSetLock && isLocked &&
       <button
         type="button"
@@ -2344,34 +2342,18 @@ function LineRow({ r, envelopeId, section, colors, setColor, onQty, onSetLock, o
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
         }}>↺</button>}
       {onSetLock && !isLocked && !isDismissed &&
-      <>
-        <button
-          type="button"
-          onClick={(e) => {e.stopPropagation();onSetLock(idx, 'dismissed');}}
-          aria-label="Dismiss row (mark not applicable)"
-          title="Dismiss — mark this row not applicable"
-          style={{
-            width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
-            background: 'transparent', color: 'var(--text-3)',
-            border: '1px solid var(--border)',
-            cursor: 'pointer', fontSize: 13, fontWeight: 600,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-          <Icon.x />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {e.stopPropagation();onSetLock(idx, 'locked');}}
-          aria-label="Lock row"
-          title="Lock — commit this row"
-          style={{
-            width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
-            background: 'transparent', color: 'var(--text-3)',
-            border: '1px solid var(--border)',
-            cursor: 'pointer', fontSize: 11, fontWeight: 700,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-          }}>🔓</button>
-      </>}
+      <button
+        type="button"
+        onClick={(e) => {e.stopPropagation();onSetLock(idx, 'locked');}}
+        aria-label="Lock row"
+        title="Lock — commit this row"
+        style={{
+          width: 28, height: 28, borderRadius: 6, padding: 0, flexShrink: 0,
+          background: 'transparent', color: 'var(--text-3)',
+          border: '1px solid var(--border)',
+          cursor: 'pointer', fontSize: 11, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+        }}>🔓</button>}
       {onRemove &&
       <button
         type="button"

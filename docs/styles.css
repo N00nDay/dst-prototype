@@ -571,7 +571,11 @@ button { font-family: inherit; cursor: pointer; }
     var(--bg);
 }
 
-/* Device shell wrappers (outside of app root) */
+/* Device shell wrappers (outside of app root).
+   The area outside the device frame always stays the warm light grey,
+   even when the inside-frame app is in dark mode — the device frame is
+   the boundary of the theming so the prototype reads as "device on a
+   workbench" rather than the page itself going dark. */
 .shell-bg {
   min-height: 100vh;
   display: flex;
@@ -583,12 +587,6 @@ button { font-family: inherit; cursor: pointer; }
     radial-gradient(circle at 80% 90%, oklch(0.96 0.012 80) 0%, transparent 50%),
     oklch(0.93 0.005 80);
   position: relative;
-}
-[data-host-theme="dark"] .shell-bg {
-  background:
-    radial-gradient(circle at 20% 10%, oklch(0.18 0.006 80) 0%, transparent 50%),
-    radial-gradient(circle at 80% 90%, oklch(0.16 0.006 80) 0%, transparent 50%),
-    oklch(0.10 0.004 80);
 }
 
 .device-switcher {

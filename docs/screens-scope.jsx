@@ -24,6 +24,7 @@ const SCOPE_OPTIONS = [
 { id: 'repairs', label: 'Repairs' },
 { id: 'roofing', label: 'Roofing' },
 { id: 'siding', label: 'Siding' },
+{ id: 'gutters', label: 'Gutters' },
 { id: 'solar', label: 'Solar' },
 { id: 'windoors', label: 'Windows & Doors' },
 { id: 'other', label: 'Other' },

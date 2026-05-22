@@ -21,8 +21,6 @@ const ENVELOPE_FACETS = [
   { id: 'other',      label: 'Other',            icon: 'building', hasPricing: false, sections: ['measurements'] },
   { id: 'trim',       label: 'Trim Work',        icon: 'building', hasPricing: false, sections: ['measurements'] },
   { id: 'insulation', label: 'Insulation',       icon: 'building', hasPricing: false, sections: ['measurements'] },
-  // Kept for back-compat with any existing structures + the Inspect findings
-  // grid, which still surfaces a Gutters card. Not offered on the Scope picker.
   { id: 'gutters',    label: 'Gutters',          icon: 'building', hasPricing: false, sections: ['measurements'] }
 ];
 

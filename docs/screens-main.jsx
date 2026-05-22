@@ -964,6 +964,7 @@ function Commissions({ onBack }) {
 function Customers({ onAppointmentClick, onOpenCustomer }) {
   const customers = typeof CUSTOMERS !== 'undefined' && CUSTOMERS || [];
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
 
   const FILTERS = [
   { id: 'all', label: 'All', count: customers.length },
@@ -973,43 +974,82 @@ function Customers({ onAppointmentClick, onOpenCustomer }) {
   { id: 'past', label: 'Past', count: customers.filter((c) => c.status === 'past').length }];
 
 
+  const q = query.trim().toLowerCase();
   const visible = customers.filter((c) => {
-    if (filter === 'all') return true;
-    if (filter === 'active') return c.status === 'active' || c.status === 'signed';
-    return c.status === filter;
+    if (filter !== 'all') {
+      if (filter === 'active' && c.status !== 'active' && c.status !== 'signed') return false;
+      if (filter !== 'active' && c.status !== filter) return false;
+    }
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      (c.address || '').toLowerCase().includes(q) ||
+      (c.flags || []).some((f) => f.toLowerCase().includes(q))
+    );
   });
 
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto' }}>
-      {/* Filter chips row — 36px tap height, soft brand active. */}
-      <div style={{ padding: '12px 16px 8px', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
-        {FILTERS.map((f) => {
-          const active = filter === f.id;
-          return (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              style={{
-                flexShrink: 0,
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 36, padding: '0 14px',
-                borderRadius: 999,
-                background: active ? 'var(--brand-soft)' : 'var(--surface)',
-                color: active ? 'var(--brand-soft-fg)' : 'var(--text-2)',
-                fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
-                cursor: 'pointer',
-                border: active ? '1px solid var(--brand-soft)' : '1px solid var(--border)'
-              }}>
-              {f.label}
-              <span style={{ fontSize: 11, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{f.count}</span>
-            </button>);
+      {/* Filter chips on the left, search field on the right — right edge
+          aligns with the customer-card right edge (16px screen padding). */}
+      <div style={{ padding: '12px 16px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flex: 1, minWidth: 0 }}>
+          {FILTERS.map((f) => {
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                style={{
+                  flexShrink: 0,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  height: 36, padding: '0 14px',
+                  borderRadius: 999,
+                  background: active ? 'var(--brand-soft)' : 'var(--surface)',
+                  color: active ? 'var(--brand-soft-fg)' : 'var(--text-2)',
+                  fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+                  cursor: 'pointer',
+                  border: active ? '1px solid var(--brand-soft)' : '1px solid var(--border)'
+                }}>
+                {f.label}
+                <span style={{ fontSize: 11, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{f.count}</span>
+              </button>);
 
-        })}
+          })}
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          height: 36, padding: '0 12px',
+          borderRadius: 999,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          flexShrink: 0, width: 200
+        }}>
+          <Icon.search style={{ color: 'var(--text-3)', flexShrink: 0, width: 14, height: 14 }} />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search customers"
+            style={{
+              flex: 1, minWidth: 0,
+              border: 0, outline: 'none', background: 'transparent',
+              fontSize: 12, fontFamily: 'inherit', color: 'var(--text)',
+              padding: 0
+            }} />
+          {query &&
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Clear search"
+            style={{ border: 0, background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', padding: 0, fontSize: 13, lineHeight: 1 }}>
+            ×
+          </button>}
+        </div>
       </div>
 
       {visible.length === 0 &&
       <div style={{ padding: '40px 24px', textAlign: 'center', fontSize: 12, color: 'var(--text-3)' }}>
-          No customers in this view.
+          No customers match this view.
         </div>
       }
 
@@ -1040,7 +1080,6 @@ function Customers({ onAppointmentClick, onOpenCustomer }) {
                   {c.lastInteraction.type}
                 </div>
               </div>
-              <Icon.arrow style={{ color: 'var(--text-3)', marginTop: 8 }} />
             </div>
           </div>
         )}
@@ -1124,8 +1163,9 @@ function CustomerDetail({ customer, onBack, onScheduleFollowup, onAppointmentCli
       </div>
 
       {/* Deals & estimates */}
+      {/* Deals — non-interactive cards (display-only). */}
       <div className="section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>Deals & estimates · {customer.deals.length}</span>
+        <span>Deals · {customer.deals.length}</span>
         {totalSpend > 0 &&
         <span style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
             Lifetime · {fmt(totalSpend)}
@@ -1153,6 +1193,41 @@ function CustomerDetail({ customer, onBack, onScheduleFollowup, onAppointmentCli
           </div>
         )}
       </div>
+
+      {/* Appointments — tap a row to jump into that appointment. Pulled
+          from the global APPOINTMENTS list by customer name. */}
+      {(() => {
+        const custAppts = typeof APPOINTMENTS !== 'undefined' ?
+          APPOINTMENTS.filter((a) => a.customer === customer.name) :
+          [];
+        if (custAppts.length === 0) return null;
+        return (
+          <>
+            <div className="section-label">Appointments · {custAppts.length}</div>
+            <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {custAppts.map((a) =>
+              <div
+                key={a.id}
+                className="card card-pad"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onAppointmentClick && onAppointmentClick(a)}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>{a.when}</div>
+                      <span className="pill">{a.trade}</span>
+                    </div>
+                    {a.leadSource &&
+                    <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{a.leadSource}</div>}
+                    {a.est &&
+                    <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>Est. {a.est}</div>}
+                  </div>
+                </div>
+              </div>
+              )}
+            </div>
+          </>);
+      })()}
 
       {/* Quick actions — primary action is the recommended next move. */}
       <div className="section-label">Stay in touch</div>

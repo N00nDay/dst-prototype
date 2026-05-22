@@ -185,7 +185,14 @@ button { font-family: inherit; cursor: pointer; }
   letter-spacing: -0.01em;
   position: relative;
   z-index: 5;
+  /* Bottom drop shadow + hairline border on the static header. When a
+     sub-header (PhaseTabBar) is rendered immediately below, the parent
+     adds `has-sub-header` so this shadow is suppressed and the sub-header
+     carries the shadow instead — the visual is always ONE shadow at the
+     bottom of the sticky stack. */
+  box-shadow: 0 6px 14px rgba(20,15,5,0.06), 0 1px 0 var(--border);
 }
+.has-sub-header > .app-status { box-shadow: none; }
 
 .rec-dot {
   width: 7px; height: 7px; border-radius: 999px;

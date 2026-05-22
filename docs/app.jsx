@@ -518,8 +518,13 @@ function App() {
       return <Login brand={brand} theme={theme} device={isTablet ? 'tablet' : 'phone'} rep={rep} onLogin={() => setAuthed(true)} />;
     }
 
+    const hasSubHeader = view !== 'present' && (
+      SOLVE_TABS.some((t) => t.id === view) ||
+      COMMIT_TABS_FN(deferred).some((t) => (t.views || [t.id]).includes(view))
+    );
+
     return (
-      <div className={`app-root ${isTablet ? 'tablet' : ''} ${view === 'list' || view === 'commissions' ? 'has-tabbar' : ''}`} data-theme={theme} data-brand={brand}>
+      <div className={`app-root ${isTablet ? 'tablet' : ''} ${view === 'list' || view === 'commissions' ? 'has-tabbar' : ''} ${hasSubHeader ? 'has-sub-header' : ''}`} data-theme={theme} data-brand={brand}>
         <OSStatusBar device={isTablet ? 'tablet' : 'phone'} theme={theme} />
         {view !== 'financing' && view !== 'present' &&
         <AppStatusBar

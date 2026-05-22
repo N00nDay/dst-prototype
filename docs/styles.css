@@ -158,7 +158,7 @@ button { font-family: inherit; cursor: pointer; }
 .scroll-area { scrollbar-width: none; }
 
 /* When tab-bar is rendered (overlaid absolute), make sure scrollable content can flow past it */
-.app-root.has-tabbar .scroll-area { padding-bottom: 96px; }
+.app-root.has-tabbar .scroll-area { padding-bottom: 78px; }
 .app-root:not(.has-tabbar) .scroll-area { padding-bottom: 56px; }
 
 /* App-level utility */
@@ -290,24 +290,26 @@ button { font-family: inherit; cursor: pointer; }
 .pill.danger { background: var(--danger-bg); color: var(--danger); }
 .pill.brand { background: var(--brand-soft); color: var(--brand-soft-fg); }
 
-/* Tab bar — extends to bottom of screen, with 28px of bottom padding reserved for the home indicator overlay */
+/* Tab bar — extends to bottom of screen. Reserves room for the home-indicator
+   container below so the indicator bar sits in the safe zone with the tab
+   content right above it (no big dead gap). */
 .tab-bar {
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   border-top: 1px solid var(--border);
   background: var(--surface);
-  padding: 6px 0 28px;
+  padding: 6px 0 18px;
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  min-height: 78px;
+  min-height: 60px;
   box-sizing: content-box;
   z-index: 5;
 }
 .tab-bar .tab {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 6px 0 8px;
+  padding: 4px 0 2px;
   background: transparent; border: 0;
   color: var(--text-3);
   font-size: 10px; font-weight: 600;
@@ -668,9 +670,11 @@ button { font-family: inherit; cursor: pointer; }
 .os-status.tablet .os-status-left,
 .os-status.tablet .os-status-right { padding: 0; }
 
-/* Home indicator (bottom safe area) */
+/* Home indicator (bottom safe area) — sits in the bottom 20px so the
+   tab content can hug right above without a big dead gap. The bar itself
+   (134×5) is centered, leaving ~7px clearance on each side. */
 .home-indicator {
-  height: 28px;
+  height: 20px;
   flex-shrink: 0;
   display: flex;
   align-items: center;

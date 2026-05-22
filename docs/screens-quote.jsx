@@ -377,7 +377,7 @@ function SignaturePad({ tablet, brand, rep, selected, onClose, onSent }) {
         <div style={{
           position: 'absolute', left: 0, right: 0, bottom: '100%',
           display: 'flex', justifyContent: 'center',
-          pointerEvents: 'none', paddingBottom: 8
+          pointerEvents: 'none', paddingBottom: 8, zIndex: 100
         }}>
             <div className="toast">{submitToast}</div>
           </div>}

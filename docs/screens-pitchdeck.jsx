@@ -329,7 +329,7 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
           <div style={{
             position: 'absolute', left: 0, right: 0, bottom: '100%',
             display: 'flex', justifyContent: 'center',
-            pointerEvents: 'none', paddingBottom: 8
+            pointerEvents: 'none', paddingBottom: 8, zIndex: 100
           }}>
                 <div className="toast">{tierToast}</div>
               </div>}

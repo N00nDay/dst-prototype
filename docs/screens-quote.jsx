@@ -222,6 +222,14 @@ function SignaturePad({ tablet, brand, rep, selected, onClose, onSent }) {
   const [drawing, setDrawing] = useState(false);
   const [legalName, setLegalName] = useState('');
   const [emailing, setEmailing] = useState(false);
+  // Tap-to-reveal blocker feedback when the rep taps the gated Send button.
+  const [submitShakeKey, setSubmitShakeKey] = useState(0);
+  const [submitToast, setSubmitToast] = useState(null);
+  useEffect(() => {
+    if (!submitToast) return;
+    const t = setTimeout(() => setSubmitToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [submitToast]);
 
   const total = tierTotal(selected);
   const tier = TIERS.find((t) => t.id === selected);
@@ -328,14 +336,20 @@ function SignaturePad({ tablet, brand, rep, selected, onClose, onSent }) {
         </div>
       </div>
 
-      <div style={{ padding: '14px 16px 0' }}>
-        <label className="label">Legal name</label>
+      <div id="blk-quote-name" style={{ padding: '14px 16px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <label className="label" style={{ marginBottom: 0 }}>Legal name</label>
+          {!legalName.trim() && <span className="attn-pill">Required</span>}
+        </div>
         <input className="input" placeholder="e.g. Marcus J. Whittaker" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
       </div>
 
-      <div style={{ padding: '14px 16px 0' }}>
+      <div id="blk-quote-sig" style={{ padding: '14px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span className="label" style={{ marginBottom: 0 }}>Signature</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="label" style={{ marginBottom: 0 }}>Signature</span>
+            {!strokes.length && <span className="attn-pill">Required</span>}
+          </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn btn-sm btn-ghost" onClick={undo} disabled={!strokes.length}><Icon.undo /> Undo</button>
             <button className="btn btn-sm btn-ghost" onClick={clear} disabled={!strokes.length}><Icon.trash /> Clear</button>
@@ -358,14 +372,42 @@ function SignaturePad({ tablet, brand, rep, selected, onClose, onSent }) {
         </div>
       </div>
 
-      <div style={{ padding: '20px 16px 22px' }}>
-        <button
-          className="btn btn-primary btn-lg btn-block"
-          onClick={submit}
-          disabled={!strokes.length || !legalName.trim() || emailing}>
-          
-          {emailing ? <><span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 999, border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /> Sending…</> : <>Continue <Icon.arrow /></>}
-        </button>
+      <div style={{ padding: '20px 16px 22px', position: 'relative' }}>
+        {submitToast &&
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: '100%',
+          display: 'flex', justifyContent: 'center',
+          pointerEvents: 'none', paddingBottom: 8
+        }}>
+            <div className="toast">{submitToast}</div>
+          </div>}
+        <div
+          key={'submit-shake-' + submitShakeKey}
+          className={submitShakeKey > 0 ? 'continue-bar-shake' : ''}>
+          <button
+            className="btn btn-primary btn-lg btn-block"
+            onClick={() => {
+              if (emailing) return;
+              if (strokes.length && legalName.trim()) {submit();return;}
+              const targetId = !legalName.trim() ? 'blk-quote-name' : 'blk-quote-sig';
+              const label = !legalName.trim() && !strokes.length ?
+              'Add your legal name and signature' :
+              !legalName.trim() ? 'Enter your legal name' : 'Sign to continue';
+              const el = document.getElementById(targetId);
+              if (el && typeof el.scrollIntoView === 'function') {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              setSubmitShakeKey((k) => k + 1);
+              setSubmitToast(label);
+            }}
+            disabled={emailing}
+            style={{
+              opacity: emailing || strokes.length && legalName.trim() ? 1 : 0.45,
+              cursor: emailing ? 'not-allowed' : 'pointer'
+            }}>
+            {emailing ? <><span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 999, border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /> Sending…</> : <>Continue <Icon.arrow /></>}
+          </button>
+        </div>
       </div>
     </div>);
 

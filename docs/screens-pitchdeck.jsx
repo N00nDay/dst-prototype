@@ -205,6 +205,16 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
   // (Craig, May '26: "I saw you built the carousel but clicking the image
   // is not opening it.")
   const [openPhoto, setOpenPhoto] = useState(null); // { slide, photoIndex }
+  // Tier-gate feedback when the rep taps the Continue button without a
+  // tier picked — scrolls to the roofing tier picker and flashes a toast
+  // so the homeowner-facing screen reveals what's still needed.
+  const [tierShakeKey, setTierShakeKey] = useState(0);
+  const [tierToast, setTierToast] = useState(null);
+  React.useEffect(() => {
+    if (!tierToast) return;
+    const t = setTimeout(() => setTierToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [tierToast]);
 
   const brandObj = BRANDS[brand];
   const current = allSlides[idx];
@@ -311,14 +321,38 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
             Next <Icon.arrow />
           </button> :
 
-        <button
-          className="btn btn-primary btn-lg"
-          onClick={onContinue}
-          disabled={!selectedTier}
-          title={selectedTier ? '' : 'Pick a package to continue'}
-          style={{ flex: tablet ? '0 1 auto' : 1, minWidth: tablet ? 240 : 0 }}>
-            {selectedTier ? <>Continue to Sign <Icon.arrow /></> : 'Pick a package'}
-          </button>
+        <div
+          key={'tier-shake-' + tierShakeKey}
+          className={tierShakeKey > 0 ? 'continue-bar-shake' : ''}
+          style={{ position: 'relative', flex: tablet ? '0 1 auto' : 1, minWidth: tablet ? 240 : 0, display: 'flex' }}>
+            {tierToast &&
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: '100%',
+            display: 'flex', justifyContent: 'center',
+            pointerEvents: 'none', paddingBottom: 8
+          }}>
+                <div className="toast">{tierToast}</div>
+              </div>}
+            <button
+            className="btn btn-primary btn-lg"
+            onClick={() => {
+              if (selectedTier) {onContinue();return;}
+              const el = document.getElementById('blk-tier-roofing');
+              if (el && typeof el.scrollIntoView === 'function') {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              setTierShakeKey((k) => k + 1);
+              setTierToast('Pick a package to continue');
+            }}
+            title={selectedTier ? '' : 'Pick a package to continue'}
+            style={{
+              flex: 1, minWidth: 0,
+              opacity: selectedTier ? 1 : 0.45,
+              cursor: 'pointer'
+            }}>
+              {selectedTier ? <>Continue to Sign <Icon.arrow /></> : 'Pick a package'}
+            </button>
+          </div>
         }
       </div>
 
@@ -940,7 +974,7 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
 // ─── Scope section: header + cards block (tiered row or single flat card) ──
 function ScopeSection({ scope, index, selected, onSelect, monthly, tablet }) {
   return (
-    <div>
+    <div id={`blk-tier-${scope.id}`}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: tablet ? 12 : 10, flexWrap: 'wrap' }}>
         <span style={{
           display: 'inline-flex', alignItems: 'baseline', gap: 8,

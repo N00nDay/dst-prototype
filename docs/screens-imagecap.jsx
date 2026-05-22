@@ -142,7 +142,7 @@ function ImageCaptureScreen({
         </div>
 
       {/* Photo grid */}
-      <div className="section-label">Captures</div>
+      <div id="blk-photos" className="section-label">Captures</div>
       <PhotoGrid items={structurePhotos} onTapPhoto={onTapPhoto} onToggleStar={(globalIdx) => togglePhoto(globalIdx, { starred: !items[globalIdx].starred })} />
 
       {/* Findings cards — always one card per envelope category (Roofing,
@@ -150,17 +150,29 @@ function ImageCaptureScreen({
           regardless of which scopes are being quoted on this structure. */}
       <div className="section-label">Findings{isMulti ? ` · ${activeStructure?.name || ''}` : ''}</div>
       <div style={{ padding: '0 16px 110px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {visibleFacets.map((f) =>
-          <EnvelopeCard
-            key={f.id}
-            facet={f}
-            env={envelope[f.id] || {}}
-            items={items}
-            structurePhotos={structurePhotos}
-            onChange={(patch) => setFacetField(f.id, patch)}
-            onOpenPicker={() => setPickerOpen(f.id)}
-            onDismiss={() => setDismissFor(f.id)} />
-          )}
+        {visibleFacets.map((f) => {
+          const e = envelope[f.id] || {};
+          const hasCondition = !!e.condition;
+          const hasNotes = (e.notes || '').trim().length > 0;
+          const isComplete = !!e.dismissed || hasCondition && hasNotes;
+          const blockerLabel = isComplete ? null :
+          !hasCondition && !hasNotes ? 'Add condition & notes' :
+          !hasCondition ? 'Pick a condition' :
+          'Add notes';
+          return (
+            <EnvelopeCard
+              key={f.id}
+              anchorId={`blk-finding-${f.id}`}
+              blockerLabel={blockerLabel}
+              facet={f}
+              env={e}
+              items={items}
+              structurePhotos={structurePhotos}
+              onChange={(patch) => setFacetField(f.id, patch)}
+              onOpenPicker={() => setPickerOpen(f.id)}
+              onDismiss={() => setDismissFor(f.id)} />);
+
+        })}
       </div>
 
       {/* Capture FABs — Photo + Dictate */}
@@ -237,12 +249,25 @@ function ImageCaptureScreen({
           if (incompleteFindings.length > 0) bits.push(`${incompleteFindings.length === 1 ? 'one finding' : `${incompleteFindings.length} findings`}`);
           gateSub = `Need ${bits.join(' and ')} — almost there.`;
         }
+        const blockers = [];
+        if (needsPhoto) blockers.push({ id: 'photo', label: 'Capture at least one photo', anchor: 'blk-photos' });
+        incompleteFindings.forEach((f) => {
+          const e = envelope[f.id] || {};
+          const hasCondition = !!e.condition;
+          const hasNotes = (e.notes || '').trim().length > 0;
+          const what =
+          !hasCondition && !hasNotes ? `Add condition & notes for ${f.label}` :
+          !hasCondition ? `Pick a condition for ${f.label}` :
+          `Add notes for ${f.label}`;
+          blockers.push({ id: `finding-${f.id}`, label: what, anchor: `blk-finding-${f.id}` });
+        });
         return (
           <window.ContinueBar
             tablet={true}
             label={continueCascade.label}
             sub={ready ? '' : gateSub}
             enabled={ready}
+            blockers={blockers}
             onContinue={onContinue}
             onBack={onBackToScope || onBack}
             backLabel="Back to Scope" />);
@@ -481,7 +506,7 @@ function AnnotateSheet({ photo, onClose, onChange }) {
 }
 
 // ─── Envelope card ────────────────────────────────────────────
-function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPicker, onDismiss }) {
+function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPicker, onDismiss, anchorId, blockerLabel }) {
   // Photos attached: starred items with matching facetId, minus removed, plus added.
   // Dictations never surface as photo thumbnails. (Craig, May '26.)
   // Photo attachment is constrained to the active structure — photos
@@ -515,7 +540,7 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
   // and an Undo affordance. (Craig, May '26.)
   if (dismissed) {
     return (
-      <div className="card" style={{
+      <div id={anchorId} className="card" style={{
         padding: '12px 14px',
         display: 'flex', alignItems: 'center', gap: 12,
         background: 'var(--surface-2)', borderStyle: 'dashed'
@@ -552,7 +577,10 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
   const parsedCount = (env.parsedFromMemo || []).length;
 
   return (
-    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div id={anchorId} className="card" style={{
+      padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      border: blockerLabel ? '1px solid var(--warn)' : undefined
+    }}>
       {/* ─── Header strip ───────────────────────────────────────
           Scope icon + title + segmented condition pills + dismiss.
           Subline below the title surfaces the carry-forward state at a
@@ -570,7 +598,10 @@ function EnvelopeCard({ facet, env, items, structurePhotos, onChange, onOpenPick
           <ScopeIconCmp size={26} />
         </div>}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{facet.label}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{facet.label}</div>
+            {blockerLabel && <span className="attn-pill">{blockerLabel}</span>}
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
             {attachedIndices.length} photo{attachedIndices.length === 1 ? '' : 's'}
             {parsedCount > 0 &&

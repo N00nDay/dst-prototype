@@ -300,6 +300,45 @@ button { font-family: inherit; cursor: pointer; }
 .pill.danger { background: var(--danger-bg); color: var(--danger); }
 .pill.brand { background: var(--brand-soft); color: var(--brand-soft-fg); }
 
+/* Attention indicators on Continue-gate blockers — used by gated screens to
+   badge the cards / sections that still need work before Continue unlocks. */
+.attn-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: var(--warn);
+  box-shadow: 0 0 0 2px var(--warn-bg);
+  flex-shrink: 0;
+}
+.attn-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px 3px 7px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+.attn-pill::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--warn);
+  flex-shrink: 0;
+}
+
+/* Shake animation for the Continue bar when the rep taps a gated Continue. */
+.continue-bar-shake { animation: continue-bar-shake 280ms ease; }
+@keyframes continue-bar-shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-4px); }
+  40%  { transform: translateX(4px); }
+  60%  { transform: translateX(-3px); }
+  80%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
 /* Tab bar — extends to bottom of screen. Reserves room for the home-indicator
    container below so the indicator bar sits in the safe zone with the tab
    content right above it (no big dead gap). */

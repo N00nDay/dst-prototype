@@ -702,6 +702,17 @@ function InspectionScreen({
           setShowContinueReview(false);
           advance();
         };
+        // Blockers fed to ContinueBar so a tap on the gated Continue
+        // scrolls the first undecided tier pillar into view and flashes
+        // a label naming what's still open. Only used when the package
+        // gate is active; the open-rows path keeps its review sheet.
+        const packageBlockers = isPackageGated ?
+        packageIncompleteTiers.map((tk) => ({
+          id: `pkg-${activeFacet}-${tk}`,
+          label: `Decide on ${TIER_LABELS[tk]} for ${facet?.label || activeFacet}`,
+          anchor: `blk-pkg-${activeFacet}-${tk}`
+        })) :
+        [];
         return (
           <>
             <window.ContinueBar
@@ -709,6 +720,7 @@ function InspectionScreen({
               label={continueLabel}
               sub={continueSub}
               enabled={!isPackageGated}
+              blockers={packageBlockers}
               onContinue={onContinueClick} />
             {showContinueReview &&
               <ContinueReviewSheet
@@ -1145,6 +1157,7 @@ function PackageSelector({ facetId, packageProducts, packageDismissals, onChange
               tier={tiers[key]}
               product={product}
               dismissal={dismissal}
+              anchorId={`blk-pkg-${facetId}-${key}`}
               onOpen={() => setDrawerTier(key)}
               onDismiss={() => setDismissTier(key)}
               onUndoDismiss={() => onChangeDismissal && onChangeDismissal(key, null)} />);
@@ -1217,21 +1230,24 @@ function PackageDismissReasonSheet({ tierKey, onPick, onClose }) {
 
 // One pillar — empty CTA when no product picked, filled card when picked,
 // dimmed dismissed state when the rep marks the tier skipped with a reason.
-function PackagePillar({ tierKey, tier, product, dismissal, onOpen, onDismiss, onUndoDismiss }) {
+function PackagePillar({ tierKey, tier, product, dismissal, onOpen, onDismiss, onUndoDismiss, anchorId }) {
   const accent = TIER_ACCENTS[tierKey];
   const hasProduct = !!product;
   const isDismissed = !!dismissal;
+  const isOpen = !hasProduct && !isDismissed;
   const reason = isDismissed ? PACKAGE_DISMISS_REASONS.find((r) => r.id === dismissal) : null;
   return (
-    <div style={{
-      border: `1px solid ${(hasProduct || isDismissed) ? accent : 'var(--border)'}`,
-      borderRadius: 12,
-      background: 'var(--surface)',
-      overflow: 'hidden',
-      display: 'flex', flexDirection: 'column',
-      opacity: isDismissed ? 0.6 : 1,
-      transition: 'opacity 160ms ease, border-color 160ms ease'
-    }}>
+    <div
+      id={anchorId}
+      style={{
+        border: `1px solid ${isOpen ? 'var(--warn)' : accent}`,
+        borderRadius: 12,
+        background: 'var(--surface)',
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        opacity: isDismissed ? 0.6 : 1,
+        transition: 'opacity 160ms ease, border-color 160ms ease'
+      }}>
       {/* Colored header band — solid accent background with white label. */}
       <div style={{
         background: accent, color: '#fff',

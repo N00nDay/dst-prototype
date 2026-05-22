@@ -360,6 +360,42 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   }, 0);
   const canPresent = totalEnabledScopes > 0 && allReady;
 
+  // Blockers fed to ProposalBottomBar so a tap on a gated Present scrolls
+  // the first scope-missing-a-product into view (switching the active
+  // structure first if the offending scope lives on a different building)
+  // and flashes a label naming what's missing.
+  const blockers = React.useMemo(() => {
+    const out = [];
+    const sList = structures || [];
+    if (totalEnabledScopes === 0) {
+      out.push({
+        id: 'no-scopes',
+        label: 'Include at least one scope of work',
+        anchor: 'blk-scope-roofing'
+      });
+      return out;
+    }
+    sList.forEach((s) => {
+      const sScopes = scopesFor(s);
+      SCOPE_CATALOG.forEach((sc) => {
+        if (!sScopes[sc.id]) return;
+        const hasAny = TIER_IDS.some((t) => getStructurePackageProduct(s, sc.id, t));
+        if (hasAny) return;
+        out.push({
+          id: `${s.id}-${sc.id}`,
+          label: sList.length > 1 ?
+          `${s.name} · ${sc.label} — associate a product` :
+          `Associate a product for ${sc.label}`,
+          anchor: () => {
+            if (s.id !== activeStructureId) setActiveStructureId(s.id);
+            return document.getElementById(`blk-scope-${sc.id}`);
+          }
+        });
+      });
+    });
+    return out;
+  }, [structures, activeStructureId, totalEnabledScopes, proposals]);
+
   // Warranty drawer scope/product lookup — product is the one carried
   // forward from Build, looked up by id on the active structure's envelope.
   const warrantyScope = warrantyDrawer ? SCOPE_CATALOG.find((s) => s.id === warrantyDrawer.scopeId) : null;
@@ -477,6 +513,7 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
         tablet={tablet}
         grand={grand}
         canPresent={canPresent}
+        blockers={blockers}
         onPresent={onPresent} />
 
       {/* Drawers — product picking lives on Build; only warranty is
@@ -501,17 +538,49 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
 // commission relegated to a tighter secondary line so the bottom bar
 // reads as "this is what the homeowner will see" with the rep's
 // numbers as supporting context.
-function ProposalBottomBar({ tablet, grand, canPresent, onPresent }) {
+function ProposalBottomBar({ tablet, grand, canPresent, blockers, onPresent }) {
   const totalShowsRange = grand.low !== grand.high && (grand.low || grand.high);
+  const [shakeKey, setShakeKey] = React.useState(0);
+  const [toast, setToast] = React.useState(null);
+  React.useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+  const hasBlockers = !canPresent && Array.isArray(blockers) && blockers.length > 0;
+  const handlePresent = () => {
+    if (canPresent) {onPresent();return;}
+    if (!hasBlockers) return;
+    const first = blockers[0];
+    const el = typeof first.anchor === 'function' ?
+    first.anchor() :
+    first.anchor ? document.getElementById(first.anchor) : null;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setShakeKey((k) => k + 1);
+    setToast(first.label);
+  };
   return (
-    <div style={{
-      flexShrink: 0,
-      background: 'var(--surface)',
-      borderTop: '1px solid var(--border)',
-      boxShadow: '0 -10px 24px rgba(0,0,0,0.08)',
-      padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
-      display: 'flex', alignItems: 'center', gap: tablet ? 18 : 12
-    }}>
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {toast &&
+      <div style={{
+        position: 'absolute', left: 0, right: 0, bottom: '100%',
+        display: 'flex', justifyContent: 'center',
+        pointerEvents: 'none', paddingBottom: 8
+      }}>
+          <div className="toast">{toast}</div>
+        </div>}
+    <div
+      key={'shake-' + shakeKey}
+      className={shakeKey > 0 ? 'continue-bar-shake' : ''}
+      style={{
+        background: 'var(--surface)',
+        borderTop: '1px solid var(--border)',
+        boxShadow: '0 -10px 24px rgba(0,0,0,0.08)',
+        padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
+        display: 'flex', alignItems: 'center', gap: tablet ? 18 : 12
+      }}>
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.1, flex: '0 1 auto' }}>
         <span style={{ fontSize: tablet ? 10 : 9, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           Project total range
@@ -538,17 +607,20 @@ function ProposalBottomBar({ tablet, grand, canPresent, onPresent }) {
       </div>
       <button
         className="btn btn-primary"
-        onClick={onPresent}
-        disabled={!canPresent}
+        onClick={handlePresent}
+        disabled={!canPresent && !hasBlockers}
         style={{
           marginLeft: 'auto',
           flexShrink: 0,
           height: tablet ? 48 : 42,
           padding: tablet ? '0 22px' : '0 16px',
-          fontSize: tablet ? 15 : 13, fontWeight: 700
+          fontSize: tablet ? 15 : 13, fontWeight: 700,
+          opacity: canPresent ? 1 : 0.45,
+          cursor: canPresent || hasBlockers ? 'pointer' : 'not-allowed'
         }}>
         Present <Icon.arrow />
       </button>
+    </div>
     </div>);
 }
 
@@ -679,13 +751,17 @@ function ScopeCard({ scope, included, anyPicked, onToggle, pillars, onOpenWarran
   const lo = totals.length ? Math.min(...totals) : 0;
   const hi = totals.length ? Math.max(...totals) : 0;
 
+  const isBlocked = included && !anyPicked;
   return (
-    <div className="card" style={{
-      padding: 0,
-      opacity: included ? 1 : 0.62,
-      border: included ? '1px solid var(--border)' : '1px dashed var(--border-strong)',
-      transition: 'opacity 160ms ease, border-color 160ms ease'
-    }} data-comment-anchor={scope.id === 'roofing' ? '240212482e-div-192-7-roof' : undefined}>
+    <div
+      id={`blk-scope-${scope.id}`}
+      className="card"
+      style={{
+        padding: 0,
+        opacity: included ? 1 : 0.62,
+        border: `1px ${included ? 'solid' : 'dashed'} ${isBlocked ? 'var(--warn)' : included ? 'var(--border)' : 'var(--border-strong)'}`,
+        transition: 'opacity 160ms ease, border-color 160ms ease'
+      }} data-comment-anchor={scope.id === 'roofing' ? '240212482e-div-192-7-roof' : undefined}>
       {/* Header — toggle row */}
       <div
         onClick={onToggle}

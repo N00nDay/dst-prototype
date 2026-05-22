@@ -42,6 +42,19 @@ function ScopeScreen({
 
   const allReady = structures.every((s) => (s.scopes?.length || 0) > 0);
 
+  // Blockers fed to ContinueBar so a tap on a gated Continue scrolls the
+  // first empty structure into view and flashes a label naming it.
+  const blockers = React.useMemo(
+    () => structures.
+    filter((s) => (s.scopes?.length || 0) === 0).
+    map((s) => ({
+      id: s.id,
+      label: `Pick a scope for ${s.name}`,
+      anchor: `blk-structure-${s.id}`
+    })),
+    [structures]
+  );
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div className="scroll-area" data-screen-label="Scope" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
@@ -135,6 +148,7 @@ function ScopeScreen({
         label="Continue to Inspect"
         sub={allReady ? '' : 'Pick at least one scope of work — you can adjust later.'}
         enabled={allReady}
+        blockers={blockers}
         onContinue={onContinue} />
 
       {pendingDelete && structures.length > 1 &&
@@ -178,13 +192,17 @@ function StructureRow({ structure, index = 1, onRename, onToggleScope, onRequest
   };
 
   const selectedCount = (structure.scopes || []).length;
+  const isBlocked = selectedCount === 0;
 
   return (
-    <div style={{
-      padding: tablet ? '14px 16px' : '12px 14px', borderRadius: 12,
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column', gap: 10
-    }}>
+    <div
+      id={`blk-structure-${structure.id}`}
+      style={{
+        padding: tablet ? '14px 16px' : '12px 14px', borderRadius: 12,
+        background: 'var(--surface)',
+        border: `1px solid ${isBlocked ? 'var(--warn)' : 'var(--border)'}`,
+        display: 'flex', flexDirection: 'column', gap: 10
+      }}>
       {/* Row 1 — index badge, name, count, trash */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
@@ -217,15 +235,18 @@ function StructureRow({ structure, index = 1, onRename, onToggleScope, onRequest
           <Icon.pen style={{ width: 12, height: 12, color: 'var(--text-4)' }} />
         </div>
 
+        {isBlocked ?
+        <span className="attn-pill">Needs scope</span> :
         <span style={{
           fontSize: 10, fontWeight: 700,
           padding: '3px 8px', borderRadius: 999,
-          background: selectedCount > 0 ? 'var(--brand-soft)' : 'var(--surface-2)',
-          color: selectedCount > 0 ? 'var(--brand-soft-fg)' : 'var(--text-3)',
+          background: 'var(--brand-soft)',
+          color: 'var(--brand-soft-fg)',
           letterSpacing: 0.04, fontVariantNumeric: 'tabular-nums'
         }}>
-          {selectedCount} {selectedCount === 1 ? 'scope' : 'scopes'}
-        </span>
+            {selectedCount} {selectedCount === 1 ? 'scope' : 'scopes'}
+          </span>
+        }
 
         <button
           onClick={onRequestDelete}
@@ -321,26 +342,71 @@ function DeleteStructureModal({ name, onCancel, onConfirm }) {
 // ─── Continue bar (shared chrome pattern) ─────────────────────
 // Sticky footer with sub-line + a labeled Continue button. Used at the end
 // of every SOLVE step.
-function ContinueBar({ tablet, label, sub, enabled, onContinue, onBack, backLabel }) {
+//
+// `blockers` is an optional array of { id, label, anchor }. When the gate
+// is not yet met but the screen has supplied blockers, the Continue button
+// keeps its disabled appearance but stays tappable — tapping it scrolls
+// the first blocker's anchor into view, shakes the bar, and flashes a
+// transient toast above the bar with the blocker's label. This is how the
+// rep learns *why* they can't proceed instead of getting a dead grey button.
+function ContinueBar({ tablet, label, sub, enabled, blockers, onContinue, onBack, backLabel }) {
   // Unlock pulse (Pass 3, D2): when `enabled` flips false→true, briefly add
   // an `unlocked` class to trigger the CSS keyframe celebration.
   const prevEnabled = React.useRef(enabled);
   const [pulseKey, setPulseKey] = React.useState(0);
+  const [shakeKey, setShakeKey] = React.useState(0);
+  const [toast, setToast] = React.useState(null);
   React.useEffect(() => {
     if (!prevEnabled.current && enabled) setPulseKey((k) => k + 1);
     prevEnabled.current = enabled;
   }, [enabled]);
+  React.useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const hasBlockers = !enabled && Array.isArray(blockers) && blockers.length > 0;
+  const handleBlockedTap = () => {
+    const first = blockers[0];
+    if (first) {
+      const el = typeof first.anchor === 'function' ?
+        first.anchor() :
+        (first.anchor ? document.getElementById(first.anchor) : null);
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setToast(first.label);
+    }
+    setShakeKey((k) => k + 1);
+  };
+  const handleClick = () => {
+    if (hasBlockers) handleBlockedTap();
+    else onContinue();
+  };
+
   return (
-    <div style={{
-      flexShrink: 0,
-      background: 'var(--surface)',
-      borderTop: '1px solid var(--border)',
-      boxShadow: '0 -10px 24px rgba(0,0,0,0.06)',
-      padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
-      display: 'flex', alignItems: 'center', gap: 12
-    }}>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
-        {onBack && backLabel ?
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {toast &&
+      <div style={{
+        position: 'absolute', left: 0, right: 0, bottom: '100%',
+        display: 'flex', justifyContent: 'center',
+        pointerEvents: 'none', paddingBottom: 8
+      }}>
+          <div className="toast">{toast}</div>
+        </div>}
+      <div
+        key={'shake-' + shakeKey}
+        className={shakeKey > 0 ? 'continue-bar-shake' : ''}
+        style={{
+          background: 'var(--surface)',
+          borderTop: '1px solid var(--border)',
+          boxShadow: '0 -10px 24px rgba(0,0,0,0.06)',
+          padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
+          display: 'flex', alignItems: 'center', gap: 12
+        }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+          {onBack && backLabel ?
           <button
             type="button"
             onClick={onBack}
@@ -357,22 +423,23 @@ function ContinueBar({ tablet, label, sub, enabled, onContinue, onBack, backLabe
             {backLabel}
           </button> :
           <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '-0.005em' }}>{sub}</span>
-        }
+          }
+        </div>
+        <button
+          key={pulseKey}
+          onClick={handleClick}
+          disabled={!enabled && !hasBlockers}
+          className={'btn btn-primary' + (enabled && pulseKey > 0 ? ' unlocked' : '')}
+          style={{
+            height: tablet ? 44 : 40,
+            padding: tablet ? '0 18px' : '0 14px',
+            fontSize: tablet ? 14 : 13, fontWeight: 700, letterSpacing: '-0.01em',
+            opacity: enabled ? 1 : 0.45,
+            cursor: enabled || hasBlockers ? 'pointer' : 'not-allowed'
+          }}>
+          {label} <Icon.arrow />
+        </button>
       </div>
-      <button
-        key={pulseKey}
-        onClick={onContinue}
-        disabled={!enabled}
-        className={'btn btn-primary' + (enabled && pulseKey > 0 ? ' unlocked' : '')}
-        style={{
-          height: tablet ? 44 : 40,
-          padding: tablet ? '0 18px' : '0 14px',
-          fontSize: tablet ? 14 : 13, fontWeight: 700, letterSpacing: '-0.01em',
-          opacity: enabled ? 1 : 0.45,
-          cursor: enabled ? 'pointer' : 'not-allowed'
-        }}>
-        {label} <Icon.arrow />
-      </button>
     </div>);
 
 }

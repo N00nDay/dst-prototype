@@ -100,8 +100,10 @@ function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
     <div style={{
       position: 'sticky', top: 0, zIndex: 4,
       background: 'var(--surface)',
-      borderBottom: '1px solid var(--border)',
-      padding: '8px 12px 10px'
+      padding: '8px 12px 10px',
+      // Soft drop-shadow under the whole static header stack (AppContextBar
+      // sits above this with shared bg, so the shadow falls below both).
+      boxShadow: '0 6px 14px rgba(20,15,5,0.06), 0 1px 0 var(--border)'
     }}>
       <div className="chev-tracker" role="tablist">
         {tabs.map((t, i) => {

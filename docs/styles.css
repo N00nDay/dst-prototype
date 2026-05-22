@@ -184,7 +184,10 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--text-3);
   letter-spacing: -0.01em;
   position: relative;
-  z-index: 5;
+  /* Above OSStatusBar (z 6), EnvelopePicker scope ribbon (z 6), and the
+     PhaseTabBar wrapper (z 4) so popovers from the header — structure
+     switcher dropdown, etc. — render over the sticky chrome below. */
+  z-index: 10;
   /* Bottom drop shadow + hairline border on the static header. When a
      sub-header (PhaseTabBar) is rendered immediately below, the parent
      adds `has-sub-header` so this shadow is suppressed and the sub-header

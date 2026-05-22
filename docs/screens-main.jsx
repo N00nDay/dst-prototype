@@ -589,7 +589,7 @@ function Dashboard({ brand, rep, onAppointmentClick, onCommissionsClick, onFollo
                     <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
                       "{f.reason}" · originally {f.originalDate}
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 4}}>
                       Due {f.dueDate}
                     </div>
                   </div>
@@ -877,14 +877,14 @@ function Settings({ brand, theme, setTheme, rep, onLogout }) {
         <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>Device</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{rep.deviceId} · iPhone 15 Pro</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)'}}>{rep.deviceId} · iPhone 15 Pro</div>
           </div>
         </div>
       </div>
 
       <div style={{ padding: '20px 16px' }}>
         <button className="btn btn-block" onClick={onLogout}>Sign out</button>
-        <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-4)', marginTop: 12, fontFamily: 'var(--font-mono)' }}>
+        <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-4)', marginTop: 12}}>
           IHS Selling Way · v3.42 · build 2026.04.28
         </div>
       </div>
@@ -908,7 +908,7 @@ function Commissions({ onBack }) {
             {c.status === 'pending' && <span className="pill" style={{ fontSize: 10 }}>Pending</span>}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{c.job}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 6, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 6 }}>
             Signed {c.date} · {pct(c.rate, 0)} of {fmt(c.sold)} · pays {c.payDate}
           </div>
         </div>
@@ -981,7 +981,7 @@ function Customers({ onAppointmentClick, onOpenCustomer }) {
 
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto' }}>
-      {/* Filter chips row */}
+      {/* Filter chips row — 36px tap height, soft brand active. */}
       <div style={{ padding: '12px 16px 8px', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {FILTERS.map((f) => {
           const active = filter === f.id;
@@ -992,16 +992,16 @@ function Customers({ onAppointmentClick, onOpenCustomer }) {
               style={{
                 flexShrink: 0,
                 display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 28, padding: '0 11px',
-                border: 0, borderRadius: 999,
-                background: active ? 'var(--brand)' : 'var(--surface)',
-                color: active ? 'var(--brand-fg)' : 'var(--text-2)',
-                fontSize: 11, fontWeight: 600, letterSpacing: '-0.01em',
-                cursor: 'pointer', boxShadow: active ? 'none' : 'var(--shadow-sm)',
-                border: active ? 'none' : '1px solid var(--border)'
+                height: 36, padding: '0 14px',
+                borderRadius: 999,
+                background: active ? 'var(--brand-soft)' : 'var(--surface)',
+                color: active ? 'var(--brand-soft-fg)' : 'var(--text-2)',
+                fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+                cursor: 'pointer',
+                border: active ? '1px solid var(--brand-soft)' : '1px solid var(--border)'
               }}>
               {f.label}
-              <span style={{ fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{f.count}</span>
+              <span style={{ fontSize: 11, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{f.count}</span>
             </button>);
 
         })}
@@ -1015,28 +1015,28 @@ function Customers({ onAppointmentClick, onOpenCustomer }) {
 
       <div style={{ padding: '4px 16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {visible.map((c) =>
-        <div key={c.id} className="card" style={{ padding: 12, cursor: 'pointer' }} onClick={() => onOpenCustomer && onOpenCustomer(c)}>
+        <div key={c.id} className="card card-pad" style={{ cursor: 'pointer' }} onClick={() => onOpenCustomer && onOpenCustomer(c)}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div className="avatar" style={{ width: 36, height: 36, fontSize: 12, borderRadius: 8 }}>
+              <div className="avatar">
                 {c.name.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('')}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em' }}>{c.name}</div>
-                  <span style={{ fontSize: 10, color: 'var(--text-4)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>{c.name}</div>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                     {c.lastInteraction.date}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.address}
                 </div>
-                <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
                   <CustomerStatusPill status={c.status} />
                   {c.flags.map((flag) =>
                 <span key={flag} className="pill" style={{ fontSize: 10 }}>{flag}</span>
                 )}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 6, fontStyle: 'italic' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 6 }}>
                   {c.lastInteraction.type}
                 </div>
               </div>
@@ -1065,45 +1065,62 @@ function CustomerStatusPill({ status }) {
 function CustomerDetail({ customer, onBack, onScheduleFollowup, onAppointmentClick }) {
   if (!customer) return null;
   const totalSpend = customer.deals.filter((d) => d.amount).reduce((s, d) => s + d.amount, 0);
+  const initials = customer.name.split(/[\s&]+/).filter(Boolean).map((s) => s[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const telHref = customer.phone ? `tel:${customer.phone.replace(/[^0-9+]/g, '')}` : undefined;
+  const smsHref = customer.phone ? `sms:${customer.phone.replace(/[^0-9+]/g, '')}` : undefined;
+  const mailHref = customer.email ? `mailto:${customer.email}` : undefined;
+  const mapsHref = customer.address ? `https://maps.google.com/?q=${encodeURIComponent(customer.address)}` : undefined;
+  const QA = window.QuickAction;
+  const HC = window.HeroChip;
 
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-      {/* Header */}
-      <div style={{ padding: '14px 16px 0' }}>
-        <div className="avatar" style={{ width: 48, height: 48, fontSize: 16, borderRadius: 10, marginBottom: 10 }}>
-          {customer.name.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('')}
-        </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>{customer.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Icon.pin /> {customer.address}
-        </div>
-        <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
-          <CustomerStatusPill status={customer.status} />
-          {customer.flags.map((flag) =>
-          <span key={flag} className="pill" style={{ fontSize: 10 }}>{flag}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Contact card */}
-      <div className="section-label">Contact</div>
-      <div style={{ padding: '0 16px' }}>
-        <div className="card">
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Icon.mail style={{ color: 'var(--text-3)' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Email</div>
-              <div style={{ fontSize: 13 }}>{customer.email}</div>
+      {/* Hero card — brand-soft gradient with avatar, name, address, status
+          pills, and a 4-up action grid. Mirrors AppointmentHero so the
+          two screens share the same "customer identity" vocabulary. */}
+      <div style={{
+        margin: '14px 16px 4px',
+        borderRadius: 16, overflow: 'hidden',
+        border: '1px solid var(--border)',
+        background: 'linear-gradient(135deg, var(--brand-soft) 0%, var(--surface) 70%)'
+      }}>
+        <div style={{ padding: '16px 16px 14px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'var(--brand)', color: 'var(--brand-fg)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+            boxShadow: '0 10px 22px rgba(20,15,5,0.14)'
+          }}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--text)' }}>
+              {customer.name}
             </div>
-          </div>
-          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Icon.mic style={{ color: 'var(--text-3)' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Phone</div>
-              <div style={{ fontSize: 13 }}>{customer.phone}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
+              <Icon.pin style={{ width: 12, height: 12, color: 'var(--text-3)' }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.address}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+              <CustomerStatusPill status={customer.status} />
+              {customer.flags.map((flag) =>
+              <span key={flag} className="pill" style={{ fontSize: 10 }}>{flag}</span>
+              )}
             </div>
           </div>
         </div>
+        {/* 4-up action grid — same vocabulary as AppointmentHero. */}
+        {QA &&
+        <div style={{
+          padding: '0 16px 14px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8
+        }}>
+          <QA href={telHref} label="Call" Glyph={Icon.phone} />
+          <QA href={smsHref} label="Text" Glyph={Icon.sms} />
+          <QA href={mapsHref} label="Directions" Glyph={Icon.directions || Icon.pin} target="_blank" />
+          <QA href={mailHref} label="Email" Glyph={Icon.mail} />
+        </div>}
       </div>
 
       {/* Deals & estimates */}
@@ -1117,15 +1134,15 @@ function CustomerDetail({ customer, onBack, onScheduleFollowup, onAppointmentCli
       </div>
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {customer.deals.map((d) =>
-        <div key={d.id} className="card" style={{ padding: 12 }}>
+        <div key={d.id} className="card card-pad">
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{d.type}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>{d.type}</div>
                   <DealStatusPill status={d.status} />
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{d.trade}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{d.date}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{d.trade}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>{d.date}</div>
               </div>
               {d.amount &&
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
@@ -1137,16 +1154,16 @@ function CustomerDetail({ customer, onBack, onScheduleFollowup, onAppointmentCli
         )}
       </div>
 
-      {/* Quick actions */}
-      <div className="section-label">Actions</div>
+      {/* Quick actions — primary action is the recommended next move. */}
+      <div className="section-label">Stay in touch</div>
       <div style={{ padding: '0 16px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button className="btn btn-block" onClick={onScheduleFollowup}>
+        <button className="btn btn-primary btn-block" onClick={onScheduleFollowup}>
           <Icon.cal /> Schedule follow-up
         </button>
-        <button className="btn btn-block btn-ghost" style={{ fontSize: 12 }}>
+        <button className="btn btn-block btn-ghost">
           <Icon.mail /> Send referral request
         </button>
-        <div style={{ fontSize: 10, color: 'var(--text-4)', textAlign: 'center', padding: '8px 12px', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-4)', textAlign: 'center', padding: '8px 12px', lineHeight: 1.5 }}>
           New appointments are created in the CRM. The DST receives them via the appointment sync.
         </div>
       </div>
@@ -1162,23 +1179,46 @@ function FollowupDetail({ followup, brand, onBack, onScheduleRepresentation, onS
   const [notes, setNotes] = useState(followup?.notes || '');
   if (!followup) return null;
 
+  const initials = (followup.customer || '?').split(/[\s&]+/).filter(Boolean).map((s) => s[0]).slice(0, 2).join('').toUpperCase() || '?';
+
   return (
     <div className="scroll-area" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-      {/* Header */}
-      <div style={{ padding: '14px 16px 0' }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand)', letterSpacing: 0.1, textTransform: 'uppercase' }}>
-          Follow-up · DST-FU
-        </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 2 }}>{followup.customer}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Icon.pin /> {followup.address}
+      {/* Hero card — brand-soft gradient with the follow-up eyebrow,
+          customer name, address, and overdue banner. Same vocabulary as
+          AppointmentHero / CustomerDetail hero so the screens read as a
+          family. */}
+      <div style={{
+        margin: '14px 16px 4px',
+        borderRadius: 16, overflow: 'hidden',
+        border: '1px solid var(--border)',
+        background: 'linear-gradient(135deg, var(--brand-soft) 0%, var(--surface) 70%)'
+      }}>
+        <div style={{ padding: '16px 16px 14px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'var(--brand)', color: 'var(--brand-fg)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+            boxShadow: '0 10px 22px rgba(20,15,5,0.14)'
+          }}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--brand-soft-fg)', letterSpacing: 0.1, textTransform: 'uppercase' }}>
+              Follow-up · DST-FU
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--text)', marginTop: 2 }}>
+              {followup.customer}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
+              <Icon.pin style={{ width: 12, height: 12, color: 'var(--text-3)' }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{followup.address}</span>
+            </div>
+          </div>
         </div>
         {followup.overdue &&
-        <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
-            <Icon.alert style={{ verticalAlign: 'middle', marginRight: 4 }} />
-            Overdue · was due {followup.dueDate}
-          </div>
-        }
+        <div style={{ margin: '0 16px 14px', padding: '10px 12px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 8, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon.alert style={{ flexShrink: 0 }} />
+          Overdue — was due {followup.dueDate}
+        </div>}
       </div>
 
       {/* Original appointment card */}

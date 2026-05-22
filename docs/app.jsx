@@ -155,13 +155,23 @@ function App() {
   const [openPhoto, setOpenPhoto] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
   const [activeFacet, setActiveFacet] = useState('roofing'); // facetId for Camera/Dictation tagging
-  // Furthest SOLVE step the rep has reached. The PhaseTabBar uses this to
-  // know which forward steps are revisitable — if you've already been to
-  // Build, you can tap Build from Inspect without going through Continue.
-  const [farthestSolveStepIdx, setFarthestSolveStepIdx] = useState(0);
+  // Highest SOLVE step the rep has COMPLETED (advanced past). PhaseTabBar
+  // uses this for both the "done" visual and the forward-tap gate. A step
+  // is completed only when the rep moves FORWARD to a higher-index step
+  // (typically via Continue) — landing on a step doesn't complete it,
+  // so visiting Build then returning to Inspect leaves Build as upcoming.
+  const [farthestSolveStepIdx, setFarthestSolveStepIdx] = useState(-1);
+  const prevSolveIdxRef = React.useRef(-1);
   useEffect(() => {
-    const idx = SOLVE_TABS.findIndex((t) => t.id === view);
-    if (idx > farthestSolveStepIdx) setFarthestSolveStepIdx(idx);
+    const newIdx = SOLVE_TABS.findIndex((t) => t.id === view);
+    const prevIdx = prevSolveIdxRef.current;
+    // If we advanced from a SOLVE step to a higher SOLVE step, mark the
+    // previous step completed. Backward navigation and non-SOLVE transitions
+    // (e.g. apt → scope, or going to 'present') don't bump completion.
+    if (newIdx >= 0 && prevIdx >= 0 && newIdx > prevIdx) {
+      setFarthestSolveStepIdx((c) => Math.max(c, prevIdx));
+    }
+    if (newIdx >= 0) prevSolveIdxRef.current = newIdx;
   }, [view]);
 
   // ── Needs Assessment ──────────────────────────────────

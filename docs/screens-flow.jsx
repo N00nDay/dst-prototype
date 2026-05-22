@@ -638,5 +638,6 @@ function DictationModal({ onClose, onCommit }) {
 }
 
 Object.assign(window, {
-  Login, AppointmentDetail, CameraModal, DictationModal
+  Login, AppointmentDetail, CameraModal, DictationModal,
+  QuickAction, HeroChip
 });

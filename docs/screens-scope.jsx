@@ -20,16 +20,17 @@ const { useState: useScopeState } = window;
 // Curated list of scopes of work. (Craig, May '26 — these account for
 // roughly half of the known scopes today; more get added as they roll
 // out company-wide.)
+// Alphabetical by label.
 const SCOPE_OPTIONS = [
+{ id: 'gutters', label: 'Gutters' },
+{ id: 'insulation', label: 'Insulation' },
+{ id: 'other', label: 'Other' },
 { id: 'repairs', label: 'Repairs' },
 { id: 'roofing', label: 'Roofing' },
 { id: 'siding', label: 'Siding' },
-{ id: 'gutters', label: 'Gutters' },
 { id: 'solar', label: 'Solar' },
-{ id: 'windoors', label: 'Windows & Doors' },
-{ id: 'other', label: 'Other' },
 { id: 'trim', label: 'Trim Work' },
-{ id: 'insulation', label: 'Insulation' }];
+{ id: 'windoors', label: 'Windows & Doors' }];
 
 
 function ScopeScreen({

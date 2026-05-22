@@ -759,15 +759,18 @@ function EnvelopeTabs({ activeFacet, setActiveFacet, envelope, items, allowedFac
 // ─────────────────────────────────────────────────────────
 // Mirror of SCOPE_OPTIONS in screens-scope.jsx — keeps the Build scope
 // tiles in lock-step with what reps can pick on the Scope screen.
+// Alphabetical by label. The Build EnvelopePicker re-sorts so included
+// (active) tiles come first alphabetically, then excluded alphabetically.
 const PICKER_ENVELOPES = [
+  { id: 'gutters',    label: 'Gutters' },
+  { id: 'insulation', label: 'Insulation' },
+  { id: 'other',      label: 'Other' },
   { id: 'repairs',    label: 'Repairs' },
   { id: 'roofing',    label: 'Roofing' },
   { id: 'siding',     label: 'Siding' },
   { id: 'solar',      label: 'Solar' },
-  { id: 'windoors',   label: 'Windows & Doors' },
-  { id: 'other',      label: 'Other' },
   { id: 'trim',       label: 'Trim Work' },
-  { id: 'insulation', label: 'Insulation' }
+  { id: 'windoors',   label: 'Windows & Doors' }
 ];
 
 // Returns { kind: 'excluded'|'done'|'progress'|'open', pct?: number }

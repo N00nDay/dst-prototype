@@ -312,6 +312,524 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
     </>);
 }
 
+// ─────── Tool-Bag Drawer ───────
+// Right-side drawer giving the rep one-tap access to customer + property
+// context, an "area work" map (completed jobs nearby), and Google reviews.
+// The whole drawer is portaled into .app-root so the backdrop covers the
+// AppContextBar header (without the portal, position:absolute would be
+// trapped inside the inner content wrapper that sits below the header).
+function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer }) {
+  const TABS = [
+    { id: 'customer', label: 'Customer' },
+    { id: 'property', label: 'Property' },
+    { id: 'area', label: 'Area Work' },
+    { id: 'reviews', label: 'Reviews' }];
+  // Inner sheet (edit field, filter) layers ON TOP of the side drawer.
+  // The sheet provides its own backdrop that covers the drawer in place —
+  // we don't slide the drawer off-screen (that motion is jarring).
+  const [innerSheet, setInnerSheet] = React.useState(null);
+  if (!open) return null;
+  const content = (
+    <>
+      <div className="drawer-backdrop" onClick={onClose} />
+      <div className="drawer-right" role="dialog" aria-label="Sales tool bag">
+        <div className="drawer-head">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ color: 'var(--brand)', display: 'inline-flex' }}><Icon.layers /></span>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Tool Bag</div>
+          </div>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
+            <Icon.x />
+          </button>
+        </div>
+        <div className="drawer-tabs" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`drawer-tab ${tab === t.id ? 'active' : ''}`}
+              onClick={() => onTabChange(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="drawer-body">
+          {tab === 'customer' && <ToolbagCustomerTab customer={customer} setCustomer={setCustomer} requestSheet={setInnerSheet} />}
+          {tab === 'property' && <ToolbagPropertyTab customer={customer} />}
+          {tab === 'area' && <ToolbagAreaTab customer={customer} requestSheet={setInnerSheet} />}
+          {tab === 'reviews' && <ToolbagReviewsTab />}
+        </div>
+      </div>
+      {innerSheet}
+    </>);
+  const mount = (typeof document !== 'undefined' && document.querySelector('.app-root')) || null;
+  return mount ? ReactDOM.createPortal(content, mount) : content;
+}
+
+// Customer fields — pencil-only edit affordance. Tapping the pencil pushes a
+// modal Sheet up to the drawer's parent so the side drawer recedes and the
+// sheet reads as the only foreground element (no drawer-in-drawer).
+function ToolbagCustomerTab({ customer, setCustomer, requestSheet }) {
+  const FIELDS = [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'phone', label: 'Phone', type: 'tel' },
+    { key: 'email', label: 'Email', type: 'email' },
+    { key: 'address', label: 'Address', type: 'text' },
+    { key: 'insurance', label: 'Insurance', type: 'text' }];
+  const telDigits = (customer.phone || '').replace(/[^0-9+]/g, '');
+  const openEdit = (f) => {
+    requestSheet(
+      <ToolbagFieldEditSheet
+        key={f.key}
+        label={f.label}
+        type={f.type}
+        initial={customer[f.key] || ''}
+        onClose={() => requestSheet(null)}
+        onSave={(v) => { setCustomer({ ...customer, [f.key]: v }); requestSheet(null); }} />);
+  };
+  return (
+    <div className="drawer-section">
+      <div className="card" style={{ padding: 0, marginBottom: 14 }}>
+        {FIELDS.map((f, i) => (
+          <div
+            key={f.key}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 14px',
+              borderBottom: i === FIELDS.length - 1 ? 'none' : '1px solid var(--border)'
+            }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{f.label}</div>
+              <div style={{ fontSize: 13, color: 'var(--text)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {customer[f.key] || '—'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={`Edit ${f.label.toLowerCase()}`}
+              onClick={() => openEdit(f)}
+              style={{ width: 36, height: 36, flexShrink: 0 }}>
+              <Icon.pen style={{ color: 'var(--text-3)' }} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <a
+          href={`tel:${telDigits}`}
+          style={{
+            textDecoration: 'none', color: 'var(--text)',
+            padding: '10px 6px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+            cursor: 'pointer', minHeight: 64,
+            borderRadius: 12,
+            background: 'var(--surface)', border: '1px solid var(--border)'
+          }}>
+          <span style={{
+            width: 34, height: 34, borderRadius: 999,
+            background: 'var(--brand)', color: 'var(--brand-fg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 10px rgba(20,15,5,0.10)'
+          }}>
+            <Icon.phone />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em' }}>Call</span>
+        </a>
+        <a
+          href={`sms:${telDigits}`}
+          style={{
+            textDecoration: 'none', color: 'var(--text)',
+            padding: '10px 6px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+            cursor: 'pointer', minHeight: 64,
+            borderRadius: 12,
+            background: 'var(--surface)', border: '1px solid var(--border)'
+          }}>
+          <span style={{
+            width: 34, height: 34, borderRadius: 999,
+            background: 'var(--brand)', color: 'var(--brand-fg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 10px rgba(20,15,5,0.10)'
+          }}>
+            <Icon.sms />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em' }}>Text</span>
+        </a>
+      </div>
+    </div>);
+}
+
+// Edit sheet mirroring CustomerEditDialog from screens-flow.jsx — explicit
+// Save / Cancel so the rep is never wondering whether their edit committed.
+function ToolbagFieldEditSheet({ label, type, initial, onClose, onSave }) {
+  const [val, setVal] = React.useState(initial);
+  const inputRef = React.useRef(null);
+  React.useEffect(() => { setTimeout(() => inputRef.current?.focus(), 80); }, []);
+  return (
+    <Sheet
+      onClose={onClose}
+      title={`Edit ${label.toLowerCase()}`}
+      zIndex={90}
+      footer={
+        <>
+          <button className="btn btn-lg btn-block" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary btn-lg btn-block" onClick={() => onSave(val)}>Save</button>
+        </>
+      }>
+      <div style={{ padding: '12px 16px 0' }}>
+        <label className="label" style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.04 }}>{label}</label>
+        <input
+          ref={inputRef}
+          className="input"
+          type={type}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          style={{ height: 44, fontSize: 15, marginTop: 6 }} />
+      </div>
+    </Sheet>);
+}
+
+// Property tab — sales-relevant subset including value, township, school
+// district, taxes, and recent permits.
+function ToolbagPropertyTab({ customer }) {
+  const p = customer.property || {};
+  const fmt$ = (n) => n ? '$' + n.toLocaleString() : '—';
+  const SECTIONS = [
+    {
+      title: 'Valuation',
+      rows: [
+        { label: 'Estimated value', value: fmt$(p.estValue), strong: true },
+        { label: 'Last sale', value: p.lastSale ? `${fmt$(p.lastSale.price)} · ${p.lastSale.year}` : '—' },
+        { label: 'Annual taxes', value: fmt$(p.annualTax) }]
+    },
+    {
+      title: 'Structure',
+      rows: [
+        { label: 'Sq ft (living)', value: p.sqft ? p.sqft.toLocaleString() : '—' },
+        { label: 'Year built', value: p.yearBuilt || '—' },
+        { label: 'Stories', value: p.stories || '—' },
+        { label: 'Lot size', value: p.lotSizeAc ? `${p.lotSizeAc} ac` : '—' },
+        { label: 'Roof slope', value: p.slope || '—' },
+        { label: 'Roof age (est.)', value: p.roofAgeEst || '—' },
+        { label: 'Roofing squares', value: p.roofingSq ? `${p.roofingSq} sq` : '—' }]
+    },
+    {
+      title: 'Jurisdiction',
+      rows: [
+        { label: 'Township', value: p.township || '—' },
+        { label: 'School district', value: p.schoolDistrict || '—' },
+        { label: 'Permits (5 yr)', value: p.permitsLast5yr != null ? String(p.permitsLast5yr) : '—' },
+        { label: 'Most recent', value: p.lastPermit || '—' }]
+    }];
+  return (
+    <div className="drawer-section">
+      {SECTIONS.map((sec) => (
+        <div key={sec.title} style={{ marginBottom: 14 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 800, letterSpacing: 0.1,
+            color: 'var(--text-3)', textTransform: 'uppercase',
+            margin: '0 0 6px 4px'
+          }}>{sec.title}</div>
+          <div className="card" style={{ padding: 0 }}>
+            {sec.rows.map((r, i) => (
+              <div
+                key={r.label}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px',
+                  borderBottom: i === sec.rows.length - 1 ? 'none' : '1px solid var(--border)'
+                }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{r.label}</div>
+                  <div style={{
+                    fontSize: r.strong ? 16 : 13,
+                    fontWeight: r.strong ? 700 : 500,
+                    color: 'var(--text)', marginTop: 2,
+                    letterSpacing: r.strong ? '-0.01em' : undefined
+                  }}>{r.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>);
+}
+
+// Area Work — aerial photo of the neighborhood with monochrome pins for each
+// completed job. Filters are four buttons (Scope, Mfr, Product, Color); each
+// opens a bottom Sheet of searchable multi-select options with an active-
+// count badge. The sheet is pushed up to the drawer's parent so the side
+// drawer recedes and the filter sheet reads as the foreground element.
+// ArcGIS World Imagery satellite tile centered on the customer's
+// neighborhood (Cedar Park, TX · z=17, no API key required).
+const AREA_AERIAL_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/17/53866/29918';
+
+function ToolbagAreaTab({ customer, requestSheet }) {
+  const jobs = window.AREA_JOBS || [];
+  const VALUES_BY_CAT = {
+    scope: Array.from(new Set(jobs.map((j) => j.scope))),
+    mfr: Array.from(new Set(jobs.map((j) => j.mfr))),
+    product: Array.from(new Set(jobs.map((j) => j.product))),
+    color: Array.from(new Set(jobs.map((j) => j.color)))
+  };
+  const CAT_META = [
+    { key: 'scope', label: 'Scope' },
+    { key: 'mfr', label: 'Manufacturer' },
+    { key: 'product', label: 'Product' },
+    { key: 'color', label: 'Color' }];
+  const [filters, setFilters] = React.useState({ scope: [], mfr: [], product: [], color: [] });
+  const [openJob, setOpenJob] = React.useState(null);
+  const matches = (j) =>
+    (!filters.scope.length || filters.scope.includes(j.scope)) &&
+    (!filters.mfr.length || filters.mfr.includes(j.mfr)) &&
+    (!filters.product.length || filters.product.includes(j.product)) &&
+    (!filters.color.length || filters.color.includes(j.color));
+  const visibleJobs = jobs.filter(matches);
+  const totalActive = filters.scope.length + filters.mfr.length + filters.product.length + filters.color.length;
+
+  const openFilterSheet = (meta) => {
+    const apply = (next) => {
+      setFilters((f) => ({ ...f, [meta.key]: next }));
+      requestSheet(null);
+    };
+    requestSheet(
+      <FilterMultiSelectSheet
+        key={meta.key}
+        label={meta.label}
+        values={VALUES_BY_CAT[meta.key]}
+        selected={filters[meta.key]}
+        onClose={() => requestSheet(null)}
+        onApply={apply} />);
+  };
+
+  return (
+    <div className="drawer-area-pane">
+      <div className="drawer-area-head">
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+          Recent work near this home
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+          Aerial view of completed jobs — tap a pin for materials and colors.
+        </div>
+      </div>
+
+      <div className="drawer-map drawer-map-flex" onClick={() => setOpenJob(null)}>
+        <div className="drawer-map-aerial" style={{ backgroundImage: `url(${AREA_AERIAL_URL})` }} />
+        <div className="drawer-map-shade" />
+
+        {/* you-are-here marker at the customer's house (map center) */}
+        <div className="drawer-you-here" style={{ left: '50%', top: '50%' }} title="You are here">
+          <span />
+        </div>
+
+        {visibleJobs.map((j) => (
+          <button
+            key={j.id}
+            type="button"
+            className="drawer-pin"
+            style={{ left: `${j.x}%`, top: `${j.y}%` }}
+            onClick={(e) => { e.stopPropagation(); setOpenJob(j); }}
+            aria-label={`${j.scope} job ${j.distance}`}>
+            <svg viewBox="0 0 24 32" aria-hidden="true">
+              <path d="M12 1 C 6 1 1.6 5.4 1.6 11 C 1.6 19 12 31 12 31 C 12 31 22.4 19 22.4 11 C 22.4 5.4 18 1 12 1 Z"
+                    fill="var(--brand)" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+              <circle cx="12" cy="11" r="3.6" fill="#fff" />
+            </svg>
+          </button>
+        ))}
+
+        {openJob && (
+          <div
+            className="drawer-pin-popover"
+            style={{
+              left: `${openJob.x}%`,
+              top: `${openJob.y}%`,
+              // Pin anchors at its tip (y%), head extends 24px above. Place the
+              // popover below the tip when near the top edge; otherwise float
+              // above the head with a 12px gap.
+              transform: `translate(${openJob.x > 70 ? '-100%' : (openJob.x < 25 ? '0' : '-50%')}, ${openJob.y < 25 ? 'calc(0% + 12px)' : 'calc(-100% - 36px)'})`
+            }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 12 }}>{openJob.scope} · {openJob.distance}</div>
+              <button type="button" className="icon-btn" style={{ width: 24, height: 24 }} aria-label="Close" onClick={() => setOpenJob(null)}>
+                <Icon.x />
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>
+              The {openJob.lastInitial}. residence · Completed {openJob.month}
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.45 }}>
+              <div><b>{openJob.mfr}</b> {openJob.product}</div>
+              <div style={{ color: 'var(--text-3)' }}>Color: {openJob.color}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="drawer-area-footer">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 8px' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            <b style={{ color: 'var(--text)' }}>{visibleJobs.length}</b> of {jobs.length} jobs shown
+          </div>
+          {totalActive > 0 &&
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ height: 26, padding: '0 8px', fontSize: 11 }}
+              onClick={() => setFilters({ scope: [], mfr: [], product: [], color: [] })}>
+              Clear all filters
+            </button>}
+        </div>
+
+        {/* Filter buttons — one per category, each opens a multi-select sheet */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {CAT_META.map((meta) => {
+            const count = filters[meta.key].length;
+            return (
+              <button
+                key={meta.key}
+                type="button"
+                className={`drawer-filter-btn ${count > 0 ? 'active' : ''}`}
+                onClick={() => openFilterSheet(meta)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <Icon.filter style={{ flexShrink: 0, color: count > 0 ? 'var(--brand)' : 'var(--text-3)' }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
+                </div>
+                <span className={`drawer-filter-count ${count > 0 ? 'active' : ''}`}>{count > 0 ? count : 'All'}</span>
+              </button>);
+          })}
+        </div>
+      </div>
+    </div>);
+}
+
+// Multi-select filter sheet. Visual pattern follows the Add-material picker
+// in screens-imagecap.jsx — search input on top, options grouped inside a
+// rounded card with borderTop separators. Selection indicator is anchored to
+// the right of each row.
+function FilterMultiSelectSheet({ label, values, selected, onClose, onApply }) {
+  const [draft, setDraft] = React.useState(selected);
+  const [q, setQ] = React.useState('');
+  const filteredValues = q
+    ? values.filter((v) => v.toLowerCase().includes(q.toLowerCase()))
+    : values;
+  const toggle = (v) => setDraft((d) => d.includes(v) ? d.filter((x) => x !== v) : [...d, v]);
+  const inputRef = React.useRef(null);
+  React.useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
+  return (
+    <Sheet
+      onClose={onClose}
+      title={`Filter by ${label.toLowerCase()}`}
+      zIndex={90}
+      flexBody
+      maxHeight="78%"
+      footer={
+        <>
+          <button className="btn btn-lg btn-block" onClick={() => { setDraft([]); }}>Clear</button>
+          <button className="btn btn-primary btn-lg btn-block" onClick={() => onApply(draft)}>
+            Apply{draft.length ? ` · ${draft.length}` : ''}
+          </button>
+        </>
+      }>
+      <div style={{ padding: '6px 16px 10px', flexShrink: 0 }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={q}
+          placeholder={`Search ${label.toLowerCase()}…`}
+          onChange={(e) => setQ(e.target.value)}
+          style={{
+            width: '100%', height: 38,
+            border: '1px solid var(--border)', borderRadius: 8,
+            padding: '0 12px', fontSize: 14,
+            background: 'var(--surface)', outline: 'none',
+            boxSizing: 'border-box'
+          }} />
+      </div>
+      <div style={{ overflow: 'auto', padding: '0 16px 16px', flex: 1 }}>
+        {filteredValues.length === 0 &&
+          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--text-3)' }}>
+            No matches for "{q}".
+          </div>}
+        {filteredValues.length > 0 &&
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {filteredValues.map((v, i) => {
+              const isChecked = draft.includes(v);
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => toggle(v)}
+                  style={{
+                    width: '100%', textAlign: 'left', background: 'transparent',
+                    border: 0, borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                    padding: '12px 14px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 10
+                  }}>
+                  <span style={{
+                    flex: 1, minWidth: 0,
+                    fontSize: 13, fontWeight: isChecked ? 700 : 600,
+                    color: 'var(--text)', letterSpacing: '-0.005em'
+                  }}>{v}</span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 22, height: 22, borderRadius: 999,
+                      border: isChecked ? 'none' : '1.5px solid var(--border-strong)',
+                      background: isChecked ? 'var(--brand)' : 'transparent',
+                      color: 'var(--brand-fg, #fff)',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                    {isChecked && <Icon.check style={{ width: 13, height: 13 }} />}
+                  </span>
+                </button>);
+            })}
+          </div>}
+      </div>
+    </Sheet>);
+}
+
+function ToolbagReviewsTab() {
+  const reviews = window.GOOGLE_REVIEWS || [];
+  // Display average is 4.9 across the live brand surface — anchored rather
+  // than computed from the mock sample (which has a single 4-star outlier).
+  const avg = '4.9';
+  return (
+    <div className="drawer-section">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 12px' }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#4285F4', fontSize: 18 }}>G</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Google reviews</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{avg} avg · {reviews.length} recent</div>
+        </div>
+        <div style={{ display: 'flex', gap: 1, color: '#f59e0b' }}>
+          {[1,2,3,4,5].map((i) => <Icon.star key={i} width="14" height="14" fill="currentColor" stroke="none" />)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {reviews.map((r) => (
+          <div key={r.id} className="card" style={{ padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>{r.author}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{r.date}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 1, color: '#f59e0b', marginBottom: 6 }}>
+              {[1,2,3,4,5].map((i) => (
+                <Icon.star key={i} width="12" height="12" fill={i <= r.stars ? 'currentColor' : 'none'} stroke="currentColor" />
+              ))}
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-2)' }}>{r.snippet}</div>
+          </div>
+        ))}
+      </div>
+    </div>);
+}
+
 // ─────── Tab Bar ───────
 function TabBar({ tab, setTab }) {
   const tabs = [
@@ -1609,7 +2127,7 @@ function GlobalSearch({ onClose, onAppointmentClick, onOpenCustomer }) {
 Object.assign(window, {
   fmt, fmt0, pct, fmtTime, tierTotal,
   AppStatusBar: AppContextBar, AppContextBar, OSStatusBar, TabBar, ToastLayer,
-  PhaseTabBar, PhaseStepsSheet,
+  PhaseTabBar, PhaseStepsSheet, ToolbagDrawer,
   Sheet, Checkbox,
   Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail,
   Commissions, GlobalSearch,

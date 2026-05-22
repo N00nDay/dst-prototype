@@ -1,7 +1,7 @@
 /* global React, ReactDOM */
 /* global Icon, BRANDS, APPOINTMENTS, INSPECTION_CATEGORIES, SEED_INSPECTION_ITEMS, TIERS, CUSTOMER, REPS, SYNC_STATES, NEEDS_SEED, FINDINGS_SEED, PITCH_SLIDES, CUSTOMERS, FOLLOWUPS */
 /* global SEED_ENVELOPE, ENVELOPE_FACETS */
-/* global AppStatusBar, OSStatusBar, TabBar, ToastLayer, Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail, Commissions, useToasts */
+/* global AppStatusBar, OSStatusBar, TabBar, ToastLayer, Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail, Commissions, useToasts, ToolbagDrawer */
 /* global Login, AppointmentDetail, InspectionScreen, ImageCaptureScreen, CameraModal, DictationModal, AnnotateSheet */
 /* global PhaseTabBar */
 /* global NeedsAssessmentScreen, FindingsScreen, PitchDeckScreen, ProposalBuilderScreen */
@@ -281,6 +281,13 @@ function App() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedFollowup, setSelectedFollowup] = useState(null);
 
+  // ── Sales Tool-Bag drawer (right-side panel, in-appointment screens) ──
+  // Owned at the app shell so the trigger lives in the header and the panel
+  // mounts once across every in-appointment view.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState('customer');
+  const [customerData, setCustomerData] = useState(CUSTOMER);
+
   const { toasts, push } = useToasts();
 
   // Apply theme + sync data attributes at the host level
@@ -501,6 +508,11 @@ function App() {
   let action = null;
   let leading = null;
 
+  // Tool-Bag trigger — visible on every in-appointment view. The drawer
+  // itself is mounted once below; this just opens it.
+  const IN_APPT_VIEWS = ['apt', 'needs', 'scope', 'inspect', 'pitch', 'build', 'proposal', 'sign', 'deposit', 'handoff', 'customer', 'followup'];
+  const showToolbagBtn = IN_APPT_VIEWS.includes(view);
+
   if (view === 'list' || view === 'commissions') {
     action =
     <button className="btn btn-sm btn-ghost" aria-label="Search" onClick={() => setShowSearch(true)} style={{ padding: '0 8px' }}>
@@ -522,6 +534,13 @@ function App() {
   if (view === 'customer') leading = backBtn(() => {setSelectedCustomer(null);setView('list');setTab('customers');});else
   if (view === 'followup') leading = backBtn(() => {setSelectedFollowup(null);setView('list');setTab('dashboard');});
   // welcome + financing have no back button — terminal/modal states
+
+  if (showToolbagBtn) {
+    action =
+    <button className="btn btn-sm btn-ghost" aria-label="Open sales tool bag" onClick={() => setDrawerOpen(true)} style={{ padding: '0 8px' }}>
+        <Icon.layers />
+      </button>;
+  }
 
   // ── Render the app shell ──────────────────────────────
   const renderApp = () => {
@@ -792,6 +811,13 @@ function App() {
           {showDictation && <DictationModal onClose={() => setShowDictation(false)} onCommit={commitItem} />}
           {showMissing && <MissingSheet items={missingForSheet} onClose={() => setShowMissing(false)} />}
           {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onAppointmentClick={handleAppointmentClick} onOpenCustomer={(c) => {setSelectedCustomer(c);setView('customer');setShowSearch(false);}} />}
+          <ToolbagDrawer
+            open={drawerOpen}
+            tab={drawerTab}
+            onTabChange={setDrawerTab}
+            onClose={() => setDrawerOpen(false)}
+            customer={customerData}
+            setCustomer={setCustomerData} />
           {/* Toasts disabled per Craig — strewn-about black pills weren't
               reading as cohesive. push() calls remain as no-ops in case
               we want to bring this back behind a unified design. */}

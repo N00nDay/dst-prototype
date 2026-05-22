@@ -39,7 +39,9 @@ const Icon = {
   handshake: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M2 13l5-5 3 3 7-7 3 3-7 7 3 3-5 5-9-9z" /></svg>,
   directions: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="12,2 22,22 12,17 2,22" /></svg>,
   star: (p) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
-  sparkles: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M5.6 5.6L8.4 8.4M15.6 15.6l2.8 2.8M5.6 18.4L8.4 15.6M15.6 8.4l2.8-2.8" /></svg>
+  sparkles: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M5.6 5.6L8.4 8.4M15.6 15.6l2.8 2.8M5.6 18.4L8.4 15.6M15.6 8.4l2.8-2.8" /></svg>,
+  layers: (p) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>,
+  filter: (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
 };
 
 // Per-scope hand-drawn line icons used on the Build scope cards. Ported
@@ -256,8 +258,58 @@ const CUSTOMER = {
   email: 'marcus.whittaker@example.com',
   phone: '(512) 555-2284',
   address: '4421 Bluffwood Ln, Cedar Park, TX 78613',
-  insurance: 'State Farm — Claim #SF-78813-26'
+  insurance: 'State Farm — Claim #SF-78813-26',
+  property: {
+    sqft: 2840,
+    yearBuilt: 2004,
+    stories: 2,
+    lotSizeAc: 0.28,
+    slope: '6/12',
+    roofAgeEst: '18 yrs',
+    roofingSq: 28,
+    estValue: 468000,
+    lastSale: { price: 312000, year: 2017 },
+    annualTax: 9420,
+    township: 'Cedar Park · Travis County',
+    schoolDistrict: 'Leander ISD',
+    permitsLast5yr: 2,
+    lastPermit: 'HVAC condenser replacement · 2023'
+  }
 };
+
+// ─── Area jobs (completed work near the customer) ────────
+// Houses are laid out on a 5×3 grid. Center cell (50,50) is the current
+// customer (you-are-here marker). The 14 surrounding cells each carry one
+// completed-job pin. Coordinates are % of the simulated map viewport.
+const AREA_JOBS = [
+// Row 1 (top): y ≈ 17
+{ id: 'J-2209', x: 10, y: 17, scope: 'Siding', mfr: 'James Hardie', product: 'HardiePlank', color: 'Iron Gray', month: 'Apr 2026', lastInitial: 'M', distance: '0.6 mi' },
+{ id: 'J-2202', x: 30, y: 17, scope: 'Roofing', mfr: 'Owens Corning', product: 'Duration Designer', color: 'Estate Gray', month: 'Feb 2026', lastInitial: 'C', distance: '0.5 mi' },
+{ id: 'J-2201', x: 50, y: 17, scope: 'Roofing', mfr: 'Owens Corning', product: 'Duration', color: 'Driftwood', month: 'Mar 2026', lastInitial: 'B', distance: '0.3 mi' },
+{ id: 'J-2210', x: 70, y: 17, scope: 'Roofing', mfr: 'Owens Corning', product: 'Duration Designer', color: 'Onyx Black', month: 'Mar 2026', lastInitial: 'H', distance: '0.7 mi' },
+{ id: 'J-2208', x: 90, y: 17, scope: 'Windows', mfr: 'Andersen', product: '400 Series', color: 'White', month: 'Jan 2026', lastInitial: 'K', distance: '0.5 mi' },
+// Row 2 (middle): y ≈ 50 — center (50,50) is the customer, no job
+{ id: 'J-2214', x: 10, y: 50, scope: 'Roofing', mfr: 'GAF', product: 'Timberline UHDZ', color: 'Charcoal', month: 'Mar 2026', lastInitial: 'F', distance: '0.2 mi' },
+{ id: 'J-2211', x: 30, y: 50, scope: 'Roofing', mfr: 'GAF', product: 'Timberline HDZ', color: 'Pewter Gray', month: 'Feb 2026', lastInitial: 'L', distance: '0.2 mi' },
+{ id: 'J-2203', x: 70, y: 50, scope: 'Roofing', mfr: 'GAF', product: 'Timberline HDZ', color: 'Charcoal', month: 'Jan 2026', lastInitial: 'P', distance: '0.4 mi' },
+{ id: 'J-2207', x: 90, y: 50, scope: 'Roofing', mfr: 'Owens Corning', product: 'Duration', color: 'Driftwood', month: 'Feb 2026', lastInitial: 'R', distance: '0.6 mi' },
+// Row 3 (bottom): y ≈ 83
+{ id: 'J-2212', x: 10, y: 83, scope: 'Siding', mfr: 'LP', product: 'SmartSide', color: 'Tundra', month: 'Dec 2025', lastInitial: 'T', distance: '0.7 mi' },
+{ id: 'J-2204', x: 30, y: 83, scope: 'Roofing', mfr: 'CertainTeed', product: 'Landmark Pro', color: 'Weathered Wood', month: 'Apr 2026', lastInitial: 'D', distance: '0.3 mi' },
+{ id: 'J-2205', x: 50, y: 83, scope: 'Roofing', mfr: 'Owens Corning', product: 'Berkshire', color: 'Wedgewood', month: 'Dec 2025', lastInitial: 'S', distance: '0.4 mi' },
+{ id: 'J-2206', x: 70, y: 83, scope: 'Gutters', mfr: 'LeafGuard', product: '6" K-Style', color: 'White', month: 'Mar 2026', lastInitial: 'A', distance: '0.7 mi' },
+{ id: 'J-2213', x: 90, y: 83, scope: 'Roofing', mfr: 'Owens Corning', product: 'Duration', color: 'Estate Gray', month: 'Apr 2026', lastInitial: 'G', distance: '0.6 mi' }];
+
+
+// ─── Google reviews (mock — used in Tool-Bag drawer) ──────
+const GOOGLE_REVIEWS = [
+{ id: 'gr-01', stars: 5, author: 'Jenna T.', date: 'Apr 14, 2026', snippet: 'Crew showed up on time, tarped everything, and the cleanup was spotless. New roof looks fantastic — neighbors are already asking who we used.' },
+{ id: 'gr-02', stars: 5, author: 'Carlos R.', date: 'Mar 28, 2026', snippet: 'Pat walked us through every option without any pressure. The Duration Designer shingles look incredible in Estate Gray. Highly recommend.' },
+{ id: 'gr-03', stars: 5, author: 'Sandra K.', date: 'Mar 5, 2026', snippet: 'Insurance claim was a maze and IHS handled the adjuster meeting for us. Final pricing came in right where the estimate said.' },
+{ id: 'gr-04', stars: 5, author: 'Devon P.', date: 'Feb 19, 2026', snippet: 'Got three quotes — IHS was the only one who actually got in the attic. That detail won us over. Job done in a day.' },
+{ id: 'gr-05', stars: 4, author: 'Yolanda M.', date: 'Feb 2, 2026', snippet: 'Good work overall. One downspout had to be re-set after the install but they came back the next morning to fix it.' },
+{ id: 'gr-06', stars: 5, author: 'Aiyana C.', date: 'Jan 12, 2026', snippet: 'Hardie siding install was flawless. Crew was respectful of our landscaping and the project lead checked in every morning.' }];
+
 
 // ─── Authenticated rep (sourced from IDP per Integration Contract IDP-01) ────
 // In prod this comes from the SSO session. Tweakable in mock for testing.
@@ -674,5 +726,5 @@ Object.assign(window, {
   TIERS, LINE_ITEMS, CUSTOMER, METRICS, COMMISSIONS, NEEDS_TOPICS,
   REPS, SYNC_STATES, NEEDS_SEED, FINDINGS_SEED, PITCH_SLIDES, PITCH_SKIP_REASONS,
   FOLLOWUPS, FOLLOWUP_REASONS, CUSTOMERS, FINANCING_PROVIDER, FINANCING_DECISIONS,
-  HANDOFF_ITEMS, WELCOME_CONTENTS
+  HANDOFF_ITEMS, WELCOME_CONTENTS, AREA_JOBS, GOOGLE_REVIEWS
 });

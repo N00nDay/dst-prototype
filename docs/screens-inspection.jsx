@@ -646,7 +646,7 @@ function InspectionScreen({
         let continueLabel;
         if (isPackageGated) {
           continueLabel = packageIncompleteTiers.length === 3 ?
-            'Pick or dismiss packages to continue' :
+            'Decide on each package first' :
             `${packageIncompleteTiers.length} package${packageIncompleteTiers.length === 1 ? '' : 's'} still open`;
         } else if (!isLastSection) {
           continueLabel = `Continue to ${nextSectionLabel[stepperIds[curIdx + 1]] || 'next'}`;
@@ -1761,23 +1761,8 @@ function MeasurementRow({ field, value, aerialValue, pendingValue, onChange, onA
 // ─────────────────────────────────────────────────────────
 // Color selection — section-level + per-item (Craig, May '26)
 // ─────────────────────────────────────────────────────────
-// Curated palette covers the colors reps see on shingles, drip edge, trim
-// coil, siding panels, etc. Custom color picker (native) is available as a
-// fallback for anything off the standard chart.
-const COLOR_PALETTE = [
-{ name: 'Charcoal', hex: '#2b2a2a' },
-{ name: 'Slate Black', hex: '#1e2024' },
-{ name: 'Pewter Gray', hex: '#6f6f6e' },
-{ name: 'Estate Gray', hex: '#4a4843' },
-{ name: 'Weathered Wood', hex: '#5b4f3c' },
-{ name: 'Driftwood', hex: '#a08b6b' },
-{ name: 'Mission Brown', hex: '#3b2c20' },
-{ name: 'Bronze', hex: '#6b4f31' },
-{ name: 'Hunter Green', hex: '#2e4a35' },
-{ name: 'Patriot Red', hex: '#7e2e2e' },
-{ name: 'Almond', hex: '#cfb89a' },
-{ name: 'White', hex: '#f4f1ea' }];
-
+// MATERIAL_COLORS lives in data-pricing.jsx so admins can edit the swatch chart
+// without touching this component file.
 
 // Pattern of catalog names / groups that represent colored goods.
 // Labor / Equipment / Disposal line items aren't colored — they're activities
@@ -1830,7 +1815,7 @@ function ColorPopover({ color, onChange, onClose, label, anchorRight }) {
           {label || 'Pick a color'}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
-          {COLOR_PALETTE.map((p) => {
+          {MATERIAL_COLORS.map((p) => {
             const active = color && color.toLowerCase() === p.hex.toLowerCase();
             return (
               <button
@@ -2544,7 +2529,7 @@ function LineDetailSheet({ envelopeId, section, li, color, setColor, onQty, onRe
   const total = qty * price;
   const linkedLabel = ce?.linked ? MEASUREMENT_SCHEMA[envelopeId]?.find((f) => f.key === ce.linked)?.label || ce.linked : null;
   const colorable = isColorable(section, ce, !!li.custom);
-  const swatchName = color ? COLOR_PALETTE.find((p) => p.hex.toLowerCase() === color.toLowerCase())?.name : null;
+  const swatchName = color ? MATERIAL_COLORS.find((p) => p.hex.toLowerCase() === color.toLowerCase())?.name : null;
 
   return (
     <>
@@ -2951,15 +2936,7 @@ function StructureScopesSheet({ structure, onChange, onClose }) {
                     background: on ? 'var(--brand-soft)' : 'transparent',
                     transition: 'background 120ms ease'
                   }}>
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 6,
-                    background: on ? 'var(--brand)' : 'transparent',
-                    border: `1.5px solid ${on ? 'var(--brand)' : 'var(--border-strong)'}`,
-                    color: 'var(--brand-fg)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                  }}>
-                    {on && <Icon.check style={{ width: 13, height: 13 }} />}
-                  </span>
+                  <Checkbox checked={on} size={22} />
                   <span style={{ fontSize: 13, fontWeight: 700 }}>{f.label}</span>
                 </div>);
             })}

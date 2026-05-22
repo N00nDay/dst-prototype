@@ -233,9 +233,9 @@ function ImageCaptureScreen({
         let gateSub = '';
         if (!ready) {
           const bits = [];
-          if (needsPhoto) bits.push('1 photo');
-          if (incompleteFindings.length > 0) bits.push(`${incompleteFindings.length} finding${incompleteFindings.length === 1 ? '' : 's'} (condition + memo or dismiss)`);
-          gateSub = `Add ${bits.join(' and ')} to continue`;
+          if (needsPhoto) bits.push('one photo');
+          if (incompleteFindings.length > 0) bits.push(`${incompleteFindings.length === 1 ? 'one finding' : `${incompleteFindings.length} findings`}`);
+          gateSub = `Need ${bits.join(' and ')} — almost there.`;
         }
         return (
           <window.ContinueBar

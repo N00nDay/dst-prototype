@@ -90,7 +90,7 @@ function ScopeScreen({
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.1, color: 'var(--text-3)', textTransform: 'uppercase' }}>Structures</div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="stagger-in" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {structures.map((s, i) =>
             <StructureRow
               key={s.id}
@@ -131,7 +131,7 @@ function ScopeScreen({
       <ContinueBar
         tablet={tablet}
         label="Continue to Inspect"
-        sub={allReady ? '' : 'Select at least one scope of work to continue'}
+        sub={allReady ? '' : 'Pick at least one scope of work — you can adjust later.'}
         enabled={allReady}
         onContinue={onContinue} />
 
@@ -320,6 +320,14 @@ function DeleteStructureModal({ name, onCancel, onConfirm }) {
 // Sticky footer with sub-line + a labeled Continue button. Used at the end
 // of every SOLVE step.
 function ContinueBar({ tablet, label, sub, enabled, onContinue, onBack, backLabel }) {
+  // Unlock pulse (Pass 3, D2): when `enabled` flips false→true, briefly add
+  // an `unlocked` class to trigger the CSS keyframe celebration.
+  const prevEnabled = React.useRef(enabled);
+  const [pulseKey, setPulseKey] = React.useState(0);
+  React.useEffect(() => {
+    if (!prevEnabled.current && enabled) setPulseKey((k) => k + 1);
+    prevEnabled.current = enabled;
+  }, [enabled]);
   return (
     <div style={{
       flexShrink: 0,
@@ -350,9 +358,10 @@ function ContinueBar({ tablet, label, sub, enabled, onContinue, onBack, backLabe
         }
       </div>
       <button
+        key={pulseKey}
         onClick={onContinue}
         disabled={!enabled}
-        className="btn btn-primary"
+        className={'btn btn-primary' + (enabled && pulseKey > 0 ? ' unlocked' : '')}
         style={{
           height: tablet ? 44 : 40,
           padding: tablet ? '0 18px' : '0 14px',

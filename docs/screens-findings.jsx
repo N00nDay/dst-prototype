@@ -43,7 +43,7 @@ function FindingsScreen({ findings, setFindings, tablet, onBack, onContinue }) {
       </div>
 
       {/* Findings stack */}
-      <div style={{ padding: tablet ? '16px 28px 0' : '12px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="stagger-in" style={{ padding: tablet ? '16px 28px 0' : '12px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {findings.map((f) =>
         <FindingCard
           key={f.id}
@@ -74,23 +74,16 @@ function FindingsScreen({ findings, setFindings, tablet, onBack, onContinue }) {
 
       {/* Education sheet */}
       {education &&
-      <>
-          <div className="sheet-backdrop" onClick={() => setEducation(null)} />
-          <div className="sheet">
-            <div className="grabber" />
-            <div style={{ padding: '0 16px' }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand)', letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4 }}>How this affects your home</div>
-              <h3 style={{ margin: '0 0 10px' }}>{education.headline}</h3>
-            </div>
-            <div style={{ padding: '0 16px 4px' }}>
-              <div className="placeholder-photo" style={{ height: 140, marginBottom: 12 }}>diagram-or-video.mp4</div>
-              <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-2)' }}>{education.education}</div>
-            </div>
-            <div style={{ padding: '14px 16px 8px' }}>
-              <button className="btn btn-primary btn-lg btn-block" onClick={() => setEducation(null)}>Got it</button>
-            </div>
+      <Sheet
+        onClose={() => setEducation(null)}
+        eyebrow="How this affects your home"
+        title={education.headline}
+        footer={<button className="btn btn-primary btn-lg btn-block" onClick={() => setEducation(null)}>Got it</button>}>
+          <div style={{ padding: '0 16px 4px' }}>
+            <div className="placeholder-photo" style={{ height: 140, marginBottom: 12 }}>diagram-or-video.mp4</div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-2)' }}>{education.education}</div>
           </div>
-        </>
+        </Sheet>
       }
     </div>);
 

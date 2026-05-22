@@ -115,9 +115,7 @@ function Quote({ tablet, onBack, onPresent, onSign, selected, setSelected, addon
                     return (
                       <div key={a} onClick={(e) => {e.stopPropagation();setAddons({ ...addons, [key]: !on });}}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '4px 0', cursor: 'pointer' }}>
-                        <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${on ? 'var(--brand)' : 'var(--border-strong)'}`, background: on ? 'var(--brand)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-fg)' }}>
-                          {on && <Icon.check style={{ width: 10, height: 10 }} />}
-                        </div>
+                        <Checkbox checked={on} size={16} />
                         {a}
                       </div>);
 

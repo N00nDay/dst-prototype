@@ -501,14 +501,7 @@ function NeedsDictationSheet({ onClose, onApply }) {
                   color: 'inherit'
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                    border: on ? '1.5px solid var(--brand)' : '1.5px solid var(--border-strong)',
-                    background: on ? 'var(--brand)' : 'transparent',
-                    color: 'var(--brand-fg)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 800
-                  }}>{on ? '\u2713' : ''}</span>
+                  <Checkbox checked={on} size={18} />
                   <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em' }}>{topic.label}</div>
                   <span className="pill brand" style={{ fontSize: 9, padding: '1px 6px' }}>AI · {Math.round(f.confidence * 100)}%</span>
                 </div>

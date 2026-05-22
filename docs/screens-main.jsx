@@ -360,6 +360,90 @@ function ToastLayer({ toasts }) {
 
 }
 
+// ─────── Sheet shell ───────
+// Shared wrapper for bottom-sheet modals. Renders backdrop + sheet container +
+// grabber + (optional) title + body + (optional) footer. Animations live in CSS
+// (.sheet-backdrop fade, .sheet slide-in). Callers control body content.
+//
+// Migrate sheets onto this incrementally — the inline `<div className="sheet">`
+// pattern still works for sheets not yet ported.
+function Sheet({
+  onClose,
+  title,
+  eyebrow,
+  maxHeight,
+  flexBody = false,
+  footer,
+  zIndex,
+  containerStyle,
+  children
+}) {
+  const sheetStyle = {
+    ...maxHeight ? { maxHeight } : {},
+    ...flexBody ? { display: 'flex', flexDirection: 'column' } : {},
+    ...zIndex ? { zIndex } : {},
+    ...containerStyle || {}
+  };
+  return (
+    <>
+      <div
+        className="sheet-backdrop"
+        onClick={onClose}
+        style={zIndex ? { zIndex: zIndex - 1 } : undefined} />
+      <div className="sheet" style={sheetStyle}>
+        <div className="grabber" />
+        {(eyebrow || title) &&
+        <div style={{ padding: '0 16px 4px' }}>
+            {eyebrow &&
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: 'var(--brand)',
+            letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4
+          }}>{eyebrow}</div>}
+            {title && <h3 style={{ margin: 0 }}>{title}</h3>}
+          </div>}
+        {children}
+        {footer &&
+        <div style={{ padding: '14px 16px 18px', display: 'flex', gap: 8 }}>
+            {footer}
+          </div>}
+      </div>
+    </>);
+
+}
+
+// ─────── Checkbox ───────
+// Shared replacement for the 15+ inline checkbox visuals scattered across screens.
+// Render the box only — caller controls the row layout (label, click target, gap).
+// Wrap in a `.tap-target` button or onClick row to get the 44×44 touch zone.
+// `size` defaults to 18; pass 16 for dense lists, 22 for finding-row toggles.
+// Animates a subtle bounce on every state change (Pass 3, D5).
+function Checkbox({ checked, size = 18 }) {
+  const iconSize = Math.max(10, Math.round(size * 0.6));
+  const radius = size >= 22 ? 6 : 4;
+  const firstRender = React.useRef(true);
+  const [bounceKey, setBounceKey] = React.useState(0);
+  React.useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    setBounceKey((k) => k + 1);
+  }, [checked]);
+  return (
+    <span
+      key={bounceKey}
+      style={{
+        width: size, height: size, borderRadius: radius,
+        background: checked ? 'var(--brand)' : 'transparent',
+        border: `1.5px solid ${checked ? 'var(--brand)' : 'var(--border-strong)'}`,
+        color: 'var(--brand-fg)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        transition: 'background 120ms ease, border-color 120ms ease',
+        animation: bounceKey > 0 ? 'checkbox-bounce 180ms cubic-bezier(.2,.8,.2,1)' : 'none'
+      }}>
+      {checked && <Icon.check style={{ width: iconSize, height: iconSize }} />}
+    </span>);
+
+}
+
 // ─────── Dashboard ───────
 function Dashboard({ brand, rep, onAppointmentClick, onCommissionsClick, onFollowupClick }) {
   const next = APPOINTMENTS.find((a) => a.status === 'next') || APPOINTMENTS[0];
@@ -1412,6 +1496,7 @@ Object.assign(window, {
   fmt, fmt0, pct, fmtTime, tierTotal,
   AppStatusBar: AppContextBar, AppContextBar, OSStatusBar, TabBar, ToastLayer,
   PhaseTabBar, PhaseStepsSheet,
+  Sheet, Checkbox,
   Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail,
   Commissions, GlobalSearch,
   useToasts

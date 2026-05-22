@@ -26,6 +26,25 @@ const ENVELOPE_FACETS = [
   { id: 'gutters',    label: 'Gutters',          icon: 'building', hasPricing: false, sections: ['measurements'] }
 ];
 
+// ─── Material color palette ──────────────────────────────────
+// Curated palette covers the colors reps see on shingles, drip edge, trim coil,
+// siding panels, etc. Custom hex is intentionally NOT offered — homeowners pick
+// from the manufacturer's standard chart, not arbitrary colors.
+const MATERIAL_COLORS = [
+  { name: 'Charcoal',        hex: '#2b2a2a' },
+  { name: 'Slate Black',     hex: '#1e2024' },
+  { name: 'Pewter Gray',     hex: '#6f6f6e' },
+  { name: 'Estate Gray',     hex: '#4a4843' },
+  { name: 'Weathered Wood',  hex: '#5b4f3c' },
+  { name: 'Driftwood',       hex: '#a08b6b' },
+  { name: 'Mission Brown',   hex: '#3b2c20' },
+  { name: 'Bronze',          hex: '#6b4f31' },
+  { name: 'Hunter Green',    hex: '#2e4a35' },
+  { name: 'Patriot Red',     hex: '#7e2e2e' },
+  { name: 'Almond',          hex: '#cfb89a' },
+  { name: 'White',           hex: '#f4f1ea' }
+];
+
 // ─── Measurement schemas ──────────────────────────────────────
 // Each field declares unit, expected source(s), and what kind of value it holds.
 // `derived` fields are computed from others (e.g. area_steep = sum of pitches ≥ 4/12).
@@ -487,6 +506,7 @@ function fmtMoneyExact(n) {
 
 Object.assign(window, {
   REPORT_SOURCES, ENVELOPE_FACETS, MEASUREMENT_SCHEMA, CATALOGS,
+  MATERIAL_COLORS,
   ROOFING_MATERIALS, ROOFING_LABOR, SIDING_MATERIALS, SIDING_LABOR,
   SEED_ENVELOPE, SEED_MEASUREMENTS, deriveInitialLineItems,
   autoQtyFor, findCatalog, fmtMoney, fmtMoneyExact

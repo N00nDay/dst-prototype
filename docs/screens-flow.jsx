@@ -110,29 +110,26 @@ function CustomerEditDialog({ label, initial, type, tablet, onClose, onSave }) {
 
   }
   return (
-    <>
-      <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet">
-        <div className="grabber" />
-        <div style={{ padding: '0 16px 4px' }}>
-          <h3 style={{ margin: 0 }}>Edit {label.toLowerCase()}</h3>
-        </div>
-        <div style={{ padding: '12px 16px 0' }}>
-          <label className="label">{label}</label>
-          <input
-            ref={inputRef}
-            className="input"
-            type={type}
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            style={{ height: 44, fontSize: 15 }} />
-        </div>
-        <div style={{ padding: '14px 16px 16px', display: 'flex', gap: 8 }}>
+    <Sheet
+      onClose={onClose}
+      title={`Edit ${label.toLowerCase()}`}
+      footer={
+        <>
           <button className="btn btn-lg btn-block" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary btn-lg btn-block" onClick={() => onSave(val)}>Save</button>
-        </div>
+        </>
+      }>
+      <div style={{ padding: '12px 16px 0' }}>
+        <label className="label">{label}</label>
+        <input
+          ref={inputRef}
+          className="input"
+          type={type}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          style={{ height: 44, fontSize: 15 }} />
       </div>
-    </>);
+    </Sheet>);
 
 }
 

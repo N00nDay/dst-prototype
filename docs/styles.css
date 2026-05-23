@@ -451,7 +451,9 @@ button { font-family: inherit; cursor: pointer; }
 
 .sheet-backdrop {
   position: absolute; inset: 0;
-  background: rgba(0,0,0,0.32);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 40;
   animation: fade 160ms ease;
 }
@@ -487,7 +489,9 @@ button { font-family: inherit; cursor: pointer; }
 /* ── Sales Tool-Bag drawer (right-side panel) ─────────────── */
 .drawer-backdrop {
   position: absolute; inset: 0;
-  background: rgba(0,0,0,0.42);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 80;
   animation: fade 160ms ease;
 }

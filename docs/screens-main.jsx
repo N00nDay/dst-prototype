@@ -138,16 +138,59 @@ function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
 }
 
 // ─────── Brand chip + recording row ───────
-function AppContextBar({ title, recording, recordingTime, sync = null, action = null, leading = null, phaseInfo = null, structureSwitcher = null }) {
+function AppContextBar({
+  title,
+  recording,
+  recordingPaused = false,
+  recordingTime,
+  sync = null,
+  action = null,
+  leading = null,
+  phaseInfo = null,
+  structureSwitcher = null,
+  lastSavedAt = null,
+  onSaveExit = null,
+  onPauseRec = null,
+  onResumeRec = null,
+  onEndRec = null
+}) {
   // Sync pill removed per Craig — redundant signal at top of every screen.
   const syncPill = null;
 
-  // Variant C: slim REC — dot + time only, no "REC" label.
+  const [showRecSheet, setShowRecSheet] = React.useState(false);
+  const [showSavedPopover, setShowSavedPopover] = React.useState(false);
+
+  // Variant C: slim REC — dot + time only, no "REC" label. Tappable when
+  // recording so the rep can pause/resume/end mid-appointment. Paused state
+  // mutes the dot + timer color so it reads at a glance.
+  const recColor = recordingPaused ? 'var(--text-3)' : 'var(--danger)';
   const recPill = recording &&
-  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--danger)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
-      <span className="rec-dot" />
-      <span>{fmtTime(recordingTime)}</span>
-    </div>;
+  <button
+    type="button"
+    onClick={() => setShowRecSheet(true)}
+    aria-label={recordingPaused ? 'Recording paused — tap for controls' : 'Recording — tap for controls'}
+    style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      color: recColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 11,
+      background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer'
+    }}>
+      <span className={recordingPaused ? '' : 'rec-dot'} style={recordingPaused ? {
+        width: 8, height: 8, borderRadius: 999, border: `1.5px solid ${recColor}`
+      } : undefined} />
+      <span>{fmtTime(recordingTime)}{recordingPaused ? ' · paused' : ''}</span>
+    </button>;
+
+  // Saved pill — ambient "everything is captured" reassurance. Only shows
+  // inside an appointment (phaseInfo present) once at least one save has
+  // happened. Tapping opens a small popover with the absolute timestamp
+  // and a Save & Exit button for walking away.
+  const savedPill = phaseInfo && lastSavedAt &&
+  <SavedPill
+    lastSavedAt={lastSavedAt}
+    open={showSavedPopover}
+    onToggle={() => setShowSavedPopover((v) => !v)}
+    onClose={() => setShowSavedPopover(false)}
+    onSaveExit={onSaveExit} />;
 
 
   // Variant C single-row layout for in-appointment screens:
@@ -155,45 +198,244 @@ function AppContextBar({ title, recording, recordingTime, sync = null, action = 
   // Drops the second row that used to carry the structure switcher.
   if (phaseInfo) {
     return (
-      <div className="app-status" style={{ padding: '6px 14px 6px', minHeight: 44, gap: 12 }}>
+      <>
+        <div className="app-status" style={{ padding: '6px 14px 6px', minHeight: 44, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+            {leading}
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {title}
+            </div>
+            {structureSwitcher &&
+            <>
+                <span style={{ color: 'var(--text-4)', flexShrink: 0 }}>·</span>
+                <div style={{ minWidth: 0, flexShrink: 1 }}>{structureSwitcher}</div>
+              </>}
+          </div>
+          <div style={{ flexShrink: 0 }}>
+            <PhaseProgress phaseInfo={phaseInfo} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, position: 'relative' }}>
+            {recPill}
+            {savedPill}
+            {syncPill}
+            {action}
+          </div>
+        </div>
+        {showRecSheet &&
+        <RecordingControlSheet
+          paused={recordingPaused}
+          elapsedSec={recordingTime}
+          onClose={() => setShowRecSheet(false)}
+          onPause={() => { setShowRecSheet(false); onPauseRec && onPauseRec(); }}
+          onResume={() => { setShowRecSheet(false); onResumeRec && onResumeRec(); }}
+          onEnd={() => { setShowRecSheet(false); onEndRec && onEndRec(); }} />
+        }
+      </>);
+
+  }
+
+  return (
+    <>
+      <div className="app-status">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
           {leading}
           <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {title}
           </div>
-          {structureSwitcher &&
-          <>
-              <span style={{ color: 'var(--text-4)', flexShrink: 0 }}>·</span>
-              <div style={{ minWidth: 0, flexShrink: 1 }}>{structureSwitcher}</div>
-            </>}
         </div>
-        <div style={{ flexShrink: 0 }}>
-          <PhaseProgress phaseInfo={phaseInfo} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {recPill}
           {syncPill}
           {action}
         </div>
-      </div>);
+      </div>
+      {showRecSheet &&
+      <RecordingControlSheet
+        paused={recordingPaused}
+        elapsedSec={recordingTime}
+        onClose={() => setShowRecSheet(false)}
+        onPause={() => { setShowRecSheet(false); onPauseRec && onPauseRec(); }}
+        onResume={() => { setShowRecSheet(false); onResumeRec && onResumeRec(); }}
+        onEnd={() => { setShowRecSheet(false); onEndRec && onEndRec(); }} />
+      }
+    </>);
 
-  }
+}
 
+// ─────── Saved pill + popover ───────
+// Ambient "everything is captured" indicator that lives in the header
+// action slot during an appointment. Updates every 30 s so the relative
+// time stays accurate; tap opens a popover with the absolute timestamp
+// and a Save & Exit button for walking away.
+function SavedPill({ lastSavedAt, open, onToggle, onClose, onSaveExit }) {
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30 * 1000);
+    return () => clearInterval(id);
+  }, []);
+  const rel = relativeSaved(lastSavedAt);
+  const abs = absoluteTime(lastSavedAt);
   return (
-    <div className="app-status">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-        {leading}
-        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {title}
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {recPill}
-        {syncPill}
-        {action}
-      </div>
+    <div style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={`Saved ${rel} — tap for save options`}
+        aria-expanded={open}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: '4px 8px', borderRadius: 999,
+          background: 'var(--success-bg, var(--surface-2))',
+          color: 'var(--success, var(--text-2))',
+          border: '1px solid var(--success, var(--border))',
+          fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
+          cursor: 'pointer'
+        }}>
+        <Icon.check style={{ width: 11, height: 11 }} />
+        <span>Saved · {rel}</span>
+      </button>
+      {open &&
+      <>
+          <div
+            onClick={onClose}
+            style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'transparent' }} />
+          <div
+            role="dialog"
+            aria-label="Save options"
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+              minWidth: 220, zIndex: 91,
+              background: 'var(--surface)', color: 'var(--text)',
+              border: '1px solid var(--border)', borderRadius: 12,
+              boxShadow: '0 14px 32px rgba(20,15,5,0.18)',
+              padding: 12
+            }}>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.04 }}>
+              Last saved
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>
+              {abs}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.4 }}>
+              Every change is captured automatically. Step away anytime — your work is safe.
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              onClick={() => { onClose && onClose(); onSaveExit && onSaveExit(); }}
+              style={{ marginTop: 10, height: 40, fontSize: 13, fontWeight: 700 }}>
+              Save & Exit
+            </button>
+          </div>
+        </>}
     </div>);
+}
 
+function relativeSaved(ts) {
+  if (!ts) return 'just now';
+  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (sec < 10) return 'just now';
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  return `${hr}h ago`;
+}
+
+function absoluteTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  let h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+// ─────── Recording control sheet ───────
+// Bottom sheet for Pause / Resume / End Recording. Surfaced by tapping the
+// REC pill in the header. Keeps the rep in control mid-appointment without
+// forcing them all the way back to the appointment overview.
+function RecordingControlSheet({ paused, elapsedSec, onClose, onPause, onResume, onEnd }) {
+  return (
+    <Sheet onClose={onClose} title={paused ? 'Recording paused' : 'Recording'} eyebrow={`Elapsed · ${fmtTime(elapsedSec)}`}>
+      <div style={{ padding: '8px 16px 0' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, margin: 0 }}>
+          Captured for coaching review. Pause anytime — your work keeps saving.
+        </p>
+      </div>
+      <div style={{ padding: '14px 16px 18px', display: 'grid', gap: 8 }}>
+        {paused ?
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onResume} style={{ height: 46, fontSize: 14, fontWeight: 700 }}>
+            Resume recording
+          </button> :
+        <button type="button" className="btn btn-lg btn-block" onClick={onPause} style={{ height: 46, fontSize: 14, fontWeight: 700 }}>
+            Pause recording
+          </button>}
+        <button
+          type="button"
+          className="btn btn-lg btn-block"
+          onClick={onEnd}
+          style={{ height: 46, fontSize: 14, fontWeight: 700, color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+          End recording
+        </button>
+      </div>
+    </Sheet>);
+}
+
+// ─────── Recording idle warning ───────
+// Modal that surfaces after a long idle stretch (gated upstream in app.jsx)
+// so a rep who walked away has a clear nudge to pause. Two options: Pause
+// now, or Keep going (which resets the idle timer).
+function RecordingIdleModal({ elapsedSec, onPause, onContinue }) {
+  return (
+    <Sheet onClose={onContinue} title="Still here?" eyebrow={`Recording · ${fmtTime(elapsedSec)}`}>
+      <div style={{ padding: '8px 16px 0' }}>
+        <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
+          You haven't tapped anything in a while. Recording is still going.
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
+          If you've stepped away, pause Rilla so the coaching review stays useful. Otherwise keep going — we'll check in again later.
+        </p>
+      </div>
+      <div style={{ padding: '14px 16px 18px', display: 'grid', gap: 8 }}>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onPause} style={{ height: 46, fontSize: 14, fontWeight: 700 }}>
+          Pause recording
+        </button>
+        <button type="button" className="btn btn-lg btn-block" onClick={onContinue} style={{ height: 46, fontSize: 14, fontWeight: 700 }}>
+          Keep recording
+        </button>
+      </div>
+    </Sheet>);
+}
+
+// ─────── Recording hard cap ───────
+// Modal at the 3-hour mark so a rep who forgot to end the session has a
+// clear out. Same two-option shape as the idle modal.
+function RecordingHardCapModal({ elapsedSec, onEnd, onKeepGoing }) {
+  return (
+    <Sheet onClose={onKeepGoing} title="Recording has been on for a while" eyebrow={`Elapsed · ${fmtTime(elapsedSec)}`}>
+      <div style={{ padding: '8px 16px 0' }}>
+        <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
+          Rilla has been recording for over 3 hours. Most appointments are wrapped well before this point.
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
+          End the session if you're done, or keep going if you're still mid-appointment.
+        </p>
+      </div>
+      <div style={{ padding: '14px 16px 18px', display: 'grid', gap: 8 }}>
+        <button
+          type="button"
+          className="btn btn-lg btn-block"
+          onClick={onEnd}
+          style={{ height: 46, fontSize: 14, fontWeight: 700, color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+          End recording
+        </button>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onKeepGoing} style={{ height: 46, fontSize: 14, fontWeight: 700 }}>
+          Keep recording
+        </button>
+      </div>
+    </Sheet>);
 }
 
 // Cross-cutting step-progress indicator (Brief Prompt L).
@@ -318,7 +560,7 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
 // The whole drawer is portaled into .app-root so the backdrop covers the
 // AppContextBar header (without the portal, position:absolute would be
 // trapped inside the inner content wrapper that sits below the header).
-function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer }) {
+function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer, onSaveExit }) {
   const TABS = [
     { id: 'customer', label: 'Customer' },
     { id: 'property', label: 'Property' },
@@ -332,7 +574,7 @@ function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer 
   const content = (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div className="drawer-right" role="dialog" aria-label="Sales tool bag">
+      <div className="drawer-right" role="dialog" aria-label="Sales tool bag" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="drawer-head">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <span style={{ color: 'var(--brand)', display: 'inline-flex' }}><Icon.layers /></span>
@@ -354,12 +596,29 @@ function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer 
             </button>
           ))}
         </div>
-        <div className="drawer-body">
+        <div className="drawer-body" style={{ flex: 1, overflow: 'auto' }}>
           {tab === 'customer' && <ToolbagCustomerTab customer={customer} setCustomer={setCustomer} requestSheet={setInnerSheet} />}
           {tab === 'property' && <ToolbagPropertyTab customer={customer} />}
           {tab === 'area' && <ToolbagAreaTab customer={customer} requestSheet={setInnerSheet} />}
           {tab === 'reviews' && <ToolbagReviewsTab />}
         </div>
+        {onSaveExit &&
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          padding: '12px 16px',
+          background: 'var(--surface)'
+        }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              onClick={() => { onClose && onClose(); onSaveExit(); }}
+              style={{ height: 44, fontSize: 14, fontWeight: 700 }}>
+              Save & Exit appointment
+            </button>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, textAlign: 'center' }}>
+              Recording pauses · pick up right where you left off
+            </div>
+          </div>}
       </div>
       {innerSheet}
     </>);
@@ -2131,5 +2390,6 @@ Object.assign(window, {
   Sheet, Checkbox,
   Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail,
   Commissions, GlobalSearch,
+  RecordingIdleModal, RecordingHardCapModal,
   useToasts
 });

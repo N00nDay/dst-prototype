@@ -216,7 +216,7 @@ function QuickAction({ href, label, Glyph, target }) {
 // appointment context, quick actions, and the Start CTA. Replaces the
 // previous flat "Start Appointment" button with something that reads as
 // the page's anchor.
-function AppointmentHero({ appt, custName, custInsurance, telHref, smsHref, mailHref, mapsHref, recording, recordingTime, onStart, tablet }) {
+function AppointmentHero({ appt, custName, custInsurance, telHref, smsHref, mailHref, mapsHref, recording, recordingPaused = false, recordingTime, onStart, tablet }) {
   const initials = (custName || '?').split(/[\s&]+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
   const addressLine = appt?.address || CUSTOMER.address;
   return (
@@ -278,6 +278,23 @@ function AppointmentHero({ appt, custName, custInsurance, telHref, smsHref, mail
         <button className="btn btn-primary btn-lg btn-block" onClick={onStart} style={{ height: 50, fontSize: 14, fontWeight: 700, boxShadow: '0 10px 22px rgba(var(--brand-rgb, 30,40,255),0.15)' }}>
             <Icon.flash /> Start Appointment
           </button> :
+        recordingPaused ?
+        <div style={{
+          padding: '12px 14px',
+          borderRadius: 10,
+          background: 'var(--surface-2)', color: 'var(--text-2)',
+          border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 10
+        }}>
+            <span style={{
+              width: 10, height: 10, borderRadius: 999,
+              border: '2px solid var(--text-3)', flexShrink: 0
+            }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Appointment paused</div>
+              <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>Recording paused at {fmtTime(recordingTime)} · tap REC in the header to resume</div>
+            </div>
+          </div> :
         <div style={{
           padding: '12px 14px',
           borderRadius: 10,
@@ -310,7 +327,7 @@ function HeroChip({ icon, label, muted }) {
     </span>);
 }
 
-function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, onOpenNeeds, onOpenInspection, onOpenBuild, onOpenProposal, onOpenPresent, onOpenSign, onOpenDeposit, onOpenHandoff, items, needsConfirmed = 0, findingsDiscussed = 0, tablet = false, solveCompleted = false }) {
+function AppointmentDetail({ appt, recording, recordingPaused = false, recordingTime, onStart, onBack, onOpenNeeds, onOpenInspection, onOpenBuild, onOpenProposal, onOpenPresent, onOpenSign, onOpenDeposit, onOpenHandoff, items, needsConfirmed = 0, findingsDiscussed = 0, tablet = false, solveCompleted = false }) {
   // Editable customer fields — owned locally so reps can correct stale CRM data
   // (DST-PREP-04 edit affordance).
   const [custName, setCustName] = useState(CUSTOMER.name);
@@ -336,6 +353,7 @@ function AppointmentDetail({ appt, recording, recordingTime, onStart, onBack, on
         mailHref={mailHref}
         mapsHref={mapsHref}
         recording={recording}
+        recordingPaused={recordingPaused}
         recordingTime={recordingTime}
         onStart={onStart}
         tablet={tablet} />

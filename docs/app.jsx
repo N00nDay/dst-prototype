@@ -82,6 +82,18 @@ function App() {
   const [view, setView] = useState('list');
   const [recording, setRecording] = useState(false);
   const [recTime, setRecTime] = useState(0);
+  // Pause + safeguard plumbing. `recordingPaused` keeps the elapsed timer
+  // visible but stops it from advancing. `lastSavedAt` powers the header's
+  // "Saved · just now" pill and the Save & Exit popover. `lastInteractionAt`
+  // anchors the idle-warning modal so reps who walk away don't leave Rilla
+  // running indefinitely.
+  const [recordingPaused, setRecordingPaused] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [lastInteractionAt, setLastInteractionAt] = useState(Date.now());
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
+  const [showHardCap, setShowHardCap] = useState(false);
+  const idleWarnedRef = useRef(false);
+  const hardCapShownRef = useRef(false);
 
   // ── Inspection state ──────────────────────────────────
   const [items, setItems] = useState(SEED_INSPECTION_ITEMS);
@@ -295,12 +307,66 @@ function App() {
     document.documentElement.setAttribute('data-host-theme', theme);
   }, [theme]);
 
-  // Recording timer
+  // Recording timer — runs only when actively recording (not paused).
   useEffect(() => {
-    if (!recording) return;
+    if (!recording || recordingPaused) return;
     const id = setInterval(() => setRecTime((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [recording]);
+  }, [recording, recordingPaused]);
+
+  // touch() — single point of truth for "the rep just did something".
+  // Bumps the saved timestamp (powers the header pill) and the interaction
+  // timestamp (resets the idle-warning countdown). Wired below to every
+  // mutation of appointment-scoped state via a watcher effect, plus called
+  // directly from handlers that don't ride a state change (start, pause,
+  // resume).
+  const touch = React.useCallback(() => {
+    const now = Date.now();
+    setLastSavedAt(now);
+    setLastInteractionAt(now);
+    idleWarnedRef.current = false;
+  }, []);
+
+  // Auto-touch on any appointment-scoped state change. The ref skips the
+  // initial mount fire so we don't show "Saved" before the rep has done
+  // anything. Gated on `appt` so saves from outside an appointment context
+  // (dashboard, settings) don't bump the pill.
+  const touchSkipRef = useRef(true);
+  useEffect(() => {
+    if (touchSkipRef.current) { touchSkipRef.current = false; return; }
+    if (!appt) return;
+    touch();
+  }, [items, structures, needsFields, findings, pitchSlides, pitchSkips,
+      pitchIncluded, addons, swaps, discounts, proposals, signed,
+      walkthrough, deposit, walkTopics, appt]);
+
+  // Idle warning — if Rilla has been running for 20 min without a tap,
+  // surface a modal so the rep can pause if they've stepped away. Polls
+  // once per minute and gates on `idleWarnedRef` so it only fires once
+  // per idle stretch (cleared by `touch()` on any new interaction).
+  const IDLE_THRESHOLD_MS = 20 * 60 * 1000;
+  useEffect(() => {
+    if (!recording || recordingPaused) return;
+    const id = setInterval(() => {
+      if (idleWarnedRef.current) return;
+      if (Date.now() - lastInteractionAt >= IDLE_THRESHOLD_MS) {
+        idleWarnedRef.current = true;
+        setShowIdleWarning(true);
+      }
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, [recording, recordingPaused, lastInteractionAt]);
+
+  // Hard cap — at 3 hr of recording surface a confirm modal so a rep who
+  // forgot to end the session has a clear out. Fires once per session.
+  const HARD_CAP_S = 3 * 60 * 60;
+  useEffect(() => {
+    if (!recording || hardCapShownRef.current) return;
+    if (recTime >= HARD_CAP_S) {
+      hardCapShownRef.current = true;
+      setShowHardCap(true);
+    }
+  }, [recording, recTime]);
 
   // SOLVE → COMMIT gate. Once the rep advances into any COMMIT view, mark
   // SOLVE as completed so the appointment overview unlocks the Enter commit
@@ -318,8 +384,48 @@ function App() {
 
   const handleStart = () => {
     setRecording(true);
+    setRecordingPaused(false);
     setRecTime(0);
+    hardCapShownRef.current = false;
+    idleWarnedRef.current = false;
+    touch();
     push('Rilla is recording · captured for coaching review');
+  };
+
+  // Recording controls — Pause keeps the timer visible but frozen so the
+  // rep can see how long they were recording before stepping away. End
+  // closes out the session entirely (timer resets when they Start again).
+  const handlePauseRec = () => {
+    if (!recording) return;
+    setRecordingPaused(true);
+    push('Recording paused');
+  };
+  const handleResumeRec = () => {
+    if (!recording) return;
+    setRecordingPaused(false);
+    touch();
+    push('Recording resumed');
+  };
+  const handleEndRec = () => {
+    setRecording(false);
+    setRecordingPaused(false);
+    setRecTime(0);
+    hardCapShownRef.current = false;
+    idleWarnedRef.current = false;
+    push('Recording ended');
+  };
+
+  // Save & Exit — auto-pauses recording (rep is walking away), drops them
+  // back at the appointment list, but preserves all in-flight state so
+  // re-opening the appointment picks up exactly where they left off. In
+  // production this is also where a server-side save would flush.
+  const handleSaveExit = () => {
+    if (recording) setRecordingPaused(true);
+    setLastSavedAt(Date.now());
+    setDrawerOpen(false);
+    setView('list');
+    setTab('dashboard');
+    push('Saved · pick up where you left off');
   };
 
   const handleCapture = (facetId) => { if (facetId) setActiveFacet(facetId); setShowCamera(true); };
@@ -560,12 +666,18 @@ function App() {
         <AppStatusBar
           title={title}
           recording={recording}
+          recordingPaused={recordingPaused}
           recordingTime={recTime}
           sync={sync}
           action={action}
           leading={leading}
           phaseInfo={phaseInfo}
-          structureSwitcher={structureSwitcher} />
+          structureSwitcher={structureSwitcher}
+          lastSavedAt={lastSavedAt}
+          onSaveExit={handleSaveExit}
+          onPauseRec={handlePauseRec}
+          onResumeRec={handleResumeRec}
+          onEndRec={handleEndRec} />
         }
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -605,6 +717,7 @@ function App() {
             appt={appt}
             tablet={isTablet}
             recording={recording}
+            recordingPaused={recordingPaused}
             recordingTime={recTime}
             items={items}
             needsConfirmed={needsConfirmed}
@@ -817,7 +930,20 @@ function App() {
             onTabChange={setDrawerTab}
             onClose={() => setDrawerOpen(false)}
             customer={customerData}
-            setCustomer={setCustomerData} />
+            setCustomer={setCustomerData}
+            onSaveExit={handleSaveExit} />
+          {showIdleWarning &&
+          <window.RecordingIdleModal
+            elapsedSec={recTime}
+            onPause={() => { setShowIdleWarning(false); handlePauseRec(); }}
+            onContinue={() => { setShowIdleWarning(false); touch(); }} />
+          }
+          {showHardCap &&
+          <window.RecordingHardCapModal
+            elapsedSec={recTime}
+            onEnd={() => { setShowHardCap(false); handleEndRec(); }}
+            onKeepGoing={() => { setShowHardCap(false); touch(); }} />
+          }
           {/* Toasts disabled per Craig — strewn-about black pills weren't
               reading as cohesive. push() calls remain as no-ops in case
               we want to bring this back behind a unified design. */}

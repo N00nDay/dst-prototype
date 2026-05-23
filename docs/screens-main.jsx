@@ -417,7 +417,7 @@ function RecordingHardCapModal({ elapsedSec, onEnd, onKeepGoing }) {
     <Sheet onClose={onKeepGoing} title="Recording has been on for a while" eyebrow={`Elapsed · ${fmtTime(elapsedSec)}`}>
       <div style={{ padding: '8px 16px 0' }}>
         <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
-          Rilla has been recording for over 3 hours. Most appointments are wrapped well before this point.
+          Rilla has been recording for over 2 hours. Most appointments are wrapped well before this point.
         </p>
         <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
           End the session if you're done, or keep going if you're still mid-appointment.

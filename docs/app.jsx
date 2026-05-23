@@ -357,9 +357,9 @@ function App() {
     return () => clearInterval(id);
   }, [recording, recordingPaused, lastInteractionAt]);
 
-  // Hard cap — at 3 hr of recording surface a confirm modal so a rep who
+  // Hard cap — at 2 hr of recording surface a confirm modal so a rep who
   // forgot to end the session has a clear out. Fires once per session.
-  const HARD_CAP_S = 3 * 60 * 60;
+  const HARD_CAP_S = 2 * 60 * 60;
   useEffect(() => {
     if (!recording || hardCapShownRef.current) return;
     if (recTime >= HARD_CAP_S) {

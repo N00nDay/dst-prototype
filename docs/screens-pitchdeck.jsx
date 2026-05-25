@@ -457,6 +457,23 @@ function SlideStage({ slide, tablet, brandObj, skipped, onOpenPhoto }) {
       {/* Brand accent stripe */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'var(--brand)' }} />
 
+      {/* Placeholder banner — signals to reviewers that Core 6 slide
+          visuals will be marketing-designed in production. Finding slides
+          (above) are real and don't get this banner. */}
+      <div style={{
+        position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+        padding: '3px 10px',
+        background: 'var(--surface-2)',
+        color: 'var(--text-3)',
+        border: '1px solid var(--border)',
+        borderRadius: 999,
+        fontSize: 9, fontWeight: 700, letterSpacing: 0.06, textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+        zIndex: 2
+      }}>
+        Placeholder · marketing-designed in production
+      </div>
+
       {skipped &&
       <div className="pill warn" style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, fontWeight: 700 }}>
           SKIPPED

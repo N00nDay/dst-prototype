@@ -147,7 +147,8 @@ function InspectionScreen({
   structures, activeStructureId, setActiveStructureId,
   onAddStructure, onDuplicateStructure, onRenameStructure, onRemoveStructure, onSetStructureScopes,
   onDictate, onBack,
-  continueCascade, onContinue
+  continueCascade, onContinue,
+  tablet = false
 }) {
   const activeStructure = structures?.find((s) => s.id === activeStructureId) || structures?.[0] || { scopes: ['roofing', 'siding', 'gutters', 'windoors'] };
   const allowedFacets = useMemo(
@@ -716,7 +717,7 @@ function InspectionScreen({
         return (
           <>
             <window.ContinueBar
-              tablet={true}
+              tablet={tablet}
               label={continueLabel}
               sub={continueSub}
               enabled={!isPackageGated}

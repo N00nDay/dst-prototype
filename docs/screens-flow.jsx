@@ -305,7 +305,7 @@ function AppointmentHero({ appt, custName, custInsurance, telHref, smsHref, mail
             <span className="rec-dot" style={{ flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Appointment in progress</div>
-              <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>Rilla is recording · {fmtTime(recordingTime)}</div>
+              <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>Recording · {fmtTime(recordingTime)}</div>
             </div>
           </div>}
       </div>

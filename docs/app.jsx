@@ -1,7 +1,7 @@
 /* global React, ReactDOM */
 /* global Icon, BRANDS, APPOINTMENTS, INSPECTION_CATEGORIES, SEED_INSPECTION_ITEMS, TIERS, CUSTOMER, REPS, SYNC_STATES, NEEDS_SEED, FINDINGS_SEED, PITCH_SLIDES, CUSTOMERS, FOLLOWUPS */
 /* global SEED_ENVELOPE, ENVELOPE_FACETS */
-/* global AppStatusBar, OSStatusBar, TabBar, ToastLayer, Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail, Commissions, useToasts, ToolbagDrawer */
+/* global AppStatusBar, OSStatusBar, TabBar, ToastLayer, Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail, Commissions, useToasts, ToolbagDrawer, HandoffSheet */
 /* global Login, AppointmentDetail, InspectionScreen, ImageCaptureScreen, CameraModal, DictationModal, AnnotateSheet */
 /* global PhaseTabBar */
 /* global NeedsAssessmentScreen, FindingsScreen, PitchDeckScreen, ProposalBuilderScreen */
@@ -85,8 +85,8 @@ function App() {
   // Pause + safeguard plumbing. `recordingPaused` keeps the elapsed timer
   // visible but stops it from advancing. `lastSavedAt` powers the header's
   // "Saved · just now" pill and the Save & Exit popover. `lastInteractionAt`
-  // anchors the idle-warning modal so reps who walk away don't leave Rilla
-  // running indefinitely.
+  // anchors the idle-warning modal so reps who walk away don't leave the
+  // recording running indefinitely.
   const [recordingPaused, setRecordingPaused] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [lastInteractionAt, setLastInteractionAt] = useState(Date.now());
@@ -94,6 +94,12 @@ function App() {
   const [showHardCap, setShowHardCap] = useState(false);
   const idleWarnedRef = useRef(false);
   const hardCapShownRef = useRef(false);
+  // Tablet→phone handoff (one-directional, Inspect-only). Rep stays primary
+  // on tablet for Build/Proposal/Present; walks the structure with phone for
+  // photo capture; returns to tablet to keep building. The receiving-side
+  // UI (phone session bar, tablet return banner) lives in the spec — not
+  // reachable in the wireframe without a backend or a dev affordance.
+  const [showHandoffSheet, setShowHandoffSheet] = useState(false);
 
   // ── Inspection state ──────────────────────────────────
   const [items, setItems] = useState(SEED_INSPECTION_ITEMS);
@@ -340,7 +346,7 @@ function App() {
       pitchIncluded, addons, swaps, discounts, proposals, signed,
       walkthrough, deposit, walkTopics, appt]);
 
-  // Idle warning — if Rilla has been running for 20 min without a tap,
+  // Idle warning — if recording has been running for 20 min without a tap,
   // surface a modal so the rep can pause if they've stepped away. Polls
   // once per minute and gates on `idleWarnedRef` so it only fires once
   // per idle stretch (cleared by `touch()` on any new interaction).
@@ -389,7 +395,7 @@ function App() {
     hardCapShownRef.current = false;
     idleWarnedRef.current = false;
     touch();
-    push('Rilla is recording · captured for coaching review');
+    push('Recording · captured for coaching review');
   };
 
   // Recording controls — Pause keeps the timer visible but frozen so the
@@ -426,6 +432,16 @@ function App() {
     setView('list');
     setTab('dashboard');
     push('Saved · pick up where you left off');
+  };
+
+  // Handoff — opens the SMS-deeplink sheet on tablet. `handleSendHandoff`
+  // fires the (mock) text; the rep then walks to their phone and picks up
+  // the deeplinked session (out of scope for this wireframe).
+  const handleOpenHandoff = () => setShowHandoffSheet(true);
+  const handleSendHandoff = () => {
+    setShowHandoffSheet(false);
+    setLastSavedAt(Date.now());
+    push('Link sent to phone · open it there to continue Inspection');
   };
 
   const handleCapture = (facetId) => { if (facetId) setActiveFacet(facetId); setShowCamera(true); };
@@ -677,7 +693,13 @@ function App() {
           onSaveExit={handleSaveExit}
           onPauseRec={handlePauseRec}
           onResumeRec={handleResumeRec}
-          onEndRec={handleEndRec} />
+          onEndRec={handleEndRec}
+          onHandoff={
+            device === 'tablet' && view === 'inspect' ?
+            handleOpenHandoff : null
+          }
+          tablet={isTablet}
+          hasStepBar={hasSubHeader} />
         }
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -686,7 +708,9 @@ function App() {
             tabs={SOLVE_TABS}
             activeId={view}
             farthestIdx={farthestSolveStepIdx}
-            onSelect={(id) => setView(id)} />
+            onSelect={(id) => setView(id)}
+            tablet={isTablet}
+            phase="SOLVE" />
           }
           {view !== 'present' && COMMIT_TABS_FN(deferred).some((t) => (t.views || [t.id]).includes(view)) && (() => {
             const tabs = COMMIT_TABS_FN(deferred);
@@ -698,7 +722,9 @@ function App() {
                 onSelect={(id) => {
                   const t = tabs.find((x) => x.id === id);
                   setView(t?.views && t.views[0] || id);
-                }} />);
+                }}
+                tablet={isTablet}
+                phase="COMMIT" />);
 
           })()}
           {view === 'list' &&
@@ -706,6 +732,7 @@ function App() {
               {tab === 'dashboard' && <Dashboard brand={brand} rep={rep} onAppointmentClick={handleAppointmentClick} onCommissionsClick={() => setView('commissions')} onFollowupClick={(f) => {setSelectedFollowup(f);setView('followup');}} />}
               {tab === 'schedule' && <Schedule onAppointmentClick={handleAppointmentClick} />}
               {tab === 'customers' && <Customers onAppointmentClick={handleAppointmentClick} onOpenCustomer={(c) => {setSelectedCustomer(c);setView('customer');}} />}
+              {tab === 'coach' && <window.Coach />}
               {tab === 'settings' && <Settings brand={brand} theme={theme} setTheme={setTheme} rep={rep} onLogout={() => setAuthed(false)} />}
             </>
           }
@@ -771,7 +798,8 @@ function App() {
             onBackToScope={() => setView('scope')}
             onContinueBuild={() => setView('build')}
             continueCascade={continueCascadeFor('inspect', 'Build')}
-            onContinue={() => continueFromPerStructure('inspect', 'build')} />
+            onContinue={() => continueFromPerStructure('inspect', 'build')}
+            tablet={isTablet} />
           }
 
           {view === 'build' &&
@@ -791,7 +819,8 @@ function App() {
             onDictate={handleDictate}
             onBack={() => setView('inspect')}
             continueCascade={continueCascadeFor('build', 'Slides')}
-            onContinue={() => continueFromPerStructure('build', 'pitch')} />
+            onContinue={() => continueFromPerStructure('build', 'pitch')}
+            tablet={isTablet} />
           }
 
 
@@ -931,7 +960,7 @@ function App() {
             onClose={() => setDrawerOpen(false)}
             customer={customerData}
             setCustomer={setCustomerData}
-            onSaveExit={handleSaveExit} />
+            tablet={isTablet} />
           {showIdleWarning &&
           <window.RecordingIdleModal
             elapsedSec={recTime}
@@ -943,6 +972,12 @@ function App() {
             elapsedSec={recTime}
             onEnd={() => { setShowHardCap(false); handleEndRec(); }}
             onKeepGoing={() => { setShowHardCap(false); touch(); }} />
+          }
+          {showHandoffSheet &&
+          <window.HandoffSheet
+            addressLine={appt?.address?.split(',')[0]}
+            onClose={() => setShowHandoffSheet(false)}
+            onSend={handleSendHandoff} />
           }
           {/* Toasts disabled per Craig — strewn-about black pills weren't
               reading as cohesive. push() calls remain as no-ops in case

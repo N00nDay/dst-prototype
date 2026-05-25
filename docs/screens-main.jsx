@@ -90,12 +90,63 @@ function BatteryGlyph({ c = 'currentColor', pct = 80 }) {
 //   - any future step they haven't reached yet: muted and inert
 // Visual is intentionally light — no pill backgrounds, thin connectors,
 // small numbered dots. Matches the in-Build SubStepStrip family.
-function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect }) {
-  // Chevron tracker for the SOLVE phase stepper (Scope / Inspect / Build /
-  // Slides / Proposal). Gating: a rep can tap backward freely; tapping
-  // forward is only allowed for steps already visited (i <= farthestIdx).
-  // Unreached steps render as `upcoming` and are disabled.
+function PhaseTabBar({ tabs, activeId, farthestIdx = 0, onSelect, tablet = false, phase = 'SOLVE' }) {
+  // Tablet: chevron tracker for the phase stepper (Scope / Inspect / Build /
+  //   Slides / Proposal). Gating: rep taps backward freely; forward only to
+  //   steps already visited (i <= farthestIdx). Unreached steps disabled.
+  // Phone: collapses to a single "current step · N of N" pill that opens the
+  //   PhaseStepsSheet on tap. Five chevrons don't fit on 375px without
+  //   truncating labels; the pill+sheet pattern is readable and keeps the
+  //   same jump-to-step affordance.
   const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeId));
+  const [sheetOpen, setSheetOpen] = React.useState(false);
+
+  if (!tablet) {
+    const active = tabs[activeIdx] || tabs[0];
+    return (
+      <>
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 4,
+          background: 'var(--surface)',
+          padding: '8px 14px 10px',
+          boxShadow: '0 6px 14px rgba(20,15,5,0.06), 0 1px 0 var(--border)'
+        }}>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            aria-label={`Step ${activeIdx + 1} of ${tabs.length}: ${active.label} — tap to jump`}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 999,
+              background: 'var(--brand-soft)',
+              border: '1px solid var(--brand)',
+              color: 'var(--brand)',
+              fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              cursor: 'pointer'
+            }}>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.08, textTransform: 'uppercase', opacity: 0.75 }}>
+              {phase} · Step {activeIdx + 1} of {tabs.length}
+            </span>
+            <span style={{ color: 'var(--text)', fontWeight: 800 }}>{active.label}</span>
+            <Icon.chev />
+          </button>
+        </div>
+        {sheetOpen &&
+        <PhaseStepsSheet
+          phase={phase}
+          currentView={activeId}
+          farthestIdx={farthestIdx}
+          onSelect={(id) => {setSheetOpen(false);onSelect(id);}}
+          onClose={() => setSheetOpen(false)} />
+        }
+      </>);
+
+  }
+
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 4,
@@ -152,7 +203,10 @@ function AppContextBar({
   onSaveExit = null,
   onPauseRec = null,
   onResumeRec = null,
-  onEndRec = null
+  onEndRec = null,
+  onHandoff = null,
+  tablet = false,
+  hasStepBar = false
 }) {
   // Sync pill removed per Craig — redundant signal at top of every screen.
   const syncPill = null;
@@ -164,33 +218,43 @@ function AppContextBar({
   // recording so the rep can pause/resume/end mid-appointment. Paused state
   // mutes the dot + timer color so it reads at a glance.
   const recColor = recordingPaused ? 'var(--text-3)' : 'var(--danger)';
+  // Phone: just the dot (and a small "paused" hint when paused) — the elapsed
+  // time isn't useful at-a-glance and the header was running out of width.
+  // Tablet: full dot + timer.
   const recPill = recording &&
   <button
     type="button"
     onClick={() => setShowRecSheet(true)}
     aria-label={recordingPaused ? 'Recording paused — tap for controls' : 'Recording — tap for controls'}
     style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
+      display: 'inline-flex', alignItems: 'center', gap: tablet ? 6 : 0,
       color: recColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 11,
-      background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer'
+      background: 'transparent', border: 'none', padding: tablet ? '4px 6px' : '4px 4px', cursor: 'pointer'
     }}>
       <span className={recordingPaused ? '' : 'rec-dot'} style={recordingPaused ? {
-        width: 8, height: 8, borderRadius: 999, border: `1.5px solid ${recColor}`
-      } : undefined} />
-      <span>{fmtTime(recordingTime)}{recordingPaused ? ' · paused' : ''}</span>
+        width: 10, height: 10, borderRadius: 999, border: `1.5px solid ${recColor}`
+      } : { width: 10, height: 10 }} />
+      {tablet && <span>{fmtTime(recordingTime)}{recordingPaused ? ' · paused' : ''}</span>}
+      {!tablet && recordingPaused && <span style={{ marginLeft: 4, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.04 }}>paused</span>}
     </button>;
 
   // Saved pill — ambient "everything is captured" reassurance. Only shows
   // inside an appointment (phaseInfo present) once at least one save has
-  // happened. Tapping opens a small popover with the absolute timestamp
-  // and a Save & Exit button for walking away.
+  // happened. Tapping opens a small popover with the absolute timestamp,
+  // a Save & Exit button for walking away, and (when applicable — tablet
+  // on Inspect, no active handoff) a Hand off Inspection to phone button.
+  // The gating happens upstream in app.jsx — if onHandoff is null, the
+  // popover just hides the button.
   const savedPill = phaseInfo && lastSavedAt &&
   <SavedPill
     lastSavedAt={lastSavedAt}
     open={showSavedPopover}
     onToggle={() => setShowSavedPopover((v) => !v)}
     onClose={() => setShowSavedPopover(false)}
-    onSaveExit={onSaveExit} />;
+    onSaveExit={onSaveExit}
+    onHandoff={onHandoff}
+    handoffLabel="Hand off Inspection"
+    tablet={tablet} />;
 
 
   // Variant C single-row layout for in-appointment screens:
@@ -202,18 +266,34 @@ function AppContextBar({
         <div className="app-status" style={{ padding: '6px 14px 6px', minHeight: 44, gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
             {leading}
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {title}
-            </div>
-            {structureSwitcher &&
+            {/* Phone: drop the title on step views — the step pill below
+                already names the current step. Structure switcher (when present
+                on multi-structure jobs) takes the title position so the rep
+                can swap between buildings without losing context. Tablet keeps
+                title + structure switcher together. */}
+            {tablet ?
             <>
-                <span style={{ color: 'var(--text-4)', flexShrink: 0 }}>·</span>
-                <div style={{ minWidth: 0, flexShrink: 1 }}>{structureSwitcher}</div>
-              </>}
+                <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {title}
+                </div>
+                {structureSwitcher &&
+              <>
+                    <span style={{ color: 'var(--text-4)', flexShrink: 0 }}>·</span>
+                    <div style={{ minWidth: 0, flexShrink: 1 }}>{structureSwitcher}</div>
+                  </>}
+              </> :
+            hasStepBar ?
+            structureSwitcher ?
+            <div style={{ minWidth: 0, flex: 1 }}>{structureSwitcher}</div> :
+            null :
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {title}
+              </div>}
           </div>
+          {tablet &&
           <div style={{ flexShrink: 0 }}>
-            <PhaseProgress phaseInfo={phaseInfo} />
-          </div>
+            <PhaseProgress phaseInfo={phaseInfo} tablet={tablet} />
+          </div>}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, position: 'relative' }}>
             {recPill}
             {savedPill}
@@ -265,9 +345,11 @@ function AppContextBar({
 // ─────── Saved pill + popover ───────
 // Ambient "everything is captured" indicator that lives in the header
 // action slot during an appointment. Updates every 30 s so the relative
-// time stays accurate; tap opens a popover with the absolute timestamp
-// and a Save & Exit button for walking away.
-function SavedPill({ lastSavedAt, open, onToggle, onClose, onSaveExit }) {
+// time stays accurate; tap opens a popover with the absolute timestamp,
+// a Save & Exit button for walking away, and (when onHandoff is provided)
+// a Hand off button for moving the active step to the phone. The handoff
+// affordance is gated upstream — when null, the button isn't rendered.
+function SavedPill({ lastSavedAt, open, onToggle, onClose, onSaveExit, onHandoff = null, handoffLabel = 'Hand off to phone', tablet = false }) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 30 * 1000);
@@ -283,16 +365,16 @@ function SavedPill({ lastSavedAt, open, onToggle, onClose, onSaveExit }) {
         aria-label={`Saved ${rel} — tap for save options`}
         aria-expanded={open}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '4px 8px', borderRadius: 999,
+          display: 'inline-flex', alignItems: 'center', gap: tablet ? 5 : 0,
+          padding: tablet ? '4px 8px' : '4px 6px', borderRadius: 999,
           background: 'var(--success-bg, var(--surface-2))',
           color: 'var(--success, var(--text-2))',
           border: '1px solid var(--success, var(--border))',
           fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em',
           cursor: 'pointer'
         }}>
-        <Icon.check style={{ width: 11, height: 11 }} />
-        <span>Saved · {rel}</span>
+        <Icon.check style={{ width: 12, height: 12 }} />
+        {tablet && <span>Saved · {rel}</span>}
       </button>
       {open &&
       <>
@@ -326,6 +408,14 @@ function SavedPill({ lastSavedAt, open, onToggle, onClose, onSaveExit }) {
               style={{ marginTop: 10, height: 40, fontSize: 13, fontWeight: 700 }}>
               Save & Exit
             </button>
+            {onHandoff &&
+            <button
+              type="button"
+              className="btn btn-block"
+              onClick={() => { onClose && onClose(); onHandoff(); }}
+              style={{ marginTop: 6, height: 38, fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
+              {handoffLabel}
+            </button>}
           </div>
         </>}
     </div>);
@@ -395,7 +485,7 @@ function RecordingIdleModal({ elapsedSec, onPause, onContinue }) {
           You haven't tapped anything in a while. Recording is still going.
         </p>
         <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
-          If you've stepped away, pause Rilla so the coaching review stays useful. Otherwise keep going — we'll check in again later.
+          If you've stepped away, pause the recording so the coaching review stays useful. Otherwise keep going — we'll check in again later.
         </p>
       </div>
       <div style={{ padding: '14px 16px 18px', display: 'grid', gap: 8 }}>
@@ -417,7 +507,7 @@ function RecordingHardCapModal({ elapsedSec, onEnd, onKeepGoing }) {
     <Sheet onClose={onKeepGoing} title="Recording has been on for a while" eyebrow={`Elapsed · ${fmtTime(elapsedSec)}`}>
       <div style={{ padding: '8px 16px 0' }}>
         <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
-          Rilla has been recording for over 2 hours. Most appointments are wrapped well before this point.
+          This appointment has been recording for over 2 hours. Most appointments are wrapped well before this point.
         </p>
         <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
           End the session if you're done, or keep going if you're still mid-appointment.
@@ -438,6 +528,63 @@ function RecordingHardCapModal({ elapsedSec, onEnd, onKeepGoing }) {
     </Sheet>);
 }
 
+// ─────── Handoff sheet ───────
+// One-directional handoff: tablet → phone, scoped to Inspect. Use case: rep
+// is on tablet (the primary surface for Build/Proposal/Present), wants to
+// walk the structure with the more mobile phone to capture findings, then
+// return to tablet to keep building. Tablet sends an SMS deeplink — the
+// tablet itself has no SMS capability, so an SMS preview is shown to make
+// the mechanism concrete.
+function HandoffSheet({ onClose, onSend, repPhone = '(512) 555-0142', addressLine = '4421 Bluffwood Ln' }) {
+  return (
+    <Sheet onClose={onClose} title="Hand off Inspection to phone" eyebrow="Walk the structure on phone">
+      <div style={{ padding: '8px 16px 0' }}>
+        <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
+          We'll text a deeplink to <strong>{repPhone}</strong> that opens phone at this Inspect step. Capture findings on the phone — when you tap Done there, this tablet will pull them in.
+        </p>
+      </div>
+      {/* SMS preview — concretizes the mechanism. iMessage-style green bubble
+          so it reads instantly as "this is what your phone will receive." */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 6 }}>
+          Preview · text to phone
+        </div>
+        <div style={{
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: '10px 12px',
+          maxWidth: '85%'
+        }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginBottom: 3 }}>
+            IHS Selling Way · just now
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.45 }}>
+            Continue Inspection at {addressLine}. Tap to pick up where the tablet left off:
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--brand)', marginTop: 4, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+            ihs.app/h/wh-1041
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: '8px 16px 0' }}>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5, margin: 0 }}>
+          Heads up — handoff needs service on both devices. Pending uploads finish on phone first, then sync back when you pull in.
+        </p>
+      </div>
+      <div style={{ padding: '14px 16px 18px' }}>
+        <button
+          type="button"
+          className="btn btn-primary btn-lg btn-block"
+          onClick={onSend}
+          style={{ height: 46, fontSize: 14, fontWeight: 700, textTransform: 'none' }}>
+          Send link to phone
+        </button>
+      </div>
+    </Sheet>);
+
+}
+
 // Cross-cutting step-progress indicator (Brief Prompt L).
 // Two rows stacked vertically:
 //  1. CONNECT · SOLVE · COMMIT phase markers — brand-themed for the active
@@ -447,7 +594,7 @@ function RecordingHardCapModal({ elapsedSec, onEnd, onKeepGoing }) {
 //     phase with check marks for completed steps and the active one
 //     highlighted. The handler comes in via onClick (wired to a state
 //     toggle in app.jsx).
-function PhaseProgress({ phaseInfo }) {
+function PhaseProgress({ phaseInfo, tablet = false }) {
   const PHASES = ['CONNECT', 'SOLVE', 'COMMIT'];
   const currentIdx = PHASES.indexOf(phaseInfo.current);
   return (
@@ -456,14 +603,21 @@ function PhaseProgress({ phaseInfo }) {
         {PHASES.map((p, i) => {
           const isCurrent = i === currentIdx;
           const passed = i < currentIdx;
+          // Phone: single-letter chips (C — S — C). Tablet: full names.
+          // Color does the heavy lifting either way — current=brand, passed=success, upcoming=muted.
+          const label = tablet ? p : p[0];
           return (
             <React.Fragment key={p}>
-              <span style={{
-                fontSize: 8, fontWeight: 700, letterSpacing: 0.08,
-                color: isCurrent ? 'var(--brand-fg)' : passed ? 'var(--success)' : 'var(--text-4)',
-                background: isCurrent ? 'var(--brand)' : passed ? 'var(--success-bg)' : 'transparent',
-                padding: '2px 5px', borderRadius: 3, transition: 'all 200ms ease'
-              }}>{p}</span>
+              <span
+                aria-label={tablet ? undefined : p}
+                title={tablet ? undefined : p}
+                style={{
+                  fontSize: tablet ? 8 : 10, fontWeight: 700, letterSpacing: 0.08,
+                  color: isCurrent ? 'var(--brand-fg)' : passed ? 'var(--success)' : 'var(--text-4)',
+                  background: isCurrent ? 'var(--brand)' : passed ? 'var(--success-bg)' : 'transparent',
+                  padding: tablet ? '2px 5px' : '2px 6px', borderRadius: 3, transition: 'all 200ms ease',
+                  minWidth: tablet ? undefined : 14, textAlign: 'center', display: 'inline-block'
+                }}>{label}</span>
               {i < 2 &&
               <span style={{ width: 6, height: 1, background: passed ? 'var(--success)' : 'var(--border-strong)' }} />
               }
@@ -478,7 +632,7 @@ function PhaseProgress({ phaseInfo }) {
 // for completed steps and a brand highlight on the current one. Reps can
 // tap a step to jump to it directly (forward or backward — same freedom
 // as the back button). Brief Prompt L.
-function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClose }) {
+function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClose, farthestIdx = null }) {
   // Phase → ordered list of views. Mirrors PHASE_OF + FLOW_VIEWS in app.jsx.
   const VIEWS_BY_PHASE = {
     CONNECT: ['apt', 'needs'],
@@ -504,7 +658,10 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
     label: stepLabelByView?.[v] || FRIENDLY_LABEL[v] || v
   }));
   const currentIdx = steps.findIndex((s) => s.id === currentView);
-  return (
+  // Portal to .app-root so the backdrop's fixed positioning covers the
+  // AppContextBar header — without this, the sheet renders inside the
+  // in-appt content tree and the header sits above the backdrop blur.
+  const content = (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
       <div className="sheet" style={{ maxHeight: '70%', display: 'flex', flexDirection: 'column' }}>
@@ -520,38 +677,65 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
           {steps.map((s, i) => {
             const isCurrent = i === currentIdx;
             const isPast = currentIdx > -1 && i < currentIdx;
+            // Matches tablet PhaseTabBar gating: steps reached (i <= farthestIdx)
+            // are reviewable; unreached future steps are disabled. When farthestIdx
+            // is null (caller didn't pass it), fall back to no gating.
+            const isCompletedAhead = farthestIdx != null && i > currentIdx && i <= farthestIdx;
+            // "Upcoming" is strictly past-the-frontier AND not the current step.
+            // farthestIdx starts at -1 when the rep hasn't advanced past Scope,
+            // so without this guard the current step gets flagged upcoming.
+            const isUpcoming = farthestIdx != null && i > farthestIdx && !isCurrent && !isPast;
+            const canTap = isPast || isCurrent || isCompletedAhead || farthestIdx == null;
+            const showCheck = isPast || isCompletedAhead;
             return (
               <button
                 key={s.id}
                 type="button"
-                onClick={() => onSelect && onSelect(s.id)}
+                disabled={!canTap}
+                onClick={canTap ? () => onSelect && onSelect(s.id) : undefined}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 14px', borderRadius: 10,
-                  background: isCurrent ? 'var(--brand-soft)' : 'var(--surface-2)',
-                  border: isCurrent ? '1.5px solid var(--brand)' : '1px solid var(--border)',
-                  cursor: 'pointer', textAlign: 'left'
+                  background: isCurrent ? 'var(--brand-soft)' : isUpcoming ? 'transparent' : 'var(--surface-2)',
+                  border:
+                    isCurrent ? '1.5px solid var(--brand)' :
+                    isUpcoming ? '1px dashed var(--border)' :
+                    '1px solid var(--border)',
+                  cursor: canTap ? 'pointer' : 'not-allowed',
+                  textAlign: 'left',
+                  opacity: isUpcoming ? 0.6 : 1
                 }}>
                 <span style={{
                   width: 24, height: 24, borderRadius: 999,
-                  background: isPast ? 'var(--success)' : (isCurrent ? 'var(--brand)' : 'var(--surface)'),
-                  color: (isPast || isCurrent) ? '#fff' : 'var(--text-3)',
-                  border: isPast || isCurrent ? 'none' : '1.5px solid var(--border-strong)',
+                  background:
+                    showCheck ? 'var(--success)' :
+                    isCurrent ? 'var(--brand)' :
+                    'var(--surface)',
+                  color: showCheck || isCurrent ? '#fff' : 'var(--text-3)',
+                  border: showCheck || isCurrent ? 'none' : '1.5px solid var(--border-strong)',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11, fontWeight: 800, flexShrink: 0
                 }}>
-                  {isPast ? '✓' : (i + 1)}
+                  {showCheck ? '✓' : (i + 1)}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: isCurrent ? 700 : 600, color: 'var(--text)' }}>
+                <span style={{
+                  flex: 1, minWidth: 0,
+                  fontSize: 13, fontWeight: isCurrent ? 700 : 600,
+                  color: isUpcoming ? 'var(--text-3)' : 'var(--text)'
+                }}>
                   {s.label}
                 </span>
                 {isCurrent &&
                   <span className="pill brand" style={{ fontSize: 9, padding: '2px 7px', flexShrink: 0 }}>Current</span>}
+                {isUpcoming &&
+                  <span style={{ fontSize: 10, color: 'var(--text-4)', fontStyle: 'italic', flexShrink: 0 }}>Upcoming</span>}
               </button>);
           })}
         </div>
       </div>
     </>);
+  const mount = (typeof document !== 'undefined' && document.querySelector('.app-root')) || null;
+  return mount ? ReactDOM.createPortal(content, mount) : content;
 }
 
 // ─────── Tool-Bag Drawer ───────
@@ -560,12 +744,15 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
 // The whole drawer is portaled into .app-root so the backdrop covers the
 // AppContextBar header (without the portal, position:absolute would be
 // trapped inside the inner content wrapper that sits below the header).
-function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer, onSaveExit }) {
+function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer, tablet = false }) {
+  // Tabs: icon + text on tablet, icon only on phone. As we add more tabs the
+  // phone bar would scrunch otherwise — icon-only keeps each tab tappable.
   const TABS = [
-    { id: 'customer', label: 'Customer' },
-    { id: 'property', label: 'Property' },
-    { id: 'area', label: 'Area Work' },
-    { id: 'reviews', label: 'Reviews' }];
+    { id: 'ai', label: 'Ask AI', icon: Icon.sparkles },
+    { id: 'customer', label: 'Customer', icon: Icon.user },
+    { id: 'property', label: 'Property', icon: Icon.building },
+    { id: 'area', label: 'Area', icon: Icon.pin },
+    { id: 'reviews', label: 'Reviews', icon: Icon.star }];
   // Inner sheet (edit field, filter) layers ON TOP of the side drawer.
   // The sheet provides its own backdrop that covers the drawer in place —
   // we don't slide the drawer off-screen (that motion is jarring).
@@ -585,40 +772,30 @@ function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer,
           </button>
         </div>
         <div className="drawer-tabs" role="tablist">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              className={`drawer-tab ${tab === t.id ? 'active' : ''}`}
-              onClick={() => onTabChange(t.id)}>
-              {t.label}
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const T = t.icon;
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id}
+                aria-label={t.label}
+                title={t.label}
+                className={`drawer-tab ${tab === t.id ? 'active' : ''}`}
+                onClick={() => onTabChange(t.id)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                <T />
+                {tablet && <span>{t.label}</span>}
+              </button>);
+          })}
         </div>
         <div className="drawer-body" style={{ flex: 1, overflow: 'auto' }}>
+          {tab === 'ai' && <ToolbagAITab customer={customer} />}
           {tab === 'customer' && <ToolbagCustomerTab customer={customer} setCustomer={setCustomer} requestSheet={setInnerSheet} />}
           {tab === 'property' && <ToolbagPropertyTab customer={customer} />}
           {tab === 'area' && <ToolbagAreaTab customer={customer} requestSheet={setInnerSheet} />}
           {tab === 'reviews' && <ToolbagReviewsTab />}
         </div>
-        {onSaveExit &&
-        <div style={{
-          borderTop: '1px solid var(--border)',
-          padding: '12px 16px',
-          background: 'var(--surface)'
-        }}>
-            <button
-              type="button"
-              className="btn btn-primary btn-block"
-              onClick={() => { onClose && onClose(); onSaveExit(); }}
-              style={{ height: 44, fontSize: 14, fontWeight: 700 }}>
-              Save & Exit appointment
-            </button>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, textAlign: 'center' }}>
-              Recording pauses · pick up right where you left off
-            </div>
-          </div>}
       </div>
       {innerSheet}
     </>);
@@ -1089,12 +1266,162 @@ function ToolbagReviewsTab() {
     </div>);
 }
 
+// ─────── Tool Bag · Ask AI ───────
+// In-the-moment AI assistant for the rep — knows the live appointment context
+// (customer, captures, scope, pricing). Wireframe only: the AI responses are
+// canned strings keyed off the suggested prompts. The shape of the experience
+// (always-on context line at the top, scrollable transcript, suggested chips
+// above the input) is the real takeaway. Real chat backend wires in later
+// against the same UI.
+function ToolbagAITab({ customer }) {
+  const customerName = (customer?.name || '').split(/\s+/)[0] || 'the customer';
+  const [messages, setMessages] = React.useState([
+  { role: 'assistant', text: `Hi Cole — I'm following along on this appointment. Ask me anything about ${customer?.name || 'this job'}: scope, materials, margin, or what they've told you so far.` }]);
+
+  const [input, setInput] = React.useState('');
+  const scrollRef = React.useRef(null);
+
+  // Canned responses keyed off the suggested prompts. Free-text input falls
+  // back to a placeholder reply that makes it obvious this is a wireframe.
+  const SUGGESTIONS = [
+  { id: 'margin', label: 'Check my margin', reply: 'Current proposal sits at 38.4% margin — above your team\'s 35% threshold. Premium tier ($23,400) has the strongest ratio at 42%. Nothing flagged for manager review.' },
+  { id: 'budget', label: 'What did they say about budget?', reply: `Renée mentioned a $20–25k comfort zone during Connect, and Marcus said insurance is covering the structural portion. Premium tier lands inside that window after their deductible.` },
+  { id: 'scope-check', label: 'Am I missing anything in scope?', reply: 'Roofing covers what they signed for. Two things worth confirming before you Build:\n• You noted soft fascia on the south side — add Trim Work if it\'s in scope.\n• No decking estimate yet — code requires replacement if more than 20% is rotted.' },
+  { id: 'compare', label: 'How should I frame Premium vs Best?', reply: `Lean on warranty and storm history. Marcus brought up the Apr 12 hail — Premium\'s Class 4 impact-resistant shingles drop their insurance premium ~12% in TX, which closes most of the price gap to Best. Best only wins if they\'re planning to stay 15+ years.` }];
+
+
+  const sendCanned = (s) => {
+    setMessages((m) => [...m, { role: 'user', text: s.label }, { role: 'assistant', text: s.reply }]);
+  };
+  const sendFree = () => {
+    const text = input.trim();
+    if (!text) return;
+    setInput('');
+    setMessages((m) => [...m, { role: 'user', text }, { role: 'assistant', text: 'Wireframe placeholder · in production I\'ll read your live appointment context (captures, dictation, pricing) and answer specifically.' }]);
+  };
+
+  React.useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Context strip — sets expectations on what the AI knows */}
+      <div style={{
+        padding: '8px 14px',
+        background: 'var(--surface-2)',
+        borderBottom: '1px solid var(--border)',
+        fontSize: 10, color: 'var(--text-3)', fontWeight: 600,
+        letterSpacing: 0.04, textTransform: 'uppercase'
+      }}>
+        AI · knows {customerName}'s appointment + your captures
+      </div>
+
+      {/* Transcript */}
+      <div
+        ref={scrollRef}
+        style={{ flex: 1, overflow: 'auto', padding: '14px 14px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {messages.map((m, i) =>
+        <div
+          key={i}
+          style={{
+            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+            maxWidth: '85%',
+            padding: '8px 12px',
+            borderRadius: 14,
+            background: m.role === 'user' ? 'var(--brand)' : 'var(--surface-2)',
+            color: m.role === 'user' ? 'var(--brand-fg)' : 'var(--text)',
+            fontSize: 13, lineHeight: 1.45,
+            whiteSpace: 'pre-wrap',
+            border: m.role === 'assistant' ? '1px solid var(--border)' : 'none'
+          }}>
+            {m.text}
+          </div>
+        )}
+      </div>
+
+      {/* Suggested prompts — horizontally scrollable chip row */}
+      <div style={{ padding: '0 14px 8px', display: 'flex', gap: 6, overflowX: 'auto', flexShrink: 0 }}>
+        {SUGGESTIONS.map((s) =>
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => sendCanned(s)}
+          style={{
+            flexShrink: 0,
+            padding: '6px 10px',
+            background: 'var(--surface)',
+            color: 'var(--text-2)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 999,
+            fontSize: 11, fontWeight: 600,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap'
+          }}>
+            {s.label}
+          </button>
+        )}
+      </div>
+
+      {/* Composer */}
+      <div style={{
+        padding: '10px 14px 14px',
+        borderTop: '1px solid var(--border)',
+        background: 'var(--surface)',
+        display: 'flex', gap: 8, alignItems: 'flex-end',
+        flexShrink: 0
+      }}>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendFree();
+            }
+          }}
+          placeholder="Ask anything…"
+          rows={1}
+          style={{
+            flex: 1,
+            minHeight: 36, maxHeight: 100,
+            padding: '8px 10px',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 10,
+            fontSize: 13, lineHeight: 1.4,
+            background: 'var(--surface)',
+            color: 'var(--text)',
+            resize: 'none',
+            fontFamily: 'inherit'
+          }} />
+        <button
+          type="button"
+          onClick={sendFree}
+          disabled={!input.trim()}
+          style={{
+            padding: '8px 14px',
+            background: input.trim() ? 'var(--brand)' : 'var(--surface-2)',
+            color: input.trim() ? 'var(--brand-fg)' : 'var(--text-3)',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 13, fontWeight: 700,
+            cursor: input.trim() ? 'pointer' : 'not-allowed',
+            flexShrink: 0
+          }}>
+          Send
+        </button>
+      </div>
+    </div>);
+
+}
+
 // ─────── Tab Bar ───────
 function TabBar({ tab, setTab }) {
   const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: Icon.home },
   { id: 'schedule', label: 'Schedule', icon: Icon.cal },
   { id: 'customers', label: 'Customers', icon: Icon.user },
+  { id: 'coach', label: 'Coach', icon: Icon.eye },
   { id: 'settings', label: 'Settings', icon: Icon.cog }];
 
   return (
@@ -2391,5 +2718,6 @@ Object.assign(window, {
   Dashboard, Schedule, Settings, Customers, CustomerDetail, FollowupDetail,
   Commissions, GlobalSearch,
   RecordingIdleModal, RecordingHardCapModal,
+  HandoffSheet,
   useToasts
 });

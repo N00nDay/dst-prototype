@@ -71,7 +71,8 @@ function ImageCaptureScreen({
   onCapture, onDictate,
   onTapPhoto,
   onBack, onBackToScope, onContinueBuild,
-  continueCascade, onContinue
+  continueCascade, onContinue,
+  tablet = false
 }) {
   const [activeFacet, setActiveFacet] = useState('roofing');
   const [pickerOpen, setPickerOpen] = useState(null); // facetId for picker
@@ -263,7 +264,7 @@ function ImageCaptureScreen({
         });
         return (
           <window.ContinueBar
-            tablet={true}
+            tablet={tablet}
             label={continueCascade.label}
             sub={ready ? '' : gateSub}
             enabled={ready}

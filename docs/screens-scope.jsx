@@ -402,7 +402,10 @@ function ContinueBar({ tablet, label, sub, enabled, blockers, onContinue, onBack
           background: 'var(--surface)',
           borderTop: '1px solid var(--border)',
           boxShadow: '0 -10px 24px rgba(0,0,0,0.06)',
-          padding: tablet ? '12px 28px' : '10px 14px env(safe-area-inset-bottom, 10px)',
+          // Phone footer honors iOS home-indicator safe-area. Fallback (22px)
+          // matches the visual breathing room on a non-notched preview. Tablet
+          // is fixed because tablets don't have a home indicator inset to dodge.
+          padding: tablet ? '12px 28px' : '10px 14px calc(env(safe-area-inset-bottom, 0px) + 22px)',
           display: 'flex', alignItems: 'center', gap: 12
         }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
@@ -410,17 +413,19 @@ function ContinueBar({ tablet, label, sub, enabled, blockers, onContinue, onBack
           <button
             type="button"
             onClick={onBack}
+            aria-label={backLabel}
+            title={backLabel}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
+              display: 'inline-flex', alignItems: 'center', gap: tablet ? 6 : 0,
               height: tablet ? 44 : 40,
-              padding: tablet ? '0 18px' : '0 14px',
+              padding: tablet ? '0 18px' : '0 12px',
               borderRadius: 8,
               background: 'transparent', border: '1px solid var(--border)',
               color: 'var(--text-2)', fontSize: tablet ? 14 : 13, fontWeight: 700, letterSpacing: '-0.01em',
-              cursor: 'pointer'
+              cursor: 'pointer', flexShrink: 0
             }}>
             <Icon.back style={{ width: 14, height: 14 }} />
-            {backLabel}
+            {tablet && backLabel}
           </button> :
           <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '-0.005em' }}>{sub}</span>
           }

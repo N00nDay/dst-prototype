@@ -8,7 +8,7 @@
 /* global ScopeScreen */
 /* global PresentMode, SignaturePad, MissingSheet */
 /* global FinancingScreen */
-/* global WalkthroughScreen, DepositScreen, WelcomePackageScreen, HandoffScreen */
+/* global DepositScreen, WelcomePackageScreen, HandoffScreen */
 /* global GlobalSearch */
 
 const { useState, useEffect, useRef, useMemo } = React;
@@ -289,6 +289,10 @@ function App() {
   const [walkTopics, setWalkTopics] = useState({});
   const [deposit, setDeposit] = useState(null);
   const [financingResult, setFinancingResult] = useState(null);
+  // Which surface launched financing — Proposal or Present. Drives where
+  // FinancingScreen returns on cancel or decision.
+  const [financingReturnView, setFinancingReturnView] = useState('proposal');
+  const openFinancingFrom = (fromView) => {setFinancingReturnView(fromView);setView('financing');};
   const [deferred, setDeferred] = useState(false); // signed-now vs deferred → swaps Welcome ↔ Follow-up tab
   // Craig (May '26): COMMIT card on the appointment overview is gated on
   // SOLVE being completed. Flips true the first time the rep advances into
@@ -577,7 +581,6 @@ function App() {
     proposal: 'Proposal',
     present: 'Present',
     sign: 'Signature',
-    walkthrough: 'Walk-through',
     deposit: 'Deposit',
     welcome: 'Welcome Package',
     handoff: 'Production Handoff',
@@ -599,7 +602,6 @@ function App() {
     proposal: 'Build proposal',
     present: 'Present to homeowner',
     sign: 'Approve & Sign',
-    walkthrough: 'Walk-through video',
     deposit: 'Collect deposit',
     welcome: 'Welcome package · sent',
     handoff: 'Production handoff'
@@ -856,6 +858,9 @@ function App() {
             discounts={discounts} setDiscounts={setDiscounts}
             proposals={proposals} setProposals={setProposals}
             pricingMode={pricingMode} setPricingMode={setPricingMode}
+            financingResult={financingResult}
+            onOpenFinancing={() => openFinancingFrom('proposal')}
+            onEmailQuote={(addr) => push(`Quote emailed to ${addr}`)}
             onBack={() => setView('apt')}
             onPresent={() => setView('present')} />
           }
@@ -877,6 +882,8 @@ function App() {
             structures={structures}
             proposals={proposals}
             pricingMode={pricingMode}
+            financingResult={financingResult}
+            onFinancing={() => openFinancingFrom('present')}
             onBack={() => setView('apt')}
             onContinue={() => setView('sign')} />
           }
@@ -929,8 +936,8 @@ function App() {
             tablet={isTablet}
             brand={brand}
             amount={signed?.total || Math.round(Object.values(swaps).length ? 36000 : 36000)}
-            onCancel={() => setView('proposal')}
-            onDecisionResolved={(result) => {setFinancingResult(result);setView('proposal');push(`Financing · ${result.decision}`);}} />
+            onCancel={() => setView(financingReturnView)}
+            onDecisionResolved={(result) => {setFinancingResult(result);setView(financingReturnView);push(`Financing · ${result.decision}`);}} />
           }
 
           {view === 'customer' && selectedCustomer &&

@@ -6,7 +6,7 @@
 
 const { useState, useMemo } = window;
 
-function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, onBack, onContinue }) {
+function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlides, skips, setSkips, included, setIncluded, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, financingResult, onFinancing, onBack, onContinue }) {
   if (mode === 'pick') {
     return <SlidePicker
       brand={brand} rep={rep} tablet={tablet}
@@ -24,6 +24,8 @@ function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlid
     structures={structures}
     proposals={proposals}
     pricingMode={pricingMode}
+    financingResult={financingResult}
+    onFinancing={onFinancing}
     onBack={onBack}
     onContinue={onContinue} />;
 }
@@ -178,7 +180,7 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
 }
 
 // ─────── Present: full presentation (Approach + Findings + Proposal preview) ───────
-function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, onBack, onContinue }) {
+function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, setSelectedTier, rollupForTier, structures, proposals, pricingMode, financingResult, onFinancing, onBack, onContinue }) {
   // Append the comparison slide(s). All-in: one rolled-up slide. By
   // structure: one slide per structure, each tagged with the structure
   // name in the hero so the homeowner sees the building this view is for.
@@ -286,6 +288,8 @@ function Presenter({ brand, rep, tablet, slides, skips, setSkips, selectedTier, 
           rep={rep}
           structures={structures}
           proposals={proposals}
+          financingResult={financingResult}
+          onFinancing={onFinancing}
           forStructure={current.structureId ? {
             id: current.structureId,
             name: current.structureName,
@@ -773,10 +777,17 @@ function materialsFor(scopeId, tierId) {
   return MATERIALS_BY_TIER[`${scopeId}.${tierId || 'flat'}`] || [];
 }
 
-function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures, proposals, forStructure }) {
-  // 7.99% APR / 120 mo financing — matches FinancingScreen assumption.
+function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier, rep, structures, proposals, forStructure, financingResult, onFinancing }) {
+  // Default 7.99% APR / 120 mo when no live decision exists. Once
+  // FinancingScreen returns an accepted result (approved or counter),
+  // we honor that rate/term so the homeowner-facing monthly tracks
+  // what they were actually offered.
+  const decisionApproved = !!(financingResult && financingResult.monthly);
+  const aprDefault = 0.0799,termDefault = 120;
+  const apr = decisionApproved && financingResult.rate != null ? Number(financingResult.rate) : aprDefault;
+  const term = decisionApproved && financingResult.term ? Number(financingResult.term) : termDefault;
   const monthly = (total) => {
-    const r = 0.0799 / 12,n = 120;
+    const r = apr / 12,n = term;
     if (!total) return 0;
     return Math.round(total * r / (1 - Math.pow(1 + r, -n)));
   };
@@ -946,7 +957,7 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
         boxShadow: 'var(--shadow)'
       }}>
           <div style={{ flex: 1.2, paddingRight: tablet ? 24 : 0, borderRight: tablet ? '1px solid var(--border)' : 'none', borderBottom: tablet ? 'none' : '1px solid var(--border)', paddingBottom: tablet ? 0 : 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.1, textTransform: 'uppercase', color: 'var(--text-3)' }}>Your monthly investment · 120 mo</div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.1, textTransform: 'uppercase', color: 'var(--text-3)' }}>Your monthly investment · {term} mo{decisionApproved ? ' · approved' : ''}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 56 : 44, fontWeight: 700, letterSpacing: '-0.035em', color: 'var(--brand)', lineHeight: 1, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
               {fmt(grandMonthly)}<span style={{ fontSize: tablet ? 18 : 15, color: 'var(--text-3)', fontWeight: 600, marginLeft: 4 }}>/mo</span>
             </div>
@@ -975,9 +986,27 @@ function ComparisonSlide({ tablet, selectedTier, setSelectedTier, rollupForTier,
               <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 800, color: 'var(--text)' }}>{fmt(grandTotal)}</span>
             </div>
             <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 6, lineHeight: 1.45 }}>
-              Est. monthly assumes 7.99% APR over 120 mo. Subject to credit approval.
+              {decisionApproved ?
+                <>Reflects approved financing · {(apr * 100).toFixed(2)}% APR over {term} mo.</> :
+                <>Est. monthly assumes {(apr * 100).toFixed(2)}% APR over {term} mo. Subject to credit approval.</>}
               {!roofingPicked && <span style={{ color: 'var(--warn)', fontWeight: 600 }}> · Pick a roofing package to continue.</span>}
             </div>
+            {onFinancing &&
+            <button
+              className="btn"
+              onClick={onFinancing}
+              style={{
+                marginTop: 12, alignSelf: 'flex-start',
+                height: tablet ? 38 : 34,
+                padding: tablet ? '0 16px' : '0 12px',
+                fontSize: tablet ? 12 : 11, fontWeight: 700,
+                color: decisionApproved ? 'var(--success)' : 'var(--brand)',
+                borderColor: decisionApproved ? 'var(--success)' : 'var(--brand)'
+              }}>
+              {decisionApproved ?
+                <><Icon.check style={{ width: 13, height: 13 }} /> Financing approved · review</> :
+                'Apply for financing'}
+            </button>}
           </div>
         </div> :
 

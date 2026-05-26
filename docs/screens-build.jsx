@@ -163,7 +163,7 @@ const DEFAULT_PROPOSAL = {
   scopeWarranty: {}
 };
 
-function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, setStructureScopes, proposals = {}, setProposals, pricingMode, setPricingMode, onBack, onPresent }) {
+function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, structures, activeStructureId, setActiveStructureId, setStructureScopes, proposals = {}, setProposals, pricingMode, setPricingMode, onBack, onPresent, onOpenFinancing, financingResult, onEmailQuote }) {
   // pricingMode + setPricingMode are lifted to app.jsx so the Presentation
   // screen can read the rep's choice and emit one comparison slide (allin)
   // vs one per structure (by).
@@ -214,6 +214,10 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
   // Warranty drawer — product picking moved to Build, but warranty per
   // tier is still selectable from the Proposal page.
   const [warrantyDrawer, setWarrantyDrawer] = useState(null); // { scopeId, tierId }
+
+  // Email-quote sheet — surfaces the PRD's "Email Me This Quote" CTA
+  // independent of signature. Open == sheet visible; payload mocks the send.
+  const [emailSheetOpen, setEmailSheetOpen] = useState(false);
 
   // Writer that targets the active structure's proposal.
   const updateActiveProposal = (patch) => {
@@ -508,6 +512,14 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
         <div style={{ height: tablet ? 30 : 24 }} />
       </div>
 
+      {/* SECONDARY ACTIONS — secondary CTAs stacked above the primary
+          ProposalBottomBar so Present stays the visual anchor. */}
+      <ProposalSecondaryActions
+        tablet={tablet}
+        financingResult={financingResult}
+        onOpenFinancing={onOpenFinancing}
+        onOpenEmailSheet={() => setEmailSheetOpen(true)} />
+
       {/* FLOATING TOTAL BAR — always visible above the scroll. */}
       <ProposalBottomBar
         tablet={tablet}
@@ -527,6 +539,136 @@ function ProposalBuilderScreen({ tablet, brand, rep, selected, setSelected, stru
         onPick={(w) => {setWarranty(warrantyDrawer.scopeId, warrantyDrawer.tierId, w);setWarrantyDrawer(null);}}
         onClose={() => setWarrantyDrawer(null)} />}
 
+      {emailSheetOpen &&
+      <EmailQuoteSheet
+        tablet={tablet}
+        defaultEmail={CUSTOMER?.email || ''}
+        total={grand.high || 0}
+        onClose={() => setEmailSheetOpen(false)}
+        onSend={(addr) => {
+          setEmailSheetOpen(false);
+          if (typeof onEmailQuote === 'function') onEmailQuote(addr);
+        }} />}
+
+    </div>);
+}
+
+// ─── Secondary action row (Financing + Email Quote) ──────────
+// Slim row pinned above ProposalBottomBar. Two ghost CTAs that the rep
+// can fire without leaving Proposal: launch the financing application
+// or email the homeowner a copy of the quote.
+function ProposalSecondaryActions({ tablet, financingResult, onOpenFinancing, onOpenEmailSheet }) {
+  const decided = !!(financingResult && financingResult.decision);
+  const approved = !!(financingResult && financingResult.monthly);
+  const financingLabel = decided ?
+    approved ?
+      `Financing · ${fmt(financingResult.monthly)}/mo` :
+      `Financing · ${financingResult.decision}` :
+    'Apply for financing';
+  return (
+    <div style={{
+      flexShrink: 0,
+      background: 'var(--surface-2, var(--surface))',
+      borderTop: '1px solid var(--border)',
+      padding: tablet ? '8px 28px' : '6px 14px',
+      display: 'flex', alignItems: 'stretch', gap: tablet ? 12 : 8
+    }}>
+      <button
+        className="btn"
+        onClick={onOpenFinancing}
+        style={{
+          flex: 1, height: tablet ? 38 : 34,
+          fontSize: tablet ? 12 : 11, fontWeight: 700,
+          color: decided ? 'var(--success)' : 'var(--text-2)',
+          borderColor: decided ? 'var(--success)' : 'var(--border-strong)'
+        }}>
+        {decided && <Icon.check style={{ width: 13, height: 13 }} />}
+        {financingLabel}
+      </button>
+      <button
+        className="btn"
+        onClick={onOpenEmailSheet}
+        style={{
+          flex: 1, height: tablet ? 38 : 34,
+          fontSize: tablet ? 12 : 11, fontWeight: 700,
+          color: 'var(--text-2)'
+        }}>
+        <Icon.mail style={{ width: 13, height: 13 }} />
+        Email this quote
+      </button>
+    </div>);
+}
+
+// ─── Email Quote sheet ────────────────────────────────────────
+// PRD DST-PRICE-10: standalone "Email Me This Quote" CTA, distinct from
+// the signature email. Mock send (1.1 s spinner), then bubbles the
+// final address up so app.jsx can push the toast.
+function EmailQuoteSheet({ tablet, defaultEmail, total, onClose, onSend }) {
+  const [email, setEmail] = useState(defaultEmail || '');
+  const [sending, setSending] = useState(false);
+  const submit = () => {
+    if (!email || sending) return;
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      onSend(email);
+    }, 1100);
+  };
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'absolute', inset: 0, zIndex: 60,
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: tablet ? 480 : '100%',
+          background: 'var(--surface)',
+          borderTopLeftRadius: 16, borderTopRightRadius: 16,
+          padding: tablet ? '20px 24px 24px' : '18px 18px 22px',
+          boxShadow: '0 -10px 30px rgba(0,0,0,0.18)'
+        }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 18 : 16, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            Email this quote
+          </div>
+          <button className="btn btn-ghost" onClick={onClose} style={{ padding: '4px 6px', fontSize: 11 }}>
+            <Icon.x style={{ width: 12, height: 12 }} /> Cancel
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.45, marginBottom: 14 }}>
+          Sends the homeowner a shareable copy of this quote with the tiers, add-ons, and totals as currently configured. They can revisit it from any device.
+        </div>
+        <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 6 }}>
+          Send to
+        </label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={sending}
+          placeholder="homeowner@example.com"
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            padding: '10px 12px', fontSize: 14,
+            border: '1px solid var(--border-strong)', borderRadius: 8,
+            background: 'var(--bg)', color: 'var(--text)',
+            marginBottom: 12, fontFamily: 'var(--font-body, inherit)'
+          }} />
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 14 }}>
+          Includes the current project total ({fmt(total)}) and per-tier breakdowns.
+        </div>
+        <button
+          className="btn btn-primary btn-lg btn-block"
+          onClick={submit}
+          disabled={!email || sending}
+          style={{ opacity: !email || sending ? 0.55 : 1 }}>
+          {sending ? 'Sending…' : (<>Send quote <Icon.arrow /></>)}
+        </button>
+      </div>
     </div>);
 }
 

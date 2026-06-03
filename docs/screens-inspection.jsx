@@ -1,5 +1,6 @@
 /* global React, Icon, ENVELOPE_FACETS, MEASUREMENT_SCHEMA, CATALOGS, REPORT_SOURCES,
-   autoQtyFor, findCatalog, fmtMoney, fmtMoneyExact, INSPECTION_CATEGORIES */
+   autoQtyFor, findCatalog, fmtMoney, fmtMoneyExact, INSPECTION_CATEGORIES,
+   RoofDiagram, ROOF_MODEL, allRoofFacetIds, allRoofEaveIds */
 
 /* IHS Selling Way — Inspection screen
    ───────────────────────────────────────────────────────────────
@@ -137,6 +138,10 @@ function packageManufacturers(facetId) {
 // Craig). Windows & Doors has no priced catalog yet, so the selector renders
 // as a passive placeholder there.
 const PACKAGE_FACETS = new Set(['roofing', 'siding', 'windoors']);
+// Facets whose Measurements step is driven by the interactive aerial diagram
+// instead of per-field rows. Their continue-gate is satisfied by having at
+// least one facet selected, not by per-row locks.
+const DIAGRAM_FACETS = new Set(['roofing', 'gutters']);
 
 // ─────────────────────────────────────────────────────────
 // Top-level component
@@ -406,7 +411,15 @@ function InspectionScreen({
             packageDismissals={env.packageDismissals || {}}
             onChange={(tier, productId) => updateEnvelope({ packageProducts: { ...(env.packageProducts || {}), [tier]: productId } })}
             onChangeDismissal={(tier, reasonId) => updateEnvelope({ packageDismissals: { ...(env.packageDismissals || {}), [tier]: reasonId } })} />}
-            {activeSection === 'measurements' && sections.includes('measurements') &&
+            {activeSection === 'measurements' && sections.includes('measurements') && (
+          DIAGRAM_FACETS.has(activeFacet) ?
+          // Roofing & gutters measurements come from the interactive roof
+          // diagram — it owns the facet/eave selection + controls and pushes
+          // the derived measurements through the normal envelope recompute path.
+          <RoofDiagram
+            mode={activeFacet === 'gutters' ? 'gutters' : 'roofing'}
+            env={env}
+            onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} /> :
           <div>
               <SourceBanner
               facet={facet}
@@ -426,7 +439,7 @@ function InspectionScreen({
               onApplyOne={applyOneAerial}
               locks={measurementLocks}
               onSetLock={setMeasurementLock} />
-            </div>}
+            </div>)}
 
             {['materials', 'labor'].map((sec) => {
             if (sec !== activeSection) return null;
@@ -507,7 +520,10 @@ function InspectionScreen({
           const e = (envelope || {})[fid] || {};
           const facetMeta = ENVELOPE_FACETS.find((f) => f.id === fid);
           const facetLabel = facetMeta?.label || fid;
-          if (sectionForSurvey === 'measurements') {
+          if (sectionForSurvey === 'measurements' && DIAGRAM_FACETS.has(fid)) {
+            // Diagram-driven facets have no per-row review — the diagram IS
+            // the measurement act. Nothing to surface in the lock-all modal.
+          } else if (sectionForSurvey === 'measurements') {
             const schema = MEASUREMENT_SCHEMA[fid] || [];
             const locks = e.measurementLocks || {};
             const meas = e.measurements || {};
@@ -596,6 +612,11 @@ function InspectionScreen({
         const openCountFor = (facetId, section) => {
           const e = (envelope || {})[facetId] || {};
           if (section === 'measurements') {
+            if (DIAGRAM_FACETS.has(facetId)) {
+              // Satisfied once at least one facet/eave is selected on the diagram.
+              const sel = facetId === 'gutters' ? (e.gutterSelection || allRoofEaveIds()) : (e.roofSelection || allRoofFacetIds());
+              return sel.length > 0 ? 0 : 1;
+            }
             const schema = MEASUREMENT_SCHEMA[facetId] || [];
             const locks = e.measurementLocks || {};
             return schema.filter((f) => (locks[f.key] || 'open') === 'open').length;

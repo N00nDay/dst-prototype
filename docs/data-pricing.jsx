@@ -60,11 +60,10 @@ const MEASUREMENT_SCHEMA = {
     { key: 'step_flashing',  label: 'Step flashing',         unit: 'ft',   step: 1,   sources: ['hover','eagleview'],         group: 'Flashing' },
     { key: 'apron_flashing', label: 'Apron / headwall',      unit: 'ft',   step: 1,   sources: ['hover','eagleview'],         group: 'Flashing' },
     { key: 'drip_edge',      label: 'Drip edge / perimeter', unit: 'ft',   step: 1,   sources: ['hover','eagleview','gafqm'], group: 'Flashing' },
-    { key: 'pipe_boots',     label: 'Pipe boots',            unit: 'ea',   step: 1,   sources: ['manual'],                    group: 'Penetrations' },
-    { key: 'box_vents',      label: 'Box vents',             unit: 'ea',   step: 1,   sources: ['manual'],                    group: 'Penetrations' },
-    { key: 'bath_vents',     label: 'Bath / kitchen vents',  unit: 'ea',   step: 1,   sources: ['manual'],                    group: 'Penetrations' },
-    { key: 'skylights',      label: 'Skylights',             unit: 'ea',   step: 1,   sources: ['manual'],                    group: 'Penetrations' },
-    { key: 'chimneys',       label: 'Chimneys',              unit: 'ea',   step: 1,   sources: ['manual'],                    group: 'Penetrations' },
+    // Penetrations (pipe boots, box/bath vents, skylights, chimneys) used to
+    // live here as counts. They now belong in Materials/Labor where each has a
+    // real size & cost the rep picks — the interactive roof diagram only drives
+    // geometric measurements. Their catalog items simply start at qty 0.
     { key: 'stories',        label: 'Stories',               unit: '',     step: 1,   sources: ['hover','manual'],            group: 'Property' },
     { key: 'waste_pct',      label: 'Waste factor',          unit: '%',    step: 1,   sources: ['manual'],                    group: 'Property', hint: 'Applied to shingle quantities' }
   ],
@@ -403,11 +402,14 @@ const CATALOGS = {
 // ─── Seed measurements (mock Hover report for current appt) ────
 // Numbers loosely follow the Hudsonville Hover sample so the demo feels real.
 const SEED_MEASUREMENTS = {
+  // Roofing seed = the interactive roof diagram (data-aerial.jsx) with EVERY
+  // facet selected. These totals must stay in sync with ROOF_MODEL's
+  // all-selected sums (deriveRoofMeasurements over all facet ids). Penetration
+  // counts are intentionally gone — they live in Materials/Labor now.
   roofing: {
-    area: 34.9, area_steep: 30.1, area_flat: 4.8, pitch: '8/12',
-    eaves: 248, rakes: 155, ridge: 120, hip: 80, valley: 100,
-    step_flashing: 77, apron_flashing: 58, drip_edge: 403,
-    pipe_boots: 4, box_vents: 5, bath_vents: 2, skylights: 0, chimneys: 1,
+    area: 35.6, area_steep: 30.8, area_flat: 4.8, pitch: '8/12',
+    eaves: 264, rakes: 105, ridge: 66, hip: 80, valley: 78,
+    step_flashing: 57, apron_flashing: 58, drip_edge: 369,
     stories: 2, waste_pct: 12
   },
   siding: {
@@ -418,7 +420,9 @@ const SEED_MEASUREMENTS = {
     soffit_area: 691, gable_vents: 0, shutters_sets: 0, exterior_lights: 4,
     waste_pct: 10
   },
-  gutters: { gutter_lf: 249, downspouts: 5, downspout_lf: 70, guards_lf: 0 },
+  // Gutters seed = the roof diagram (data-aerial.jsx) with every eave selected
+  // and the seeded downspout markers (5 drops; 2-story drops = 20ft, 1-story = 10ft).
+  gutters: { gutter_lf: 264, downspouts: 5, downspout_lf: 80, guards_lf: 0 },
   windoors: { windows: 14, doors: 3, sliders: 1 },
   attic:    { attic_area: 1820, insulation_r: 30, insulation_depth: 9, soffit_vents: 12, ridge_vent_lf: 48, bath_fans_vented: 2 }
 };
@@ -451,7 +455,12 @@ const SEED_ENVELOPE = {
   roofing: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.roofing,
-    measurements: {},
+    // Roofing measurements come from the interactive roof diagram. Every facet
+    // starts selected, so the envelope opens with the full take-off populated.
+    measurements: { ...SEED_MEASUREMENTS.roofing },
+    roofSelection: allRoofFacetIds(),
+    roofWaste: 12,
+    roofStories: 2,
     lineItems: deriveInitialLineItems('roofing', SEED_MEASUREMENTS.roofing),
     // Pre-pick a G/B/B set so the Presentation pricing has real numbers on
     // first load — makes the Build → Proposal → Pitch data flow visible.
@@ -467,7 +476,12 @@ const SEED_ENVELOPE = {
   gutters: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.gutters,
-    measurements: {},
+    // Gutter runs come from the roof diagram — every eave selected by default,
+    // with the report's downspout placement (rep can add / move / remove).
+    measurements: { ...SEED_MEASUREMENTS.gutters },
+    gutterSelection: allRoofEaveIds(),
+    gutterDownspouts: JSON.parse(JSON.stringify(SEED_DOWNSPOUTS)),
+    gutterGuards: false,
     packageProducts: { good: 'g-5k-g', better: 'g-6k-lg-b', best: 'g-hr-cu-x' }
   },
   windoors: {

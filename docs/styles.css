@@ -1333,3 +1333,278 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--text-3);
 }
 .chev-tracker .ctile:disabled { cursor: default; }
+
+/* ─── Interactive roof diagram (screens-roof-diagram.jsx) ─────────── */
+/* Overlay label toggle (Area / Pitch / Lengths) */
+.roof-seg {
+  display: inline-flex;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.roof-seg__btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.roof-seg__btn.is-on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Facet polygons — tap to include/exclude */
+.roof-facet { cursor: pointer; transition: fill .12s ease, opacity .12s ease; outline: none; }
+.roof-facet--on {
+  fill: oklch(0.55 0.1 250 / 0.20);
+  stroke: oklch(0.5 0.09 250);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.roof-facet--off {
+  fill: oklch(0.72 0.01 80 / 0.14);
+  stroke: oklch(0.72 0.012 80);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  stroke-linejoin: round;
+}
+.roof-facet--on:hover { fill: oklch(0.55 0.12 250 / 0.30); }
+.roof-facet--off:hover { fill: oklch(0.72 0.02 80 / 0.24); }
+.roof-facet:focus-visible { stroke: var(--brand); stroke-width: 2.5; }
+.roof-facet__lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.roof-edge { stroke-linecap: round; pointer-events: none; }
+.roof-edge__lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: var(--surface-2);
+  stroke-width: 2.5px;
+}
+
+/* Small ghost buttons (Select all / Clear) */
+.roof-mini-btn {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.roof-mini-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Live measurement readout grid */
+.roof-readout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.roof-readout__cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+.roof-readout__cell--wide { grid-column: span 2; }
+.roof-readout__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.roof-readout__value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.roof-readout__unit {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-left: 3px;
+}
+.roof-readout__sub { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+
+/* Waste factor segmented row */
+.roof-waste {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.roof-waste__btn {
+  position: relative;
+  flex: 1 0 auto;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.roof-waste__btn.is-on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-fg);
+}
+.roof-waste__sug {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--success);
+  background: var(--surface);
+  padding: 0 3px;
+  white-space: nowrap;
+}
+.roof-waste__btn.is-on .roof-waste__sug { color: var(--brand-fg); background: var(--brand); }
+
+/* Stories stepper */
+.roof-stepper { display: inline-flex; align-items: center; gap: 2px; }
+.roof-stepper button {
+  width: var(--tap-sm);
+  height: var(--tap-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.roof-stepper button:disabled { opacity: 0.4; cursor: default; }
+.roof-stepper span { min-width: 28px; text-align: center; font-size: 15px; font-weight: 800; }
+
+/* Gutters mode — facets become static context, eaves are the tap targets */
+.roof-facet--context {
+  fill: oklch(0.72 0.01 80 / 0.10);
+  stroke: oklch(0.8 0.012 80);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.roof-gutter-line { stroke-linecap: round; pointer-events: none; transition: stroke .12s ease, stroke-width .12s ease; }
+.roof-gutter-hit {
+  stroke: transparent;
+  stroke-width: 22;
+  stroke-linecap: round;
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+}
+.roof-gutter-hit:focus-visible { stroke: oklch(0.55 0.14 235 / 0.25); }
+
+/* Toggle switch (gutter guards) */
+.roof-switch {
+  width: 46px; height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  position: relative;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+  flex: 0 0 auto;
+}
+.roof-switch.is-on { background: var(--brand); border-color: var(--brand); }
+.roof-switch__knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s ease;
+}
+.roof-switch.is-on .roof-switch__knob { transform: translateX(18px); }
+
+/* Selected-downspout editor */
+.roof-ds-editor {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--brand);
+  border-radius: 10px;
+  background: var(--brand-soft);
+}
+.roof-ds-remove {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid var(--danger);
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.roof-ds-remove:active { background: var(--danger-bg); }
+
+/* Downspout popover — anchored to the marker dot */
+.roof-ds-pop {
+  position: absolute;
+  z-index: 20;
+  width: 210px;
+  transform: translate(-50%, calc(-100% - 13px));
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 10px;
+}
+.roof-ds-pop--down { transform: translate(-50%, 13px); }
+/* caret */
+.roof-ds-pop::after {
+  content: "";
+  position: absolute;
+  left: var(--caret, 50%);
+  width: 12px; height: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  transform: translateX(-50%) rotate(45deg);
+}
+.roof-ds-pop::after { bottom: -7px; border-top: 0; border-left: 0; }
+.roof-ds-pop--down::after { top: -7px; bottom: auto; border-top: 1px solid var(--border-strong); border-left: 1px solid var(--border-strong); border-bottom: 0; border-right: 0; }
+.roof-ds-pop__head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 800; color: var(--text);
+}
+.roof-ds-pop__head button {
+  border: 0; background: transparent; color: var(--text-3);
+  font-size: 13px; cursor: pointer; padding: 2px 4px; line-height: 1;
+}
+.roof-ds-pop__row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-top: 8px;
+}
+.roof-ds-pop__lbl { font-size: 11px; font-weight: 700; color: var(--text-2); }
+.roof-linkbtn {
+  border: 0; background: transparent; padding: 0;
+  color: var(--brand); font-size: 11px; font-weight: 700; cursor: pointer;
+  text-align: right;
+}
+.roof-stepper--sm button { width: 28px; height: 28px; font-size: 15px; }
+.roof-stepper--sm span { min-width: 34px; font-size: 12px; font-weight: 800; }

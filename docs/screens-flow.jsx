@@ -381,11 +381,6 @@ function AppointmentDetail({ appt, recording, recordingPaused = false, recording
         </div>
       </div>}
 
-      {/* Customer history — a quick historical glance so the rep walks in
-          knowing what's come before (prior projects, open/expired estimates,
-          earlier canvasses). Pulled from the CUSTOMERS master list by name. */}
-      <CustomerHistory name={appt?.customer || custName} tablet={tablet} />
-
       {recording &&
       <>
           <div className="section-label">The IHS Selling Way</div>
@@ -419,6 +414,12 @@ function AppointmentDetail({ appt, recording, recordingPaused = false, recording
           </div>
         </>
       }
+
+      {/* Customer history — a quick historical glance so the rep walks in
+          knowing what's come before (prior projects, open/expired estimates,
+          earlier canvasses). Sits below the IHS Selling Way phase cards.
+          Pulled from the CUSTOMERS master list by name. */}
+      <CustomerHistory name={appt?.customer || custName} tablet={tablet} />
 
       <div className="section-label">Customer details</div>
       <div style={{ padding: tablet ? '0 28px' : '0 16px' }}>
@@ -458,6 +459,17 @@ function CustomerHistory({ name, tablet = false }) {
   const list = typeof CUSTOMERS !== 'undefined' ? CUSTOMERS : [];
   const rec = list.find((c) => c.name === name);
   const past = (rec?.deals || []).filter((d) => d.status !== 'in-progress');
+  // Tapping a row will open that past project/estimate — those objects
+  // aren't modeled yet, so for now a tap flashes a "coming soon" cue on
+  // the row. The detail view + return-to-appointment wiring lands once the
+  // project/estimate records exist. (Craig, Jun '26.)
+  const [flashId, setFlashId] = useState(null);
+  const flashRef = useRef(null);
+  const onOpenDeal = (d) => {
+    setFlashId(d.id);
+    clearTimeout(flashRef.current);
+    flashRef.current = setTimeout(() => setFlashId(null), 1800);
+  };
   if (past.length === 0) return null;
   const rows = past.slice(0, 4);
   const lifetime = (rec.deals || [])
@@ -473,26 +485,48 @@ function CustomerHistory({ name, tablet = false }) {
         </span>}
       </div>
       <div style={{ padding: tablet ? '0 28px' : '0 16px' }}>
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {rows.map((d, i) =>
-          <div key={d.id} style={{
-            padding: '11px 14px',
-            borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{d.type}</span>
-                <HistStatusPill status={d.status} />
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{d.trade}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>{d.date}</div>
-            </div>
-            {d.amount &&
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
-              {fmt(d.amount)}
-            </div>}
-          </div>)}
+        {/* Plain bordered list (not .card) so rows don't inherit the card
+            press-nudge — each row is its own tap target instead. */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden'
+        }}>
+          {rows.map((d, i) => {
+            const flashed = flashId === d.id;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => onOpenDeal(d)}
+                style={{
+                  width: '100%', textAlign: 'left', cursor: 'pointer',
+                  padding: '11px 12px 11px 14px',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  border: 0, borderTopColor: 'var(--border)',
+                  background: flashed ? 'var(--brand-soft)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                  transition: 'background 120ms ease'
+                }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{d.type}</span>
+                    <HistStatusPill status={d.status} />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{d.trade}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>
+                    {flashed ? <span style={{ color: 'var(--brand)', fontWeight: 700 }}>Project detail coming soon</span> : d.date}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {d.amount &&
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(d.amount)}
+                  </div>}
+                  <span style={{ color: 'var(--text-4)', display: 'inline-flex' }}><Icon.chev /></span>
+                </div>
+              </button>);
+          })}
         </div>
       </div>
     </>);

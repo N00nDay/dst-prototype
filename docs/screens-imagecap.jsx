@@ -237,32 +237,14 @@ function ImageCaptureScreen({
                 )}
               </div>
             </div> :
-            <div style={{
-              padding: '14px 16px', borderRadius: 12,
-              border: '1px solid var(--border)', background: 'var(--surface)',
-              display: 'flex', alignItems: 'center', gap: 14
-            }}>
-              <button
-                type="button"
-                onClick={runWalkDictation}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 9,
-                  padding: '11px 16px', borderRadius: 999, flexShrink: 0,
-                  border: anyDictated ? '1px solid var(--border-strong)' : 0,
-                  background: anyDictated ? 'var(--surface)' : 'var(--brand)',
-                  color: anyDictated ? 'var(--text-2)' : 'var(--brand-fg)',
-                  fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em', cursor: 'pointer',
-                  boxShadow: anyDictated ? 'none' : '0 6px 16px rgba(20,15,5,0.12)'
-                }}>
-                <Icon.mic style={{ width: 16, height: 16 }} />
-                {anyDictated ? 'Re-dictate findings' : 'Dictate findings'}
-              </button>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.45, minWidth: 0 }}>
-                {anyDictated ?
-                'Run another pass to refresh every area, or edit a card directly below.' :
-                'Walk the whole structure once — AI fills each area’s notes and materials below. Edit any card after.'}
-              </div>
-            </div>}
+            <button
+              type="button"
+              onClick={runWalkDictation}
+              className={`btn btn-lg btn-block ${anyDictated ? '' : 'btn-primary'}`}
+              style={{ gap: 9 }}>
+              <Icon.mic style={{ width: 16, height: 16 }} />
+              {anyDictated ? 'Re-dictate findings' : 'Dictate findings'}
+            </button>}
           </div>);
       })()}
 

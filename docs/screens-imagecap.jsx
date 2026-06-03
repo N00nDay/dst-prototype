@@ -78,6 +78,7 @@ function ImageCaptureScreen({
   const [pickerOpen, setPickerOpen] = useState(null); // facetId for picker
   const [dismissFor, setDismissFor] = useState(null); // facetId pending dismissal
   const [bulkOpen, setBulkOpen] = useState(false); // bulk-dismiss sheet open
+  const [walkRecording, setWalkRecording] = useState(false); // walk-the-structure dictation in progress
 
   // Active structure + position (for the chip + Continue copy).
   const activeIdx = Math.max(0, (structures || []).findIndex((s) => s.id === activeStructureId));
@@ -120,6 +121,38 @@ function ImageCaptureScreen({
   };
   const setFacetField = (facetId, patch) => {
     setEnvelope((s) => ({ ...s, [facetId]: { ...(s?.[facetId] || {}), ...patch } }));
+  };
+
+  // Walk-the-structure dictation — the rep records one pass talking through
+  // the whole envelope ("roof has granule loss… gutters are sagging…") and
+  // the AI splits the transcript across the finding cards, filling each
+  // facet's memo + parsed materials in a single action. Replaces the old
+  // per-card dictation (four separate recordings). Dismissed facets and any
+  // facet without a mock parse are skipped. (Mocked — fans out the same
+  // per-facet fixtures the old flow used; real impl streams STT → LLM.)
+  const runWalkDictation = () => {
+    if (walkRecording) return;
+    setWalkRecording(true);
+    setTimeout(() => {
+      setEnvelope((s) => {
+        const next = { ...s };
+        visibleFacets.forEach((f) => {
+          if (next[f.id]?.dismissed) return;
+          const mock = MOCK_DICTATION_BY_FACET[f.id];
+          if (!mock) return;
+          const notesNext = mock.notes || mock;
+          const base = { ...(next[f.id] || {}), notes: notesNext };
+          if (Array.isArray(mock.parsed)) {
+            const updated = applyParsedFromMemo(base, mock.parsed);
+            next[f.id] = { ...base, lineItems: updated.lineItems, parsedFromMemo: updated.parsedFromMemo };
+          } else {
+            next[f.id] = base;
+          }
+        });
+        return next;
+      });
+      setWalkRecording(false);
+    }, 1600);
   };
 
   return (
@@ -170,6 +203,69 @@ function ImageCaptureScreen({
             </button>}
           </div>);
       })()}
+      {/* Walk-the-structure dictation — one recording for the whole envelope;
+          AI splits it across the finding cards below. */}
+      {(() => {
+        const active = visibleFacets.filter((f) => !envelope[f.id]?.dismissed);
+        if (active.length === 0) return null;
+        const anyDictated = active.some((f) => (envelope[f.id]?.notes || '').trim().length > 0);
+        return (
+          <div style={{ padding: '0 16px 12px' }}>
+            {walkRecording ?
+            <div style={{
+              padding: '14px 16px', borderRadius: 12,
+              border: '1.5px solid var(--brand)',
+              background: 'var(--brand-soft)', color: 'var(--brand-soft-fg)',
+              display: 'flex', alignItems: 'center', gap: 12
+            }}>
+              <span style={{
+                width: 34, height: 34, borderRadius: 999,
+                background: 'var(--brand)', color: 'var(--brand-fg)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, animation: 'micPulse 1.2s ease-in-out infinite'
+              }}><Icon.mic style={{ width: 15, height: 15 }} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>Listening…</div>
+                <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>Splitting your walk-through across every finding below</div>
+              </div>
+              <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 24 }}>
+                {[0, 1, 2, 3, 4].map((i) =>
+                <span key={i} style={{
+                  width: 3, borderRadius: 2, background: 'var(--brand)',
+                  animation: `barpulse 0.9s ease-in-out ${i * 0.12}s infinite`
+                }} />
+                )}
+              </div>
+            </div> :
+            <div style={{
+              padding: '14px 16px', borderRadius: 12,
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              display: 'flex', alignItems: 'center', gap: 14
+            }}>
+              <button
+                type="button"
+                onClick={runWalkDictation}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 9,
+                  padding: '11px 16px', borderRadius: 999, flexShrink: 0,
+                  border: anyDictated ? '1px solid var(--border-strong)' : 0,
+                  background: anyDictated ? 'var(--surface)' : 'var(--brand)',
+                  color: anyDictated ? 'var(--text-2)' : 'var(--brand-fg)',
+                  fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em', cursor: 'pointer',
+                  boxShadow: anyDictated ? 'none' : '0 6px 16px rgba(20,15,5,0.12)'
+                }}>
+                <Icon.mic style={{ width: 16, height: 16 }} />
+                {anyDictated ? 'Re-dictate findings' : 'Dictate findings'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.45, minWidth: 0 }}>
+                {anyDictated ?
+                'Run another pass to refresh every area, or edit a card directly below.' :
+                'Walk the whole structure once — AI fills each area’s notes and materials below. Edit any card after.'}
+              </div>
+            </div>}
+          </div>);
+      })()}
+
       <div style={{ padding: '0 16px 110px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {visibleFacets.map((f) => {
           const e = envelope[f.id] || {};
@@ -795,28 +891,20 @@ function DictationPanel({ facet, env, onChange, hasDictation }) {
     }, 1400);
   };
 
-  // Empty state — centered CTA, no chrome.
+  // Empty state — quiet hint. The recording itself now happens once at the
+  // structure level ("Dictate findings" above), which fills every area's
+  // memo + materials in one pass; this card just waits for that.
   if (status === 'idle' && !hasDictation) {
     return (
-      <div style={{
-        padding: '14px 14px 16px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-      }}>
-        <button
-          type="button"
-          onClick={beginDictate}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 10,
-            padding: '12px 18px', borderRadius: 999,
-            border: 0, background: 'var(--brand)', color: 'var(--brand-fg)',
-            cursor: 'pointer',
-            fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
-            boxShadow: '0 6px 16px rgba(20,15,5,0.12)'
-          }}>
-          <Icon.mic style={{ width: 16, height: 16 }} /> Dictate findings for {facet.label}
-        </button>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.45, textAlign: 'center', maxWidth: 480 }}>
-          AI parses your memo into homeowner-facing notes and quantified materials. You can edit either side after.
+      <div style={{ padding: '12px 14px 14px' }}>
+        <div style={{
+          padding: '11px 12px', borderRadius: 8,
+          border: '1px dashed var(--border-strong)', background: 'var(--surface-2)',
+          color: 'var(--text-3)', fontSize: 11, fontWeight: 600, lineHeight: 1.45,
+          display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          <Icon.mic style={{ width: 13, height: 13, flexShrink: 0 }} />
+          Use “Dictate findings” above to capture this and every area in one pass — then edit here.
         </div>
       </div>);
   }
@@ -864,10 +952,17 @@ function DictationPanel({ facet, env, onChange, hasDictation }) {
     }}>
       {/* Notes pane */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 6 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>
             Memo
           </span>
+          <button
+            type="button"
+            onClick={beginDictate}
+            title={`Re-dictate ${facet.label} only`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 0, color: 'var(--brand)', fontSize: 10, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+            <Icon.mic style={{ width: 11, height: 11 }} /> Re-dictate
+          </button>
         </div>
         <textarea
           value={env.notes || ''}

@@ -95,7 +95,8 @@ const MEASUREMENT_SCHEMA = {
   windoors: [
     { key: 'windows',        label: 'Windows',               unit: 'ea',   step: 1,   sources: ['hover','manual'],   group: 'Openings' },
     { key: 'doors',          label: 'Doors',                 unit: 'ea',   step: 1,   sources: ['hover','manual'],   group: 'Openings' },
-    { key: 'sliders',        label: 'Sliding / patio doors', unit: 'ea',   step: 1,   sources: ['hover','manual'],   group: 'Openings' }
+    { key: 'sliders',        label: 'Sliding / patio doors', unit: 'ea',   step: 1,   sources: ['hover','manual'],   group: 'Openings' },
+    { key: 'garage_doors',   label: 'Garage doors',          unit: 'ea',   step: 1,   sources: ['hover','manual'],   group: 'Openings' }
   ],
   attic: [
     { key: 'attic_area',      label: 'Attic floor area',      unit: 'sf',   step: 10,  sources: ['manual'],           group: 'Area' },
@@ -423,7 +424,7 @@ const SEED_MEASUREMENTS = {
   // Gutters seed = the roof diagram (data-aerial.jsx) with every eave selected
   // and the seeded downspout markers (5 drops; 2-story drops = 20ft, 1-story = 10ft).
   gutters: { gutter_lf: 264, downspouts: 5, downspout_lf: 80, guards_lf: 0 },
-  windoors: { windows: 25, doors: 4, sliders: 1 },
+  windoors: { windows: 21, doors: 4, sliders: 0, garage_doors: 1 },
   attic:    { attic_area: 1820, insulation_r: 30, insulation_depth: 9, soffit_vents: 12, ridge_vent_lf: 48, bath_fans_vented: 2 }
 };
 

@@ -197,49 +197,40 @@ function deriveGutterMeasurements(model, selectedEaveIds, downspouts, opts) {
 // windoors counts. Pin coords are in the 880×490 image space. Window/door
 // positions for front/right/back came from the report's colored label tags;
 // left was placed by inspection. (Garage door excluded — siding scope.)
+// Each opening is a PHYSICAL window/door identified by its Hover label (W-105,
+// D-3, GD-1…). A corner / bay window carries the SAME id on both elevations it
+// appears on (its `places` list two), so selecting it anywhere toggles it
+// everywhere and it counts ONCE. Type is inferred from the id prefix
+// (GD=garage, D=door, W=window). Placement rects are derived from the label
+// position (openingRect) and cover the opening like a roofing facet.
 const ELEVATION_MODEL = {
   source: 'hover',
   sourceId: 'HV-7024146',
   imgW: 880,
   imgH: 489,
   sides: [
-    { id: 'front', label: 'Front', img: 'elevations/front.png', openings: [
-      { id: 'fr-w1', type: 'window', cx: 363, cy: 210 },
-      { id: 'fr-w2', type: 'window', cx: 108, cy: 363 },
-      { id: 'fr-w3', type: 'window', cx: 322, cy: 360 },
-      { id: 'fr-w4', type: 'window', cx: 384, cy: 360 },
-      { id: 'fr-w5', type: 'window', cx: 434, cy: 360 },
-      { id: 'fr-d1', type: 'door',   cx: 235, cy: 380 }
+    { id: 'front', label: 'Front', img: 'elevations/front.png', places: [
+      { key: 'W-219', cx: 364, cy: 211 }, { key: 'W-1', cx: 103, cy: 364 },
+      { key: 'W-102', cx: 320, cy: 360 }, { key: 'W-103', cx: 383, cy: 360 },
+      { key: 'W-104', cx: 432, cy: 360 }, { key: 'D-1', cx: 236, cy: 380 },
+      { key: 'GD-1', cx: 649, cy: 376, w: 255, h: 118 }
     ] },
-    { id: 'right', label: 'Right', img: 'elevations/right.png', openings: [
-      { id: 'rt-w1', type: 'window', cx: 135, cy: 331 },
-      { id: 'rt-w2', type: 'window', cx: 324, cy: 302 },
-      { id: 'rt-w3', type: 'window', cx: 602, cy: 327 },
-      { id: 'rt-w4', type: 'window', cx: 844, cy: 328 },
-      { id: 'rt-d1', type: 'door',   cx: 262, cy: 358 },
-      { id: 'rt-d2', type: 'door',   cx: 658, cy: 348 }
+    { id: 'right', label: 'Right', img: 'elevations/right.png', places: [
+      { key: 'W-105', cx: 135, cy: 320 }, { key: 'W-106', cx: 323, cy: 300 },
+      { key: 'W-110', cx: 602, cy: 328 }, { key: 'W-113', cx: 843, cy: 328 },
+      { key: 'D-3', cx: 262, cy: 340 }, { key: 'D-4', cx: 657, cy: 348 }
     ] },
-    { id: 'back', label: 'Back', img: 'elevations/back.png', openings: [
-      { id: 'bk-w1',  type: 'window', cx: 423, cy: 210 },
-      { id: 'bk-w2',  type: 'window', cx: 567, cy: 210 },
-      { id: 'bk-w3',  type: 'window', cx: 346, cy: 330 },
-      { id: 'bk-w4',  type: 'window', cx: 83,  cy: 350 },
-      { id: 'bk-w5',  type: 'window', cx: 219, cy: 350 },
-      { id: 'bk-w6',  type: 'window', cx: 474, cy: 356 },
-      { id: 'bk-w7',  type: 'window', cx: 527, cy: 354 },
-      { id: 'bk-w8',  type: 'window', cx: 580, cy: 355 },
-      { id: 'bk-w9',  type: 'window', cx: 661, cy: 356 },
-      { id: 'bk-w10', type: 'window', cx: 715, cy: 355 },
-      { id: 'bk-w11', type: 'window', cx: 771, cy: 356 },
-      { id: 'bk-w12', type: 'window', cx: 143, cy: 437 }
+    { id: 'back', label: 'Back', img: 'elevations/back.png', places: [
+      { key: 'W-220', cx: 420, cy: 210 }, { key: 'W-221', cx: 567, cy: 208 },
+      { key: 'W-109', cx: 344, cy: 331 }, { key: 'W-107', cx: 85, cy: 350 },
+      { key: 'W-108', cx: 219, cy: 350 }, { key: 'W-110', cx: 477, cy: 358 },
+      { key: 'W-111', cx: 530, cy: 358 }, { key: 'W-112', cx: 583, cy: 358 },
+      { key: 'W-113', cx: 659, cy: 355 }, { key: 'W-114', cx: 717, cy: 358 },
+      { key: 'W-115', cx: 774, cy: 358 }, { key: 'W-001', cx: 142, cy: 438, w: 34, h: 26 }
     ] },
-    { id: 'left', label: 'Left', img: 'elevations/left.png', openings: [
-      { id: 'lf-w1', type: 'window', cx: 52,  cy: 315 },
-      { id: 'lf-w2', type: 'window', cx: 110, cy: 318 },
-      { id: 'lf-w3', type: 'window', cx: 215, cy: 318 },
-      { id: 'lf-w4', type: 'window', cx: 800, cy: 320 },
-      { id: 'lf-d1', type: 'door',   cx: 405, cy: 365 },
-      { id: 'lf-s1', type: 'slider', cx: 625, cy: 320 }
+    { id: 'left', label: 'Left', img: 'elevations/left.png', places: [
+      { key: 'W-115', cx: 35, cy: 330 }, { key: 'W-116', cx: 116, cy: 326 },
+      { key: 'W-117', cx: 210, cy: 326 }, { key: 'D-5', cx: 802, cy: 356 }
     ] }
   ]
 };
@@ -247,24 +238,46 @@ const ELEVATION_MODEL = {
 const OPENING_STYLE = {
   window: { label: 'Window', color: 'oklch(0.55 0.14 235)' },
   door:   { label: 'Door',   color: 'oklch(0.62 0.16 55)' },
-  slider: { label: 'Slider', color: 'oklch(0.6 0.12 165)' }
+  slider: { label: 'Slider', color: 'oklch(0.6 0.12 165)' },
+  garage: { label: 'Garage', color: 'oklch(0.55 0.16 300)' }
 };
 
-function deriveWindoorMeasurements(model, selectedIds) {
-  const sel = new Set(selectedIds || []);
-  let windows = 0, doors = 0, sliders = 0;
-  (model.sides || []).forEach((s) => (s.openings || []).forEach((o) => {
-    if (!sel.has(o.id)) return;
-    if (o.type === 'window') windows += 1;
-    else if (o.type === 'door') doors += 1;
-    else if (o.type === 'slider') sliders += 1;
-  }));
-  return { windows, doors, sliders };
+// Type from the Hover id prefix.
+function openingType(key) {
+  if (/^GD/i.test(key)) return 'garage';
+  if (/^D/i.test(key)) return 'door';
+  if (/^S/i.test(key)) return 'slider';
+  return 'window';
+}
+// Covering rect for an opening, anchored on its label position. Windows sit
+// above their label tag; doors are taller; garage uses its measured size.
+function openingRect(type, cx, cy, ow, oh) {
+  if (type === 'garage') { const w = ow || 255, h = oh || 118; return { x: cx - w / 2, y: cy - h * 0.55, w, h }; }
+  if (ow && oh) return { x: cx - ow / 2, y: cy - oh + 9, w: ow, h: oh };
+  if (type === 'door') return { x: cx - 18, y: cy - 64, w: 36, h: 88 };
+  return { x: cx - 21, y: cy - 38, w: 42, h: 56 };
+}
+
+// Count UNIQUE selected opening ids by type (so ties never double-count).
+// `added` = field-added openings [{key,type}] the rep placed on site.
+function deriveWindoorMeasurements(model, selectedKeys, added) {
+  const sel = new Set(selectedKeys || []);
+  const typeOf = {};
+  (model.sides || []).forEach((s) => (s.places || []).forEach((p) => { typeOf[p.key] = openingType(p.key); }));
+  (added || []).forEach((a) => { typeOf[a.key] = a.type; });
+  let windows = 0, doors = 0, sliders = 0, garage = 0;
+  Object.keys(typeOf).forEach((k) => {
+    if (!sel.has(k)) return;
+    const t = typeOf[k];
+    if (t === 'window') windows += 1; else if (t === 'door') doors += 1;
+    else if (t === 'slider') sliders += 1; else if (t === 'garage') garage += 1;
+  });
+  return { windows, doors, sliders, garage_doors: garage };
 }
 function allWindoorOpeningIds() {
-  const ids = [];
-  (ELEVATION_MODEL.sides || []).forEach((s) => (s.openings || []).forEach((o) => ids.push(o.id)));
-  return ids;
+  const s = new Set();
+  (ELEVATION_MODEL.sides || []).forEach((sd) => (sd.places || []).forEach((p) => s.add(p.key)));
+  return [...s];
 }
 
 // Convenience: every facet id / every eave id (default "all selected" sets).
@@ -277,7 +290,7 @@ function allRoofEaveIds() {
 
 Object.assign(window, {
   ROOF_MODEL, EDGE_STYLE, SEED_DOWNSPOUTS, STORY_DROP_FT,
-  ELEVATION_MODEL, OPENING_STYLE,
+  ELEVATION_MODEL, OPENING_STYLE, openingType, openingRect,
   deriveRoofMeasurements, deriveGutterMeasurements, deriveWindoorMeasurements,
   allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds,
   edgeById, facetById, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint

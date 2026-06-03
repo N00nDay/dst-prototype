@@ -1408,6 +1408,7 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .roof-mini-btn:disabled { opacity: 0.4; cursor: default; }
+.roof-mini-btn.is-on-add { background: var(--brand); border-color: var(--brand); color: var(--brand-fg); }
 
 /* Live measurement readout grid */
 .roof-readout {

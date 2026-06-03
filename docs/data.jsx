@@ -552,7 +552,10 @@ const CUSTOMERS = [
   lastInteraction: { date: 'Today', type: 'Active appointment' },
   deals: [
   { id: 'd1', date: 'Today', type: 'Inspection', trade: 'Roofing', status: 'in-progress', amount: null },
-  { id: 'd2', date: 'Apr 12', type: 'Storm canvass', trade: 'Roofing', status: 'lead', amount: null }]
+  { id: 'd2', date: 'Apr 12', type: 'Storm canvass', trade: 'Roofing', status: 'lead', amount: null },
+  { id: 'd3', date: 'Aug 2023', type: 'Estimate', trade: 'Gutters · Standard', status: 'expired', amount: 4850 },
+  { id: 'd4', date: 'May 2022', type: 'Installed', trade: 'Gutter guards', status: 'installed', amount: 3120 },
+  { id: 'd5', date: 'Sep 2019', type: 'Installed', trade: 'Roof replacement · Standard', status: 'installed', amount: 16400 }]
 
 },
 {

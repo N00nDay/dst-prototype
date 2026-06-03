@@ -381,6 +381,11 @@ function AppointmentDetail({ appt, recording, recordingPaused = false, recording
         </div>
       </div>}
 
+      {/* Customer history — a quick historical glance so the rep walks in
+          knowing what's come before (prior projects, open/expired estimates,
+          earlier canvasses). Pulled from the CUSTOMERS master list by name. */}
+      <CustomerHistory name={appt?.customer || custName} tablet={tablet} />
+
       {recording &&
       <>
           <div className="section-label">The IHS Selling Way</div>
@@ -428,6 +433,69 @@ function AppointmentDetail({ appt, recording, recordingPaused = false, recording
       <div style={{ height: 22 }} />
     </div>);
 
+}
+
+// ─────── Customer history glance ───────
+// Surfaces this homeowner's prior dealings — past installs, open/expired
+// estimates, earlier canvasses — so the rep walks in primed on the
+// relationship instead of cold. Sourced from the CUSTOMERS master list,
+// matched by name. The active in-progress appointment is excluded (that's
+// the visit they're on now, not history). Capped to keep the overview tight.
+function HistStatusPill({ status }) {
+  const map = {
+    installed: { label: 'Installed', cls: 'success' },
+    signed: { label: 'Signed', cls: 'success' },
+    open: { label: 'Open estimate', cls: 'warn' },
+    expired: { label: 'Expired', cls: '' },
+    lead: { label: 'Lead', cls: '' },
+    completed: { label: 'Completed', cls: '' }
+  };
+  const m = map[status] || { label: status, cls: '' };
+  return <span className={`pill ${m.cls}`} style={{ fontSize: 9, fontWeight: 700 }}>{m.label}</span>;
+}
+
+function CustomerHistory({ name, tablet = false }) {
+  const list = typeof CUSTOMERS !== 'undefined' ? CUSTOMERS : [];
+  const rec = list.find((c) => c.name === name);
+  const past = (rec?.deals || []).filter((d) => d.status !== 'in-progress');
+  if (past.length === 0) return null;
+  const rows = past.slice(0, 4);
+  const lifetime = (rec.deals || [])
+    .filter((d) => d.status === 'installed' || d.status === 'signed')
+    .reduce((s, d) => s + (d.amount || 0), 0);
+  return (
+    <>
+      <div className="section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>History · {past.length}</span>
+        {lifetime > 0 &&
+        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'none', letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>
+          Lifetime · {fmt(lifetime)}
+        </span>}
+      </div>
+      <div style={{ padding: tablet ? '0 28px' : '0 16px' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {rows.map((d, i) =>
+          <div key={d.id} style={{
+            padding: '11px 14px',
+            borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>{d.type}</span>
+                <HistStatusPill status={d.status} />
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{d.trade}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>{d.date}</div>
+            </div>
+            {d.amount &&
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+              {fmt(d.amount)}
+            </div>}
+          </div>)}
+        </div>
+      </div>
+    </>);
 }
 
 

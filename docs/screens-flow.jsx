@@ -455,7 +455,7 @@ function HistStatusPill({ status }) {
   return <span className={`pill ${m.cls}`} style={{ fontSize: 9, fontWeight: 700 }}>{m.label}</span>;
 }
 
-function CustomerHistory({ name, tablet = false }) {
+function CustomerHistory({ name, tablet = false, flush = false }) {
   const list = typeof CUSTOMERS !== 'undefined' ? CUSTOMERS : [];
   const rec = list.find((c) => c.name === name);
   const past = (rec?.deals || []).filter((d) => d.status !== 'in-progress');
@@ -477,14 +477,14 @@ function CustomerHistory({ name, tablet = false }) {
     .reduce((s, d) => s + (d.amount || 0), 0);
   return (
     <>
-      <div className="section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: flush ? '14px 0 6px' : undefined }}>
         <span>History · {past.length}</span>
         {lifetime > 0 &&
         <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'none', letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>
           Lifetime · {fmt(lifetime)}
         </span>}
       </div>
-      <div style={{ padding: tablet ? '0 28px' : '0 16px' }}>
+      <div style={{ padding: flush ? 0 : (tablet ? '0 28px' : '0 16px') }}>
         {/* Plain bordered list (not .card) so rows don't inherit the card
             press-nudge — each row is its own tap target instead. */}
         <div style={{

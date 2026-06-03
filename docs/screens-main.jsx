@@ -896,6 +896,11 @@ function ToolbagCustomerTab({ customer, setCustomer, requestSheet }) {
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '-0.01em' }}>Text</span>
         </a>
       </div>
+      {/* Prior dealings — same history glance shown on the appointment
+          screen, so the rep can pull it up mid-visit from the Tool Bag.
+          Reuses CustomerHistory (screens-flow.jsx); `flush` strips the
+          full-screen padding so it aligns inside the drawer. */}
+      <CustomerHistory name={customer.name} flush />
     </div>);
 }
 

@@ -501,9 +501,9 @@ function CustomerHistory({ name, tablet = false, flush = false }) {
                 onClick={() => onOpenDeal(d)}
                 style={{
                   width: '100%', textAlign: 'left', cursor: 'pointer',
-                  padding: '11px 12px 11px 14px',
-                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                  border: 0, borderTopColor: 'var(--border)',
+                  padding: '11px 14px',
+                  border: 0,
+                  borderBottom: i === rows.length - 1 ? 'none' : '1px solid var(--border)',
                   background: flashed ? 'var(--brand-soft)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                   transition: 'background 120ms ease'
@@ -518,13 +518,10 @@ function CustomerHistory({ name, tablet = false, flush = false }) {
                     {flashed ? <span style={{ color: 'var(--brand)', fontWeight: 700 }}>Project detail coming soon</span> : d.date}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  {d.amount &&
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>
-                    {fmt(d.amount)}
-                  </div>}
-                  <span style={{ color: 'var(--text-4)', display: 'inline-flex' }}><Icon.chev /></span>
-                </div>
+                {d.amount &&
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  {fmt(d.amount)}
+                </div>}
               </button>);
           })}
         </div>

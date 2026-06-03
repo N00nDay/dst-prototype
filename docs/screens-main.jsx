@@ -744,7 +744,7 @@ function PhaseStepsSheet({ phase, currentView, stepLabelByView, onSelect, onClos
 // The whole drawer is portaled into .app-root so the backdrop covers the
 // AppContextBar header (without the portal, position:absolute would be
 // trapped inside the inner content wrapper that sits below the header).
-function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer, tablet = false }) {
+function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer, slides, setSlides, included, setIncluded, tablet = false }) {
   // Tabs: icon + text on tablet, icon only on phone. As we add more tabs the
   // phone bar would scrunch otherwise — icon-only keeps each tab tappable.
   const TABS = [
@@ -752,7 +752,8 @@ function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer,
     { id: 'customer', label: 'Customer', icon: Icon.user },
     { id: 'property', label: 'Property', icon: Icon.building },
     { id: 'area', label: 'Area', icon: Icon.pin },
-    { id: 'reviews', label: 'Reviews', icon: Icon.star }];
+    { id: 'reviews', label: 'Reviews', icon: Icon.star },
+    { id: 'slides', label: 'Slides', icon: Icon.layers }];
   // Inner sheet (edit field, filter) layers ON TOP of the side drawer.
   // The sheet provides its own backdrop that covers the drawer in place —
   // we don't slide the drawer off-screen (that motion is jarring).
@@ -795,6 +796,7 @@ function ToolbagDrawer({ open, tab, onTabChange, onClose, customer, setCustomer,
           {tab === 'property' && <ToolbagPropertyTab customer={customer} />}
           {tab === 'area' && <ToolbagAreaTab customer={customer} requestSheet={setInnerSheet} />}
           {tab === 'reviews' && <ToolbagReviewsTab />}
+          {tab === 'slides' && <SlidePicker embedded tablet={tablet} slides={slides} setSlides={setSlides} included={included} setIncluded={setIncluded} />}
         </div>
       </div>
       {innerSheet}

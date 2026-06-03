@@ -13,6 +13,38 @@
 
 const { useState, useEffect, useRef, useMemo } = React;
 
+// Slide-deck config persistence. The rep's default deck (Core 6 order +
+// which slides are on/off) is saved to localStorage so it carries across
+// appointments and is editable from both the Slides step and the Tool Bag.
+// Only Core-6 (non-finding) slides are serialized — finding slides always
+// re-compose live from inspection state.
+const SLIDE_CONFIG_KEY = 'dst:slideConfig';
+function loadSlideConfig() {
+  try {
+    const raw = localStorage.getItem(SLIDE_CONFIG_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.slides)) return null;
+    // Re-hydrate against PITCH_SLIDES so any slides added to the catalog
+    // since the config was saved still appear (appended at the end).
+    const byId = new Map(PITCH_SLIDES.map((s) => [s.id, s]));
+    const ordered = parsed.slides.map((s) => byId.get(s.id)).filter(Boolean);
+    const seen = new Set(ordered.map((s) => s.id));
+    PITCH_SLIDES.forEach((s) => { if (!seen.has(s.id)) ordered.push(s); });
+    return { slides: ordered, included: parsed.included || {} };
+  } catch (e) {
+    return null;
+  }
+}
+function saveSlideConfig(slides, included) {
+  try {
+    localStorage.setItem(SLIDE_CONFIG_KEY, JSON.stringify({
+      slides: (slides || []).map((s) => ({ id: s.id })),
+      included: included || {}
+    }));
+  } catch (e) {/* storage unavailable — config stays in-memory only */}
+}
+
 // Production defaults — formerly tweakable via the dev-only Tweaks panel,
 // which has been removed in favor of values that match the live rep
 // experience. `device` is the form factor (phone vs tablet preview);
@@ -206,9 +238,14 @@ function App() {
   // ── Pitch Deck ────────────────────────────────────────
   // Approach = rep picks which slides to include (mode='pick'). Present = runs
   // the included slides + the proposal preview (mode='present').
-  const [pitchSlides, setPitchSlides] = useState(PITCH_SLIDES);
+  const [pitchSlides, setPitchSlides] = useState(() => loadSlideConfig()?.slides || PITCH_SLIDES);
   const [pitchSkips, setPitchSkips] = useState({});
-  const [pitchIncluded, setPitchIncluded] = useState({}); // { [slideId]: false } if excluded
+  const [pitchIncluded, setPitchIncluded] = useState(() => loadSlideConfig()?.included || {}); // { [slideId]: false } if excluded
+
+  // Persist the default deck whenever its order or on/off set changes.
+  useEffect(() => {
+    saveSlideConfig(pitchSlides, pitchIncluded);
+  }, [pitchSlides, pitchIncluded]);
 
   // Findings appear as slides at the start of the presentation.
   // Source of truth: envelope cards on the Inspect tab. One slide per
@@ -555,7 +592,11 @@ function App() {
     }]);
     setActiveStructureId('main');
     setFindings(FINDINGS_SEED);
-    setPitchSlides(PITCH_SLIDES);
+    // Keep the rep's saved default deck across appointments rather than
+    // resetting to the raw catalog order.
+    const savedDeck = loadSlideConfig();
+    setPitchSlides(savedDeck?.slides || PITCH_SLIDES);
+    setPitchIncluded(savedDeck?.included || {});
     setPitchSkips({});
     setSwaps({});setAddons({});setDiscounts({});
     setNeedsFields(NEEDS_SEED);
@@ -967,6 +1008,10 @@ function App() {
             onClose={() => setDrawerOpen(false)}
             customer={customerData}
             setCustomer={setCustomerData}
+            slides={composedPitchSlides}
+            setSlides={handleSetPitchSlides}
+            included={pitchIncluded}
+            setIncluded={setPitchIncluded}
             tablet={isTablet} />
           {showIdleWarning &&
           <window.RecordingIdleModal

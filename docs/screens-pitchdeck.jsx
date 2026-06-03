@@ -31,7 +31,7 @@ function PitchDeckScreen({ brand, rep, tablet, mode = 'present', slides, setSlid
 }
 
 // ─────── Approach: slide picker (no live homeowner presentation) ───────
-function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setIncluded, onContinue }) {
+function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setIncluded, onContinue, embedded = false }) {
   const includedCount = slides.filter((s) => included?.[s.id] !== false).length;
   const [skipPrompt, setSkipPrompt] = useState(null); // { id, label } when prompting
   const [dragIdx, setDragIdx] = useState(null);
@@ -67,7 +67,10 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
   };
 
   return (
-    <div className="scroll-area" style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
+    <div
+      className={embedded ? '' : 'scroll-area'}
+      style={embedded ? { background: 'transparent' } : { flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
+      {!embedded &&
       <div style={{ padding: tablet ? '20px 28px 8px' : '14px 16px 8px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: tablet ? 26 : 20, fontWeight: 700, letterSpacing: '-0.02em' }}>
           Choose what to present
@@ -75,9 +78,13 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
           Drag the handle (⋮⋮) to reorder. Toggle Core 6 slides off if needed — we'll ask why. Findings auto-include from inspection.
         </div>
-      </div>
+      </div>}
+      {embedded &&
+      <div style={{ padding: '12px 14px 6px', fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+        Set your default deck — order and which Core 6 slides are on. This is the same list the Slides step uses, and it's saved for your next appointments.
+      </div>}
 
-      <div style={{ padding: tablet ? '14px 28px' : '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: embedded ? '6px 12px' : tablet ? '14px 28px' : '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {slides.map((s, i) => {
           const on = included?.[s.id] !== false;
           const isFinding = s.kind === 'finding';
@@ -139,6 +146,7 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
         })}
       </div>
 
+      {!embedded &&
       <div style={{ padding: tablet ? '8px 28px 28px' : '8px 16px 24px' }}>
         <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 12 }}>
           {includedCount} of {slides.length} slides included · ready to build proposal
@@ -146,7 +154,11 @@ function SlidePicker({ brand, rep, tablet, slides, setSlides, included, setInclu
         <button className="btn btn-primary btn-lg btn-block" onClick={onContinue}>
           Continue to proposal <Icon.arrow />
         </button>
-      </div>
+      </div>}
+      {embedded &&
+      <div style={{ padding: '4px 12px 16px', fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>
+        {includedCount} of {slides.length} slides included · saved automatically
+      </div>}
 
       {/* Skip-reason sheet — required when toggling off a Core 6 slide */}
       {skipPrompt &&

@@ -423,7 +423,7 @@ const SEED_MEASUREMENTS = {
   // Gutters seed = the roof diagram (data-aerial.jsx) with every eave selected
   // and the seeded downspout markers (5 drops; 2-story drops = 20ft, 1-story = 10ft).
   gutters: { gutter_lf: 264, downspouts: 5, downspout_lf: 80, guards_lf: 0 },
-  windoors: { windows: 14, doors: 3, sliders: 1 },
+  windoors: { windows: 25, doors: 4, sliders: 1 },
   attic:    { attic_area: 1820, insulation_r: 30, insulation_depth: 9, soffit_vents: 12, ridge_vent_lf: 48, bath_fans_vented: 2 }
 };
 
@@ -487,7 +487,10 @@ const SEED_ENVELOPE = {
   windoors: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.windoors,
-    measurements: {}
+    // Window/door counts come from the interactive elevations — every opening
+    // selected by default.
+    measurements: { ...SEED_MEASUREMENTS.windoors },
+    windoorSelection: allWindoorOpeningIds()
   },
   attic: {
     source: 'manual', sourceId: null, linkedAt: null,

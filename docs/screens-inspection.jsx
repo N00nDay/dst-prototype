@@ -1,6 +1,6 @@
 /* global React, Icon, ENVELOPE_FACETS, MEASUREMENT_SCHEMA, CATALOGS, REPORT_SOURCES,
    autoQtyFor, findCatalog, fmtMoney, fmtMoneyExact, INSPECTION_CATEGORIES,
-   RoofDiagram, ROOF_MODEL, allRoofFacetIds, allRoofEaveIds */
+   RoofDiagram, WindoorDiagram, ROOF_MODEL, allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds */
 
 /* IHS Selling Way — Inspection screen
    ───────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ const PACKAGE_FACETS = new Set(['roofing', 'siding', 'windoors']);
 // Facets whose Measurements step is driven by the interactive aerial diagram
 // instead of per-field rows. Their continue-gate is satisfied by having at
 // least one facet selected, not by per-row locks.
-const DIAGRAM_FACETS = new Set(['roofing', 'gutters']);
+const DIAGRAM_FACETS = new Set(['roofing', 'gutters', 'windoors']);
 
 // ─────────────────────────────────────────────────────────
 // Top-level component
@@ -413,13 +413,17 @@ function InspectionScreen({
             onChangeDismissal={(tier, reasonId) => updateEnvelope({ packageDismissals: { ...(env.packageDismissals || {}), [tier]: reasonId } })} />}
             {activeSection === 'measurements' && sections.includes('measurements') && (
           DIAGRAM_FACETS.has(activeFacet) ?
-          // Roofing & gutters measurements come from the interactive roof
-          // diagram — it owns the facet/eave selection + controls and pushes
+          // Roofing, gutters & windows/doors measurements come from an
+          // interactive diagram that owns the selection + controls and pushes
           // the derived measurements through the normal envelope recompute path.
+          (activeFacet === 'windoors' ?
+          <WindoorDiagram
+            env={env}
+            onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} /> :
           <RoofDiagram
             mode={activeFacet === 'gutters' ? 'gutters' : 'roofing'}
             env={env}
-            onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} /> :
+            onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} />) :
           <div>
               <SourceBanner
               facet={facet}
@@ -613,8 +617,10 @@ function InspectionScreen({
           const e = (envelope || {})[facetId] || {};
           if (section === 'measurements') {
             if (DIAGRAM_FACETS.has(facetId)) {
-              // Satisfied once at least one facet/eave is selected on the diagram.
-              const sel = facetId === 'gutters' ? (e.gutterSelection || allRoofEaveIds()) : (e.roofSelection || allRoofFacetIds());
+              // Satisfied once at least one item is selected on the diagram.
+              const sel = facetId === 'gutters' ? (e.gutterSelection || allRoofEaveIds())
+                : facetId === 'windoors' ? (e.windoorSelection || allWindoorOpeningIds())
+                : (e.roofSelection || allRoofFacetIds());
               return sel.length > 0 ? 0 : 1;
             }
             const schema = MEASUREMENT_SCHEMA[facetId] || [];

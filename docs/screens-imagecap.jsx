@@ -77,6 +77,7 @@ function ImageCaptureScreen({
   const [activeFacet, setActiveFacet] = useState('roofing');
   const [pickerOpen, setPickerOpen] = useState(null); // facetId for picker
   const [dismissFor, setDismissFor] = useState(null); // facetId pending dismissal
+  const [bulkOpen, setBulkOpen] = useState(false); // bulk-dismiss sheet open
 
   // Active structure + position (for the chip + Continue copy).
   const activeIdx = Math.max(0, (structures || []).findIndex((s) => s.id === activeStructureId));
@@ -149,7 +150,26 @@ function ImageCaptureScreen({
       {/* Findings cards — always one card per envelope category (Roofing,
           Siding, Gutters, Windows & Doors). We inspect the whole envelope
           regardless of which scopes are being quoted on this structure. */}
-      <div className="section-label">Findings{isMulti ? ` · ${activeStructure?.name || ''}` : ''}</div>
+      {(() => {
+        const dismissable = visibleFacets.filter((f) => !envelope[f.id]?.dismissed);
+        return (
+          <div className="section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Findings{isMulti ? ` · ${activeStructure?.name || ''}` : ''}</span>
+            {dismissable.length > 0 &&
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '4px 9px', borderRadius: 999,
+                border: '1px solid var(--border-strong)', background: 'var(--surface)',
+                color: 'var(--text-2)', fontSize: 10, fontWeight: 700,
+                letterSpacing: 0.02, textTransform: 'none', cursor: 'pointer'
+              }}>
+              <Icon.x style={{ width: 10, height: 10 }} /> Dismiss areas…
+            </button>}
+          </div>);
+      })()}
       <div style={{ padding: '0 16px 110px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {visibleFacets.map((f) => {
           const e = envelope[f.id] || {};
@@ -224,6 +244,24 @@ function ImageCaptureScreen({
           onConfirm={(reason) => {
             setFacetField(dismissFor, { dismissed: reason });
             setDismissFor(null);
+          }} />}
+
+      {/* Bulk-dismiss drawer — clear several areas at once (e.g. a structure
+          with no siding, gutters, or windows being quoted). One reason
+          applies to every checked facet; each collapses to its dismissed row. */}
+      {bulkOpen &&
+        <BulkDismissSheet
+          facets={visibleFacets.filter((f) => !envelope[f.id]?.dismissed)}
+          onClose={() => setBulkOpen(false)}
+          onConfirm={(facetIds, reason) => {
+            setEnvelope((s) => {
+              const next = { ...s };
+              facetIds.forEach((id) => {
+                next[id] = { ...(next[id] || {}), dismissed: reason };
+              });
+              return next;
+            });
+            setBulkOpen(false);
           }} />}
       </div>
 
@@ -1446,6 +1484,145 @@ function DismissReasonSheet({ facet, onClose, onConfirm }) {
       </div>
     </>);
 
+}
+
+// ─── Bulk dismiss sheet ───────────────────────────────────────
+// Clear several finding areas in one pass. The rep checks every facet
+// that isn't present / isn't being quoted on this structure, picks a
+// single shared reason, and confirms — each checked card collapses to
+// its dismissed row. Same reason payload as the single-card sheet so the
+// audit trail and Undo behave identically.
+function BulkDismissSheet({ facets, onClose, onConfirm }) {
+  const [checked, setChecked] = useState(() => new Set());
+  const [selected, setSelected] = useState(null);
+  const [note, setNote] = useState('');
+  if (!facets || facets.length === 0) return null;
+  const reason = DISMISS_REASONS.find((r) => r.id === selected);
+  const toggle = (id) => setChecked((s) => {
+    const n = new Set(s);
+    n.has(id) ? n.delete(id) : n.add(id);
+    return n;
+  });
+  const allOn = checked.size === facets.length;
+  const toggleAll = () => setChecked(allOn ? new Set() : new Set(facets.map((f) => f.id)));
+  const canConfirm = checked.size > 0 && !!reason && (reason.id !== 'other' || note.trim().length > 0);
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet" style={{ maxHeight: '82%', display: 'flex', flexDirection: 'column' }}>
+        <div className="grabber" />
+        <div style={{ padding: '0 16px 8px', flexShrink: 0 }}>
+          <h3 style={{ margin: '0 0 4px' }}>Dismiss areas</h3>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.45 }}>
+            Check the areas that aren't on this structure or aren't being quoted, then pick one reason for all of them.
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 12px' }}>
+          {/* Facet checklist */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 6px' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase' }}>Areas</span>
+            <button type="button" onClick={toggleAll} style={{ background: 'none', border: 0, color: 'var(--brand)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              {allOn ? 'Clear all' : 'Select all'}
+            </button>
+          </div>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {facets.map((f, i) => {
+              const on = checked.has(f.id);
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => toggle(f.id)}
+                  style={{
+                    width: '100%', textAlign: 'left',
+                    padding: '12px 14px',
+                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                    border: 0,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: on ? 'var(--brand-soft)' : 'var(--surface)',
+                    cursor: 'pointer'
+                  }}>
+                  <span style={{
+                    width: 20, height: 20, borderRadius: 6,
+                    border: `1.5px solid ${on ? 'var(--brand)' : 'var(--border-strong)'}`,
+                    background: on ? 'var(--brand)' : 'transparent',
+                    color: 'var(--brand-fg)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {on && <Icon.check style={{ width: 11, height: 11 }} />}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{f.label}</span>
+                </button>);
+            })}
+          </div>
+
+          {/* Shared reason */}
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.06, textTransform: 'uppercase', margin: '14px 2px 6px' }}>Reason</div>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {DISMISS_REASONS.map((r, i) => {
+              const on = r.id === selected;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setSelected(r.id)}
+                  style={{
+                    width: '100%', textAlign: 'left',
+                    padding: '12px 14px',
+                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                    border: 0,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: on ? 'var(--brand-soft)' : 'var(--surface)',
+                    cursor: 'pointer'
+                  }}>
+                  <span style={{
+                    width: 20, height: 20, borderRadius: 999,
+                    border: `1.5px solid ${on ? 'var(--brand)' : 'var(--border-strong)'}`,
+                    background: on ? 'var(--brand)' : 'transparent',
+                    color: 'var(--brand-fg)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {on && <Icon.check style={{ width: 11, height: 11 }} />}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{r.label}</span>
+                </button>);
+            })}
+          </div>
+          {selected === 'other' &&
+          <textarea
+            autoFocus
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Tell us why…"
+            rows={3}
+            style={{
+              marginTop: 10, width: '100%', boxSizing: 'border-box',
+              padding: '10px 12px', borderRadius: 10,
+              border: '1px solid var(--border-strong)', background: 'var(--surface)',
+              color: 'var(--text)', fontSize: 13, lineHeight: 1.45,
+              fontFamily: 'inherit', resize: 'vertical', minHeight: 70,
+              outline: 'none'
+            }} />}
+        </div>
+        <div style={{ padding: '10px 16px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+          <button className="btn btn-block" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button
+            className="btn btn-primary btn-lg btn-block"
+            style={{ flex: 2, opacity: canConfirm ? 1 : 0.45, cursor: canConfirm ? 'pointer' : 'not-allowed' }}
+            disabled={!canConfirm}
+            onClick={() => onConfirm([...checked], {
+              reason: reason.id,
+              reasonLabel: reason.id === 'other' ? note.trim() : reason.label,
+              note: note.trim() || null,
+              ts: Date.now()
+            })}>
+            Dismiss {checked.size || ''} {checked.size === 1 ? 'area' : 'areas'}
+          </button>
+        </div>
+      </div>
+    </>);
 }
 
 // ─── Photo FAB row ───────────────────────────────────────────

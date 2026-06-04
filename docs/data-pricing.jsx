@@ -414,7 +414,7 @@ const SEED_MEASUREMENTS = {
     stories: 2, waste_pct: 12
   },
   siding: {
-    siding_area: 23, openings_area: 529, trim_area: 171,
+    siding_area: 22.9, openings_area: 529, trim_area: 171,
     windows: 14, doors: 3, garage_doors: 1,
     inside_corners: 57, outside_corners: 128,
     eaves_fascia: 248, rakes_fascia: 155, level_frieze: 237, sloped_frieze: 144,
@@ -470,7 +470,11 @@ const SEED_ENVELOPE = {
   siding: {
     source: 'hover', sourceId: 'HV-7024146', linkedAt: 'Today · 8:42 AM',
     aerial: SEED_MEASUREMENTS.siding,
-    measurements: {},
+    // Siding area comes from the interactive SI-region diagram (every region
+    // selected by default); the remaining take-off fields seed from Hover and
+    // stay editable as secondary inputs.
+    measurements: { ...SEED_MEASUREMENTS.siding },
+    sidingSelection: allSidingRegionIds(),
     lineItems: deriveInitialLineItems('siding', SEED_MEASUREMENTS.siding),
     packageProducts: { good: 's-jh-sc-g', better: 's-jh-cp-b', best: 's-jh-art-x' }
   },

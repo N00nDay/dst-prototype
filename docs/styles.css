@@ -1410,6 +1410,32 @@ button { font-family: inherit; cursor: pointer; }
 .roof-mini-btn:disabled { opacity: 0.4; cursor: default; }
 .roof-mini-btn.is-on-add { background: var(--brand); border-color: var(--brand); color: var(--brand-fg); }
 
+/* Siding region chips */
+.siding-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.siding-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 9px 11px;
+  cursor: pointer;
+  text-align: left;
+}
+.siding-chip__id { font-size: 12px; font-weight: 800; color: var(--text-2); }
+.siding-chip__sqft { font-size: 12px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.siding-chip.is-on {
+  border-color: oklch(0.5 0.09 250);
+  background: oklch(0.55 0.1 250 / 0.12);
+}
+.siding-chip.is-on .siding-chip__id { color: oklch(0.4 0.09 250); }
+.siding-chip:not(.is-on) { border-style: dashed; opacity: 0.7; }
+.siding-zone__lbl {
+  font-size: 11px; font-weight: 800;
+  text-anchor: middle; dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke; stroke: #fff; stroke-width: 3px;
+}
+
 /* Live measurement readout grid */
 .roof-readout {
   display: grid;

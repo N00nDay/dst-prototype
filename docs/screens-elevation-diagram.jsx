@@ -1,4 +1,4 @@
-/* global React, ELEVATION_MODEL, OPENING_STYLE, openingType, openingRect, deriveWindoorMeasurements, allWindoorOpeningIds */
+/* global React, ELEVATION_MODEL, OPENING_STYLE, openingType, openingRect, deriveWindoorMeasurements, allWindoorOpeningIds, SIDING_MODEL, deriveSidingMeasurements, sidingSqft, sidingRegionRect, allSidingRegionIds */
 
 /* WindoorDiagram — interactive Windows & Doors measurement experience.
    ───────────────────────────────────────────────────────────────
@@ -160,4 +160,104 @@ function WindoorDiagram({ env, onApplyMeasurements }) {
   );
 }
 
-Object.assign(window, { WindoorDiagram });
+// ───────────────────────────────────────────────────────────────
+// SIDING — tap SI-x wall regions (area only)
+// ───────────────────────────────────────────────────────────────
+function SidingDiagram({ env, onApplyMeasurements }) {
+  const model = SIDING_MODEL;
+  const [side, setSide] = React.useState('front');
+  const selection = (env && env.sidingSelection) || allSidingRegionIds();
+  const selSet = new Set(selection);
+  const activeSide = model.sides.find((s) => s.id === side) || model.sides[0];
+
+  const totalSqft = sidingSqft(model, selection);
+  const sqValue = Math.round(totalSqft / 100 * 10) / 10;
+
+  // Merge siding_area into existing measurements (siding keeps its other
+  // take-off fields). The Inspection handler does the merge.
+  const commit = (next) => onApplyMeasurements(deriveSidingMeasurements(model, next), { sidingSelection: next });
+  const toggle = (id) => commit(selSet.has(id) ? selection.filter((k) => k !== id) : [...selection, id]);
+
+  const sideIds = activeSide.regions.map((r) => r.id);
+  const sideSel = sideIds.filter((id) => selSet.has(id)).length;
+  const selectAllSide = () => commit([...new Set([...selection, ...sideIds])]);
+  const clearSide = () => commit(selection.filter((id) => !sideIds.includes(id)));
+
+  return (
+    <div style={{ padding: '8px 14px 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <span style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase',
+          color: 'var(--brand-soft-fg)', background: 'var(--brand-soft)', padding: '3px 8px', borderRadius: 5
+        }}>Hover</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{model.sourceId} · siding per elevation</span>
+      </div>
+
+      {/* side switcher */}
+      <div className="roof-seg roof-seg--wide" role="tablist" aria-label="Elevation side" style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
+        {model.sides.map((s) => {
+          const n = s.regions.filter((r) => selSet.has(r.id)).length;
+          return (
+            <button key={s.id} type="button" role="tab" aria-selected={side === s.id}
+              className={'roof-seg__btn' + (side === s.id ? ' is-on' : '')} style={{ flex: 1 }}
+              onClick={() => setSide(s.id)}>
+              {s.label}<span className="elev-side-count">{n}/{s.regions.length}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* elevation image + clickable region zones */}
+      <div className="card" style={{ padding: 8, background: 'var(--surface)', overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${model.imgW} ${model.imgH}`} width="100%" style={{ display: 'block', height: 'auto' }}
+          preserveAspectRatio="xMidYMid meet" role="img"
+          aria-label={`${activeSide.label} elevation — tap a wall region to include or exclude its siding`}>
+          <image href={activeSide.img} x={0} y={0} width={model.imgW} height={model.imgH} style={{ pointerEvents: 'none' }} />
+          {activeSide.regions.map((rg) => {
+            const on = selSet.has(rg.id);
+            const r = sidingRegionRect(rg);
+            return (
+              <g key={rg.id} onClick={() => toggle(rg.id)} tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(rg.id); } }}
+                role="checkbox" aria-checked={on} aria-label={`${rg.id} ${rg.sqft} square feet ${on ? 'included' : 'excluded'}`}
+                style={{ cursor: 'pointer' }}>
+                <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={3}
+                  fill={on ? 'oklch(0.55 0.1 250)' : '#fff'} fillOpacity={on ? 0.24 : 0.04}
+                  stroke={on ? 'oklch(0.45 0.09 250)' : 'oklch(0.55 0.02 80)'} strokeWidth={on ? 3 : 2}
+                  strokeDasharray={on ? 'none' : '5 4'} />
+                <text x={rg.cx} y={rg.cy} className="siding-zone__lbl" style={{ fill: on ? 'oklch(0.32 0.09 250)' : 'var(--text-3)' }}>{rg.id}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '8px 2px 0' }}>
+        Tap a wall region to include / exclude its siding area.
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '10px 2px 0' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>
+          {sideSel} of {sideIds.length} on {activeSide.label.toLowerCase()}
+        </span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button type="button" className="roof-mini-btn" onClick={selectAllSide} disabled={sideSel === sideIds.length}>Select all</button>
+          <button type="button" className="roof-mini-btn" onClick={clearSide} disabled={sideSel === 0}>Clear</button>
+        </div>
+      </div>
+
+      <div className="roof-readout" style={{ gridTemplateColumns: '2fr 1fr' }}>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Siding area</div>
+          <div className="roof-readout__value">{sqValue}<span className="roof-readout__unit">sq</span></div>
+          <div className="roof-readout__sub">{totalSqft.toLocaleString()} ft² across {selection.length} regions</div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Regions</div>
+          <div className="roof-readout__value">{selection.length}<span className="roof-readout__unit">of {allSidingRegionIds().length}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { WindoorDiagram, SidingDiagram });

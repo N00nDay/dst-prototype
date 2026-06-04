@@ -1,6 +1,7 @@
 /* global React, Icon, ENVELOPE_FACETS, MEASUREMENT_SCHEMA, CATALOGS, REPORT_SOURCES,
    autoQtyFor, findCatalog, fmtMoney, fmtMoneyExact, INSPECTION_CATEGORIES,
-   RoofDiagram, WindoorDiagram, ROOF_MODEL, allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds */
+   RoofDiagram, WindoorDiagram, SidingDiagram, ROOF_MODEL,
+   allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds, allSidingRegionIds */
 
 /* IHS Selling Way — Inspection screen
    ───────────────────────────────────────────────────────────────
@@ -141,7 +142,7 @@ const PACKAGE_FACETS = new Set(['roofing', 'siding', 'windoors']);
 // Facets whose Measurements step is driven by the interactive aerial diagram
 // instead of per-field rows. Their continue-gate is satisfied by having at
 // least one facet selected, not by per-row locks.
-const DIAGRAM_FACETS = new Set(['roofing', 'gutters', 'windoors']);
+const DIAGRAM_FACETS = new Set(['roofing', 'gutters', 'windoors', 'siding']);
 
 // ─────────────────────────────────────────────────────────
 // Top-level component
@@ -420,6 +421,34 @@ function InspectionScreen({
           <WindoorDiagram
             env={env}
             onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} /> :
+          activeFacet === 'siding' ?
+          // Siding: the diagram drives siding_area (MERGED into measurements so
+          // the other take-off fields are preserved); the rest stay editable
+          // below as secondary inputs.
+          <div>
+              <SidingDiagram
+              env={env}
+              onApplyMeasurements={(next, patch) => {
+                const merged = { ...measurements, ...next };
+                updateEnvelope({ ...patch, measurements: merged, lineItems: recomputeLineItems(merged) });
+              }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 14px 2px' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.08, color: 'var(--text-3)', textTransform: 'uppercase' }}>Other siding measurements</div>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              </div>
+              <MeasurementsPane
+              facetId={activeFacet}
+              measurements={measurements}
+              setMeasurement={setMeasurement}
+              aerial={aerial}
+              pendingMeas={env.pendingMeas || {}}
+              onApplyPending={applyOnePending}
+              onDismissPending={dismissPending}
+              onApplyOne={applyOneAerial}
+              locks={measurementLocks}
+              onSetLock={setMeasurementLock}
+              excludeKeys={['siding_area']} />
+            </div> :
           <RoofDiagram
             mode={activeFacet === 'gutters' ? 'gutters' : 'roofing'}
             env={env}
@@ -620,6 +649,7 @@ function InspectionScreen({
               // Satisfied once at least one item is selected on the diagram.
               const sel = facetId === 'gutters' ? (e.gutterSelection || allRoofEaveIds())
                 : facetId === 'windoors' ? (e.windoorSelection || allWindoorOpeningIds())
+                : facetId === 'siding' ? (e.sidingSelection || allSidingRegionIds())
                 : (e.roofSelection || allRoofFacetIds());
               return sel.length > 0 ? 0 : 1;
             }
@@ -1602,8 +1632,9 @@ function SourceBanner({ facet, env, measurements, aerial, onChange, onApplyAll }
 // ─────────────────────────────────────────────────────────
 // Measurements pane
 // ─────────────────────────────────────────────────────────
-function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendingMeas, onApplyPending, onDismissPending, onApplyOne, locks, onSetLock }) {
-  const schema = MEASUREMENT_SCHEMA[facetId] || [];
+function MeasurementsPane({ facetId, measurements, setMeasurement, aerial, pendingMeas, onApplyPending, onDismissPending, onApplyOne, locks, onSetLock, excludeKeys }) {
+  const exclude = new Set(excludeKeys || []);
+  const schema = (MEASUREMENT_SCHEMA[facetId] || []).filter((f) => !exclude.has(f.key));
   // Group by `group`
   const grouped = useMemo(() => {
     const g = {};

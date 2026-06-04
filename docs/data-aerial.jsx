@@ -242,6 +242,65 @@ const OPENING_STYLE = {
   garage: { label: 'Garage', color: 'oklch(0.55 0.16 300)' }
 };
 
+// ─── Siding regions (per elevation) ───────────────────────────
+// Hover "Siding Per Elevation" — each SI-x wall region with its net ft².
+// Tapping regions sums to siding_area (squares). Shares the elevation images.
+const SIDING_MODEL = {
+  source: 'hover',
+  sourceId: 'HV-7024146',
+  imgW: 880,
+  imgH: 489,
+  // cx/cy = the SI label position on the image (from the report's blue tags);
+  // the clickable zone is sized from its ft². Wireframe-approximate — exact wall
+  // polygons would come from Hover's structured data.
+  sides: [
+    { id: 'front', label: 'Front', img: 'elevations/front.png', regions: [
+      { id: 'SI-1', sqft: 23, cx: 450, cy: 349 }, { id: 'SI-2', sqft: 45, cx: 79, cy: 321 },
+      { id: 'SI-3', sqft: 35, cx: 193, cy: 316 }, { id: 'SI-4', sqft: 92, cx: 300, cy: 135 },
+      { id: 'SI-6', sqft: 222, cx: 600, cy: 270 }, { id: 'SI-7', sqft: 15, cx: 520, cy: 168 }
+    ] },
+    { id: 'right', label: 'Right', img: 'elevations/right.png', regions: [
+      { id: 'SI-5', sqft: 52, cx: 95, cy: 330 }, { id: 'SI-8', sqft: 126, cx: 498, cy: 151 },
+      { id: 'SI-9', sqft: 359, cx: 439, cy: 329 }, { id: 'SI-10', sqft: 141, cx: 779, cy: 343 }
+    ] },
+    { id: 'back', label: 'Back', img: 'elevations/back.png', regions: [
+      { id: 'SI-11', sqft: 187, cx: 300, cy: 330 }, { id: 'SI-13', sqft: 122, cx: 333, cy: 207 },
+      { id: 'SI-17', sqft: 65, cx: 716, cy: 234 }, { id: 'SI-18', sqft: 23, cx: 659, cy: 397 },
+      { id: 'SI-12', sqft: 8, cx: 372, cy: 390 }, { id: 'SI-14', sqft: 12, cx: 475, cy: 399 },
+      { id: 'SI-16', sqft: 17, cx: 527, cy: 400 }, { id: 'SI-20', sqft: 17, cx: 583, cy: 399 },
+      { id: 'SI-19', sqft: 8, cx: 734, cy: 405 }, { id: 'SI-15', sqft: 3, cx: 772, cy: 397 }
+    ] },
+    { id: 'left', label: 'Left', img: 'elevations/left.png', regions: [
+      { id: 'SI-21', sqft: 217, cx: 311, cy: 322 }, { id: 'SI-22', sqft: 208, cx: 400, cy: 136 },
+      { id: 'SI-24', sqft: 46, cx: 470, cy: 300 }, { id: 'SI-23', sqft: 33, cx: 560, cy: 305 },
+      { id: 'SI-26', sqft: 106, cx: 645, cy: 300 }, { id: 'SI-25', sqft: 112, cx: 730, cy: 290 }
+    ] }
+  ]
+};
+
+// Clickable zone rect for a region, sized from its ft² (capped so big walls
+// don't swamp the image and slivers stay tappable).
+function sidingRegionRect(rg) {
+  const w = Math.max(30, Math.min(170, Math.round(Math.sqrt(rg.sqft) * 8)));
+  const h = Math.max(26, Math.min(100, Math.round(Math.sqrt(rg.sqft) * 5.5)));
+  return { x: rg.cx - w / 2, y: rg.cy - h / 2, w, h };
+}
+
+function sidingSqft(model, selectedIds) {
+  const sel = new Set(selectedIds || []);
+  let sqft = 0;
+  (model.sides || []).forEach((s) => (s.regions || []).forEach((rg) => { if (sel.has(rg.id)) sqft += rg.sqft; }));
+  return sqft;
+}
+function deriveSidingMeasurements(model, selectedIds) {
+  return { siding_area: Math.round(sidingSqft(model, selectedIds) / 100 * 10) / 10 };
+}
+function allSidingRegionIds() {
+  const ids = [];
+  (SIDING_MODEL.sides || []).forEach((s) => (s.regions || []).forEach((rg) => ids.push(rg.id)));
+  return ids;
+}
+
 // Type from the Hover id prefix.
 function openingType(key) {
   if (/^GD/i.test(key)) return 'garage';
@@ -291,6 +350,7 @@ function allRoofEaveIds() {
 Object.assign(window, {
   ROOF_MODEL, EDGE_STYLE, SEED_DOWNSPOUTS, STORY_DROP_FT,
   ELEVATION_MODEL, OPENING_STYLE, openingType, openingRect,
+  SIDING_MODEL, deriveSidingMeasurements, sidingSqft, sidingRegionRect, allSidingRegionIds,
   deriveRoofMeasurements, deriveGutterMeasurements, deriveWindoorMeasurements,
   allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds,
   edgeById, facetById, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint

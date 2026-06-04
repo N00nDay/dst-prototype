@@ -423,32 +423,14 @@ function InspectionScreen({
             onApplyMeasurements={(next, patch) => updateEnvelope({ ...patch, measurements: next, lineItems: recomputeLineItems(next) })} /> :
           activeFacet === 'siding' ?
           // Siding: the diagram drives siding_area (MERGED into measurements so
-          // the other take-off fields are preserved); the rest stay editable
-          // below as secondary inputs.
-          <div>
-              <SidingDiagram
-              env={env}
-              onApplyMeasurements={(next, patch) => {
-                const merged = { ...measurements, ...next };
-                updateEnvelope({ ...patch, measurements: merged, lineItems: recomputeLineItems(merged) });
-              }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 14px 2px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.08, color: 'var(--text-3)', textTransform: 'uppercase' }}>Other siding measurements</div>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              </div>
-              <MeasurementsPane
-              facetId={activeFacet}
-              measurements={measurements}
-              setMeasurement={setMeasurement}
-              aerial={aerial}
-              pendingMeas={env.pendingMeas || {}}
-              onApplyPending={applyOnePending}
-              onDismissPending={dismissPending}
-              onApplyOne={applyOneAerial}
-              locks={measurementLocks}
-              onSetLock={setMeasurementLock}
-              excludeKeys={['siding_area']} />
-            </div> :
+          // the rest of the Hover-seeded take-off is preserved and shown
+          // read-only in the diagram's readout) — clean, like the other facets.
+          <SidingDiagram
+            env={env}
+            onApplyMeasurements={(next, patch) => {
+              const merged = { ...measurements, ...next };
+              updateEnvelope({ ...patch, measurements: merged, lineItems: recomputeLineItems(merged) });
+            }} /> :
           <RoofDiagram
             mode={activeFacet === 'gutters' ? 'gutters' : 'roofing'}
             env={env}

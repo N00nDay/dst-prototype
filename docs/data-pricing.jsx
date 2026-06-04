@@ -413,12 +413,15 @@ const SEED_MEASUREMENTS = {
     step_flashing: 77, apron_flashing: 58, drip_edge: 405,
     stories: 2, waste_pct: 12
   },
+  // Siding seed = exact Hover data export (facades, openings, corners, trim,
+  // frieze, fascia, soffit, shutters). siding_area is region-driven by the
+  // diagram; the rest are read-only take-off values.
   siding: {
     siding_area: 22.9, openings_area: 529, trim_area: 171,
-    windows: 14, doors: 3, garage_doors: 1,
+    windows: 21, doors: 4, garage_doors: 1,
     inside_corners: 57, outside_corners: 128,
-    eaves_fascia: 248, rakes_fascia: 155, level_frieze: 237, sloped_frieze: 144,
-    soffit_area: 691, gable_vents: 0, shutters_sets: 0, exterior_lights: 4,
+    eaves_fascia: 248, rakes_fascia: 155, level_frieze: 238, sloped_frieze: 144,
+    soffit_area: 715, gable_vents: 0, shutters_sets: 1, exterior_lights: 4,
     waste_pct: 10
   },
   // Gutters seed = the roof diagram (data-aerial.jsx) with every eave selected

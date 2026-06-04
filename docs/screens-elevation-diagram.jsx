@@ -165,6 +165,7 @@ function SidingDiagram({ env, onApplyMeasurements }) {
   const [side, setSide] = React.useState('front');
   const selection = (env && env.sidingSelection) || allSidingRegionIds();
   const selSet = new Set(selection);
+  const m = (env && env.measurements) || {};
   const activeSide = model.sides.find((s) => s.id === side) || model.sides[0];
   const totalSqft = sidingSqft(model, selection);
   const sqValue = Math.round(totalSqft / 100 * 10) / 10;
@@ -220,15 +221,35 @@ function SidingDiagram({ env, onApplyMeasurements }) {
         </div>
       </div>
 
-      <div className="roof-readout" style={{ gridTemplateColumns: '2fr 1fr' }}>
-        <div className="roof-readout__cell">
+      <div className="roof-readout">
+        <div className="roof-readout__cell roof-readout__cell--wide">
           <div className="roof-readout__label">Siding area</div>
           <div className="roof-readout__value">{sqValue}<span className="roof-readout__unit">sq</span></div>
-          <div className="roof-readout__sub">{totalSqft.toLocaleString()} ft² across {selection.length} regions</div>
+          <div className="roof-readout__sub">{totalSqft.toLocaleString()} ft² · {selection.length} of {allSidingRegionIds().length} regions</div>
         </div>
         <div className="roof-readout__cell">
-          <div className="roof-readout__label">Regions</div>
-          <div className="roof-readout__value">{selection.length}<span className="roof-readout__unit">of {allSidingRegionIds().length}</span></div>
+          <div className="roof-readout__label">Openings</div>
+          <div className="roof-readout__value">{m.openings_area || 0}<span className="roof-readout__unit">ft²</span></div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Inside corners</div>
+          <div className="roof-readout__value">{m.inside_corners || 0}<span className="roof-readout__unit">ft</span></div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Outside corners</div>
+          <div className="roof-readout__value">{m.outside_corners || 0}<span className="roof-readout__unit">ft</span></div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Fascia</div>
+          <div className="roof-readout__value">{(m.eaves_fascia || 0) + (m.rakes_fascia || 0)}<span className="roof-readout__unit">ft</span></div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Frieze</div>
+          <div className="roof-readout__value">{(m.level_frieze || 0) + (m.sloped_frieze || 0)}<span className="roof-readout__unit">ft</span></div>
+        </div>
+        <div className="roof-readout__cell">
+          <div className="roof-readout__label">Soffit</div>
+          <div className="roof-readout__value">{m.soffit_area || 0}<span className="roof-readout__unit">ft²</span></div>
         </div>
       </div>
     </div>

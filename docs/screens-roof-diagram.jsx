@@ -386,14 +386,14 @@ function GutterDiagram({ env, onApplyMeasurements }) {
         return (
           <div className={'roof-ds-pop' + (flipDown ? ' roof-ds-pop--down' : '')} style={{ left: centerX, top: pos[1], '--caret': caretX + 'px' }}>
             <div className="roof-ds-pop__head">
-              <span>{facet ? facet.label : 'Downspout'}</span>
+              <span>Downspout</span>
               <button type="button" aria-label="Close" onClick={() => setSelectedDsId(null)}>✕</button>
             </div>
             <div className="roof-ds-pop__row">
               <span className="roof-ds-pop__lbl">Drop</span>
               {auto ? (
                 <button type="button" className="roof-linkbtn" onClick={() => setDrop(selectedDs.id, autoVal)}>
-                  Auto · {facet ? facet.stories : 2}-story · {autoVal} ft
+                  Auto · gutter ht · {autoVal} ft
                 </button>
               ) : (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

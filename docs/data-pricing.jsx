@@ -408,9 +408,9 @@ const SEED_MEASUREMENTS = {
   // all-selected sums (deriveRoofMeasurements over all facet ids). Penetration
   // counts are intentionally gone — they live in Materials/Labor now.
   roofing: {
-    area: 35.6, area_steep: 30.8, area_flat: 4.8, pitch: '8/12',
-    eaves: 264, rakes: 105, ridge: 66, hip: 80, valley: 78,
-    step_flashing: 57, apron_flashing: 58, drip_edge: 369,
+    area: 34.9, area_steep: 30.8, area_flat: 4.1, pitch: '8/12',
+    eaves: 250, rakes: 155, ridge: 126, hip: 76, valley: 100,
+    step_flashing: 77, apron_flashing: 58, drip_edge: 405,
     stories: 2, waste_pct: 12
   },
   siding: {
@@ -423,7 +423,7 @@ const SEED_MEASUREMENTS = {
   },
   // Gutters seed = the roof diagram (data-aerial.jsx) with every eave selected
   // and the seeded downspout markers (5 drops; 2-story drops = 20ft, 1-story = 10ft).
-  gutters: { gutter_lf: 264, downspouts: 5, downspout_lf: 80, guards_lf: 0 },
+  gutters: { gutter_lf: 250, downspouts: 5, downspout_lf: 54, guards_lf: 0 },
   windoors: { windows: 21, doors: 4, sliders: 0, garage_doors: 1 },
   attic:    { attic_area: 1820, insulation_r: 30, insulation_depth: 9, soffit_vents: 12, ridge_vent_lf: 48, bath_fans_vented: 2 }
 };

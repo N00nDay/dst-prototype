@@ -1643,6 +1643,14 @@ button { font-family: inherit; cursor: pointer; }
   stroke-width: 1.2;
   stroke-linejoin: round;
 }
+/* Real wall polygons (elevation context behind the openings) */
+.elev-wall {
+  fill: oklch(0.93 0.005 80);
+  stroke: oklch(0.78 0.012 80);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
 .elev-dim {
   font-size: 8px;
   font-weight: 700;

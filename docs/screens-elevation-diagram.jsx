@@ -91,8 +91,8 @@ function WindoorDiagram({ env, onApplyMeasurements }) {
         <svg ref={svgRef} viewBox={model.viewBox} width="100%" style={{ display: 'block', height: 'auto', cursor: addType ? 'crosshair' : 'default' }}
           preserveAspectRatio="xMidYMid meet" role="img" onClick={onCanvasClick}
           aria-label={`${activeSide.label} elevation — tap an opening to include or exclude it`}>
-          {activeSide.walls.map((w) => (
-            <polygon key={w.id} className="elev-wall" points={ptsAttr(w.pts)} />
+          {activeSide.silhouette.map((poly, i) => (
+            <polygon key={'sil' + i} className="elev-wall" points={ptsAttr(poly)} />
           ))}
           {items.map((o) => {
             const on = selSet.has(o.id);
@@ -185,6 +185,9 @@ function SidingDiagram({ env, onApplyMeasurements }) {
       <div className="card" style={{ padding: 8, background: 'var(--surface)', overflow: 'hidden' }}>
         <svg viewBox={model.viewBox} width="100%" style={{ display: 'block', height: 'auto' }}
           preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${activeSide.label} elevation — tap a wall region to include or exclude its siding`}>
+          {activeSide.silhouette.map((poly, i) => (
+            <polygon key={'sil' + i} className="elev-wall" points={ptsAttr(poly)} />
+          ))}
           {activeSide.walls.map((w) => {
             const on = selSet.has(w.id);
             const [cx, cy] = centroid(w.pts);

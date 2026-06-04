@@ -1362,9 +1362,15 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Facet polygons — tap to include/exclude */
 .roof-facet { cursor: pointer; transition: fill .12s ease, opacity .12s ease; outline: none; }
-.roof-facet--on {
-  fill: oklch(0.55 0.1 250 / 0.20);
-  stroke: oklch(0.5 0.09 250);
+.roof-facet--steep {
+  fill: oklch(0.55 0.12 250 / 0.22);
+  stroke: oklch(0.5 0.1 250);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.roof-facet--low {
+  fill: oklch(0.78 0.15 75 / 0.28); /* amber — low slope */
+  stroke: oklch(0.62 0.14 70);
   stroke-width: 1.5;
   stroke-linejoin: round;
 }
@@ -1375,7 +1381,8 @@ button { font-family: inherit; cursor: pointer; }
   stroke-dasharray: 4 3;
   stroke-linejoin: round;
 }
-.roof-facet--on:hover { fill: oklch(0.55 0.12 250 / 0.30); }
+.roof-facet--steep:hover { fill: oklch(0.55 0.13 250 / 0.32); }
+.roof-facet--low:hover { fill: oklch(0.78 0.16 75 / 0.40); }
 .roof-facet--off:hover { fill: oklch(0.72 0.02 80 / 0.24); }
 .roof-facet:focus-visible { stroke: var(--brand); stroke-width: 2.5; }
 .roof-facet__lbl {

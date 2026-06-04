@@ -153,6 +153,10 @@ const OPENING_STYLE = {
 };
 
 // ── lookups & geometry (roof / gutters) ──
+// Effective slope = per-job override if present, else the surveyed value.
+function facetSlope(facet, overrides) {
+  return (overrides && overrides[facet.id]) || facet.slope;
+}
 const edgeById = (id) => (ROOF_MODEL.edges || []).find((e) => e.id === id) || null;
 const facetById = (id) => (ROOF_MODEL.facets || []).find((f) => f.id === id) || null;
 function pointOnEave(eave, t) {
@@ -193,11 +197,12 @@ function nearestEavePoint(selectedEaveIds, x, y) {
 // ── Roofing ──
 function deriveRoofMeasurements(model, selectedIds, opts) {
   const sel = new Set(selectedIds || []);
+  const ov = opts && opts.slopeOverrides;
   const facets = (model.facets || []).filter((f) => sel.has(f.id));
   let area = 0, steep = 0, flat = 0, step = 0, apron = 0, pitch = '', maxArea = -1;
   facets.forEach((f) => {
     area += f.areaSq;
-    if (f.slope === 'flat') flat += f.areaSq; else steep += f.areaSq;
+    if (facetSlope(f, ov) === 'flat') flat += f.areaSq; else steep += f.areaSq;
     if (f.stepFlash) step += f.stepFlash;
     if (f.apronFlash) apron += f.apronFlash;
     if (f.areaSq > maxArea) { maxArea = f.areaSq; pitch = f.pitch; }
@@ -275,5 +280,5 @@ Object.assign(window, {
   deriveRoofMeasurements, deriveGutterMeasurements, deriveWindoorMeasurements,
   deriveSidingMeasurements, sidingSqft, ptsAttr,
   allRoofFacetIds, allRoofEaveIds, allWindoorOpeningIds, allSidingRegionIds,
-  edgeById, facetById, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint, openingType
+  edgeById, facetById, facetSlope, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint, openingType
 });

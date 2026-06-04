@@ -1,4 +1,4 @@
-/* global React, Icon, ROOF_MODEL, EDGE_STYLE, SEED_DOWNSPOUTS, deriveRoofMeasurements, deriveGutterMeasurements, allRoofFacetIds, allRoofEaveIds, edgeById, facetById, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint */
+/* global React, Icon, ROOF_MODEL, EDGE_STYLE, SEED_DOWNSPOUTS, deriveRoofMeasurements, deriveGutterMeasurements, allRoofFacetIds, allRoofEaveIds, edgeById, facetById, facetSlope, pointOnEave, snapEaveEndT, downspoutDropLf, downspoutAutoDrop, nearestEavePoint */
 
 /* RoofDiagram — interactive roofing / gutters measurement experience.
    ───────────────────────────────────────────────────────────────
@@ -50,17 +50,26 @@ function DiagramHeader({ right }) {
 // ───────────────────────────────────────────────────────────────
 function RoofingDiagram({ env, onApplyMeasurements }) {
   const [overlay, setOverlay] = React.useState('area'); // area | pitch | lengths
+  const [editSlope, setEditSlope] = React.useState(false); // tap flips slope vs include
   const selection = (env && env.roofSelection) || allRoofFacetIds();
   const waste = (env && env.roofWaste != null) ? env.roofWaste : SUGGESTED_WASTE;
   const stories = (env && env.roofStories != null) ? env.roofStories : 2;
+  const slopeOverrides = (env && env.roofSlopeOverrides) || {};
   const selSet = new Set(selection);
-  const derived = deriveRoofMeasurements(ROOF_MODEL, selection, { waste, stories });
+  const derived = deriveRoofMeasurements(ROOF_MODEL, selection, { waste, stories, slopeOverrides });
 
-  const commit = (nextSel, nextWaste, nextStories) => {
-    const next = deriveRoofMeasurements(ROOF_MODEL, nextSel, { waste: nextWaste, stories: nextStories });
-    onApplyMeasurements(next, { roofSelection: nextSel, roofWaste: nextWaste, roofStories: nextStories });
+  const commit = (nextSel, nextWaste, nextStories, nextOv = slopeOverrides) => {
+    const next = deriveRoofMeasurements(ROOF_MODEL, nextSel, { waste: nextWaste, stories: nextStories, slopeOverrides: nextOv });
+    onApplyMeasurements(next, { roofSelection: nextSel, roofWaste: nextWaste, roofStories: nextStories, roofSlopeOverrides: nextOv });
   };
   const toggleFacet = (id) => commit(selSet.has(id) ? selection.filter((x) => x !== id) : [...selection, id], waste, stories);
+  const flipSlope = (f) => {
+    const cur = slopeOverrides[f.id] || f.slope;
+    const nextVal = cur === 'flat' ? 'steep' : 'flat';
+    const ov = { ...slopeOverrides };
+    if (nextVal === f.slope) delete ov[f.id]; else ov[f.id] = nextVal;
+    commit(selection, waste, stories, ov);
+  };
   const selectAll = () => commit(allRoofFacetIds(), waste, stories);
   const clearAll = () => commit([], waste, stories);
   const setWaste = (w) => commit(selection, w, stories);
@@ -87,15 +96,22 @@ function RoofingDiagram({ env, onApplyMeasurements }) {
           preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive roof plan — tap a facet to include or exclude it">
           {ROOF_MODEL.facets.map((f) => {
             const on = selSet.has(f.id);
+            const slope = slopeOverrides[f.id] || f.slope; // 'steep' | 'flat'
+            // In slope-edit mode every facet shows its slope tint (so any section can be
+            // retagged); otherwise excluded facets read as the gray "off" state.
+            const tinted = on || editSlope;
+            const cls = !tinted ? 'roof-facet--off' : slope === 'flat' ? 'roof-facet--low' : 'roof-facet--steep';
+            const onTap = () => (editSlope ? flipSlope(f) : toggleFacet(f.id));
             const [cx, cy] = centroid(f.pts);
             return (
               <g key={f.id}>
-                <polygon className={'roof-facet ' + (on ? 'roof-facet--on' : 'roof-facet--off')}
-                  points={ptsAttr(f.pts)} onClick={() => toggleFacet(f.id)} tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFacet(f.id); } }}
-                  role="checkbox" aria-checked={on} aria-label={`${f.label} — ${f.areaSq} squares, ${f.pitch}`} />
+                <polygon className={'roof-facet ' + cls}
+                  points={ptsAttr(f.pts)} onClick={onTap} tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(); } }}
+                  role="checkbox" aria-checked={on}
+                  aria-label={`${f.label} — ${f.areaSq} squares, ${f.pitch}, ${slope === 'flat' ? 'low-slope' : 'steep'}`} />
                 {overlay !== 'lengths' && (
-                  <text x={cx} y={cy} className="roof-facet__lbl" style={{ fill: on ? 'var(--text)' : 'var(--text-4)' }}>
+                  <text x={cx} y={cy} className="roof-facet__lbl" style={{ fill: tinted ? 'var(--text)' : 'var(--text-4)' }}>
                     {overlay === 'area' ? f.areaSq : f.pitch}
                   </text>
                 )}
@@ -120,12 +136,32 @@ function RoofingDiagram({ env, onApplyMeasurements }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px', margin: '10px 2px 2px' }}>
+        {[['Steep slope', 'oklch(0.55 0.12 250)'], ['Low slope', 'oklch(0.72 0.15 75)']].map(([lbl, color]) => (
+          <span key={lbl} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-2)' }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: color }} />
+            {lbl}
+          </span>
+        ))}
         {Object.keys(EDGE_STYLE).map((t) => (
           <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-2)' }}>
             <span style={{ width: 14, height: 3, borderRadius: 2, background: EDGE_STYLE[t].color }} />
             {EDGE_STYLE[t].label}
           </span>
         ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '10px 2px 0', flexWrap: 'wrap' }}>
+        <div className="roof-seg" role="tablist" aria-label="Tap action">
+          {[['include', 'Include'], ['slope', 'Set slope']].map(([m, lbl]) => {
+            const sel = editSlope === (m === 'slope');
+            return (
+              <button key={m} type="button" role="tab" aria-selected={sel}
+                className={'roof-seg__btn' + (sel ? ' is-on' : '')} onClick={() => setEditSlope(m === 'slope')}>{lbl}</button>
+            );
+          })}
+        </div>
+        {editSlope && (
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Tap a section to switch it between steep and low-slope.</span>
+        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '8px 2px 0' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: noneOn ? 'var(--danger)' : 'var(--text-2)' }}>
